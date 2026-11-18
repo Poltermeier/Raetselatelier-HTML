@@ -67,13 +67,14 @@ input[type="text"] { background: var(--paper); border: 1px solid #aebdb2; border
 .tk-role-title { line-height: 1.15; margin: 0; }
 .tk-role-status { min-height: 22px; }
 .tk-role-board-holder { min-height: 360px; flex: 1 1 auto; }
-.tk-role-board { flex: 1 1 auto; min-height: 360px; overflow: auto; border-radius: 3px; }
+.tk-role-board { flex: 1 1 auto; min-height: 360px; border-radius: 3px; }
 .tk-canvas { overflow: hidden; }
-.tk-role-board { overflow: auto; }
+.tk-role-board { overflow: auto; overflow-anchor: none; }
 .tk-canvas-surface, .tk-canvas-windows { position: absolute; inset: 0 auto auto 0; }
-.tk-canvas-windows { pointer-events: none; }
+.tk-canvas-windows { inset: 0; pointer-events: none; }
 .tk-canvas-windows > .tk-widget { position: absolute; pointer-events: auto; }
-.tk-canvas-content { position: relative; min-width: 100%; min-height: 100%; }
+/* Only the scroll region contributes to the board's scrollable extent. */
+.tk-canvas-content { position: relative; min-width: 100%; min-height: 100%; overflow: clip; }
 .tk-role-board .tk-canvas-surface { touch-action: none; }
 .tk-role-board[data-drag="false"] .tk-canvas-surface { touch-action: pan-x pan-y; }
 .tk-canvas-windows input, .tk-canvas-windows select { padding: 1px 3px; }
@@ -91,6 +92,14 @@ input[type="text"] { background: var(--paper); border: 1px solid #aebdb2; border
   max-width: calc(100vw - 24px); max-height: calc(100dvh - 24px);
 }
 .tk-toplevel:not([open]) { display: none; }
+.tk-role-settings { width: min(560px, calc(100% - 24px)); padding: 8px 8px 4px; overflow: auto; }
+.tk-role-settings > .tk-frame { min-height: min-content; }
+.tk-role-settings .tk-toplevel-heading {
+  margin: 16px 20px 0; font: 26px/1.2 Georgia, serif;
+}
+.tk-role-settings input[type="range"] { min-height: 32px; accent-color: var(--accent); }
+.tk-role-settings input[type="checkbox"] { flex: none; accent-color: var(--accent); }
+.tk-role-settings button { min-height: 42px; }
 dialog::backdrop { background: #233a3252; }
 .tk-menu { position: fixed; z-index: 8; padding: 5px; background: var(--paper); border: 1px solid var(--line); box-shadow: 0 6px 24px #233a3233; }
 .tk-menu button { display: block; width: 100%; margin-bottom: 3px; }

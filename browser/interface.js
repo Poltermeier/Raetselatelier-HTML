@@ -86,6 +86,11 @@ function makeWidget(id, kind, parentId) {
         }
     }
     if (kind === "Toplevel") {
+        const heading = widget.heading = document.createElement("h2");
+        heading.className = "tk-toplevel-heading";
+        heading.id = `tk-dialog-title-${id}`;
+        element.setAttribute("aria-labelledby", heading.id);
+        element.append(heading);
         element.hidden = false;
         element.addEventListener("cancel", (event) => {
             event.preventDefault();
@@ -169,7 +174,14 @@ function setOptions(widget, changed) {
         input.max = options.to ?? 100;
         input.setAttribute("aria-label", "Lautstärke");
     }
-    if (kind === "Canvas") queueDraw(widget);
+    if (kind === "Canvas") {
+        if ("scrollregion" in changed) {
+            const [, , width, height] = changed.scrollregion;
+            widget.content.style.width = length(width);
+            widget.content.style.height = length(height);
+        }
+        queueDraw(widget);
+    }
 }
 
 function pack(widget, options) {
@@ -451,16 +463,9 @@ function setWindow(child, widget, item, width, height, left, top) {
 }
 
 function paint(widget) {
-    const { element, content, surface, windows, options } = widget;
+    const { element, surface } = widget;
     const width = Math.max(1, element.clientWidth), height = Math.max(1, element.clientHeight);
     const [left, top] = scrollPosition(widget);
-    const region = options.scrollregion || [];
-    const extent = Math.max(width, region[2] || width);
-    const depth = Math.max(height, region[3] || height);
-    content.style.width = length(extent);
-    content.style.height = length(depth);
-    windows.style.width = length(extent);
-    windows.style.height = length(depth);
     const ratio = Math.min(window.devicePixelRatio || 1, 3);
     if (surface.width !== Math.ceil(width * ratio)) surface.width = Math.ceil(width * ratio);
     if (surface.height !== Math.ceil(height * ratio)) surface.height = Math.ceil(height * ratio);
@@ -632,7 +637,7 @@ function applyOperations(operations) {
         }
         case "title":
             if (widget.kind === "Root") document.title = args[0];
-            else widget.element.setAttribute("aria-label", args[0]);
+            else if (widget.heading) widget.heading.textContent = args[0];
             break;
         case "raise": widget.element.style.zIndex = "3"; break;
         case "reveal":
