@@ -12,9 +12,6 @@ python start_local.py
 
 Nach dem Download läuft das Atelier offline. Es lädt die Rätsel-Engine und alle weiteren Dateien vom eigenen Rechner. Alternativ kann ein beliebiger statischer Webserver den Projektordner bereitstellen. Der direkte Aufruf per Doppelklick auf `index.html` ist wegen der Browserregeln für Web Worker ungeeignet.
 
-## GitHub Pages
-
-In **Settings → Pages** unter **Build and deployment** den Eintrag **Deploy from a branch** auswählen. Als Branch **main** und als Ordner **/ (root)** wählen und speichern. Das Projekt funktioniert auch unter einem Repository-Pfad. Für Pages aus einem privaten Repository ist ein unterstützter GitHub-Tarif erforderlich. Vor dem Aktivieren die Sichtbarkeit der Pages-Website prüfen.
 
 ## Weiterentwicklung
 
