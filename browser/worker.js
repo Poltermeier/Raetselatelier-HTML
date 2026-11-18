@@ -114,7 +114,7 @@ globalThis.atelierChess = () => new Stockfish();
 async function start() {
     importScripts("../runtime/pyodide/pyodide.js");
     python = await loadPyodide({ indexURL: "../runtime/pyodide/" });
-    const archive = await fetch("../runtime/atelier.zip");
+    const archive = await fetch("../runtime/atelier.zip" + self.location.search);
     if (!archive.ok) throw new Error("Der Rätselkatalog konnte nicht geladen werden.");
     python.unpackArchive(await archive.arrayBuffer(), "zip", { extractDir: "/atelier" });
     await python.runPythonAsync(`

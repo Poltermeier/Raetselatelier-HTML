@@ -1,8 +1,11 @@
 """Atomic pentomino drag-and-drop with a snapped, purely geometric preview."""
-from .pentomino import SHAPES,PIECE_COLORS,normalize_shape,transform_shape
+from .pentomino import normalize_shape,transform_shape
 
 
 class PentominoDragUI:
+    pentomino_palette_offset = (8, 24)
+    pentomino_palette_step = 12
+
     def cancel_pentomino_drag(self,*,paint=True):
         drag=getattr(self,'pentomino_drag',None)
         if drag is None:return
@@ -19,8 +22,10 @@ class PentominoDragUI:
         for a,b,c,d,data in self.workshop_hitboxes:
             if data[0]!='piece' or not(a<=x<=c and b<=y<=d):continue
             name=data[1]
-            shape=transform_shape(SHAPES[name],self.workshop_turns,self.workshop_mirror) if self.activity_selected==name else normalize_shape(SHAPES[name])
-            grab=int((y-b-12)//16),int((x-a-8)//16)
+            points=self.puzzle.view['shapes'][name]
+            shape=transform_shape(points,self.workshop_turns,self.workshop_mirror) if self.activity_selected==name else normalize_shape(points)
+            dx,dy=self.pentomino_palette_offset;step=self.pentomino_palette_step
+            grab=int((y-b-dy)//step),int((x-a-dx)//step)
             if grab in shape:drag.update(piece=name,shape=shape,grab=grab)
             break
         else:
@@ -36,8 +41,9 @@ class PentominoDragUI:
         self.pentomino_drag=drag
         if drag['piece'] is not None:
             self.activity_selected=drag['piece']
+            points=self.puzzle.view['shapes'][drag['piece']]
             self.workshop_turns,self.workshop_mirror=next((turn,mirror) for turn in range(4) for mirror in (False,True)
-                if transform_shape(SHAPES[drag['piece']],turn,mirror)==drag['shape'])
+                if transform_shape(points,turn,mirror)==drag['shape'])
             self.paint_activity()
         return 'break'
 
@@ -55,7 +61,7 @@ class PentominoDragUI:
         self.canvas.delete('pentomino-drag');drag=getattr(self,'pentomino_drag',None)
         if drag is None or not drag['active'] or drag['piece'] is None:return
         points,cells,valid=self.pentomino_drop(drag);left,top,step=self.workshop_geometry
-        color=PIECE_COLORS[list(SHAPES).index(drag['piece'])]
+        color=self.puzzle.piece_colors[drag['piece']]
         for r,c in points:
             x,y=left+c*step,top+r*step
             tags=('pentomino-drag','pentomino-drop-valid' if valid else 'pentomino-drop-invalid')

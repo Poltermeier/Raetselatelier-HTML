@@ -1,7 +1,7 @@
-"""All twelve free pentominoes, exhaustive legal placements and exact-cover search."""
+"""Generate varied polyomino sets from verified rectangular pentomino tilings."""
 from functools import lru_cache
+from itertools import chain
 import random
-import time
 
 from .card_code_matches import validate_entries
 from .puzzle import Puzzle
@@ -39,12 +39,16 @@ def transform_shape(shape,turns=0,mirror=False):
 def orientations(shape):return tuple(sorted({transform_shape(shape,turns,mirror) for turns in range(4) for mirror in (False,True)}))
 
 
-@lru_cache(maxsize=2)
-def placement_options(rows,cols):
-    return {name:tuple(tuple((r+dr)*cols+c+dc for dr,dc in shape)
-                       for shape in orientations(points)
-                       for r in range(rows-max(dr for dr,dc in shape))
-                       for c in range(cols-max(dc for dr,dc in shape))) for name,points in SHAPES.items()}
+@lru_cache(maxsize=256)
+def shape_placements(rows, cols, points):
+    return tuple(tuple((row + dr) * cols + col + dc for dr, dc in shape)
+                 for shape in orientations(points)
+                 for row in range(rows - max(dr for dr, dc in shape))
+                 for col in range(cols - max(dc for dr, dc in shape)))
+
+
+def placement_options(rows, cols, shapes=SHAPES):
+    return {name: shape_placements(rows, cols, normalize_shape(points)) for name, points in shapes.items()}
 
 
 def pentomino_solution(rows,cols,rng):
@@ -55,7 +59,7 @@ def pentomino_solution(rows,cols,rng):
         for index,cells in enumerate(options[name]):
             for point in cells:cover[point].append((pi,index,masks[name][index]))
     for group in cover:rng.shuffle(group)
-    deadline=time.monotonic()+4;nodes=0
+    nodes=0
     def components_fit(occupied):
         free=full^occupied
         while free:
@@ -75,7 +79,7 @@ def pentomino_solution(rows,cols,rng):
     def place(occupied,used,chosen):
         nonlocal nodes
         nodes+=1
-        if nodes%512==0 and time.monotonic()>deadline:raise TimeoutError
+        if nodes>12_000:raise TimeoutError  # Stable across machines for a given seed.
         if occupied==full:return chosen
         best=None;free=full^occupied
         while free:
@@ -95,6 +99,67 @@ def pentomino_solution(rows,cols,rng):
     return {name:result[name] for name in names}
 
 
+def neighbors(point):
+    row, col = point
+    return ((row - 1, col), (row + 1, col), (row, col - 1), (row, col + 1))
+
+
+def connected(points):
+    start = min(points)
+    seen = {start}
+    pending = [start]
+    while pending:
+        for point in neighbors(pending.pop()):
+            if point in points and point not in seen:
+                seen.add(point)
+                pending.append(point)
+    return len(seen) == len(points)
+
+
+def transfer_choices(tiles):
+    """A boundary square can turn two adjacent fives into a four and a six."""
+    owners = {point: name for name, cells in tiles.items() for point in cells}
+    for donor, cells in tiles.items():
+        for point in sorted(cells):
+            remaining = cells - {point}
+            if not connected(remaining):
+                continue
+            smaller = orientations(remaining)[0]
+            recipients = {owners[neighbor] for neighbor in neighbors(point) if neighbor in owners} - {donor}
+            for recipient in sorted(recipients):
+                enlarged = tiles[recipient] | {point}
+                larger = orientations(enlarged)[0]
+                yield {donor, recipient, smaller, larger}, ((donor, remaining), (recipient, enlarged))
+
+
+def select_transfers(choices, count, start=0, used=frozenset()):
+    """Choose disjoint transfers with distinct shapes up to rotation and reflection."""
+    if not count:
+        return ()
+    for index in range(start, len(choices) - count + 1):
+        conflicts, transfer = choices[index]
+        if used.isdisjoint(conflicts):
+            rest = select_transfers(choices, count - 1, index + 1, used | conflicts)
+            if rest is not None:
+                return (transfer, *rest)
+    return None
+
+
+def mix_tiles(tiles, pairs, rng):
+    choices = list(transfer_choices(tiles))
+    rng.shuffle(choices)
+    transfers = select_transfers(choices, pairs)
+    if transfers is None:
+        return None
+    mixed = tiles.copy()
+    for new_name, (old_name, cells) in zip("ABCDEG", chain.from_iterable(transfers)):
+        del mixed[old_name]
+        mixed[new_name] = cells
+    names = list(mixed)
+    rng.shuffle(names)
+    return {name: mixed[name] for name in names}
+
+
 class PentominoPuzzle(Puzzle):
     def check(self,entries):
         pending=validate_entries(self,entries)
@@ -102,30 +167,52 @@ class PentominoPuzzle(Puzzle):
         used=set()
         for name,index in entries.items():
             cells=set(self.options[name][index])
-            if len(cells)!=5 or used&cells:return 'wrong',self.editable
+            if len(cells)!=len(self.view['shapes'][name]) or used&cells:return 'wrong',self.editable
             used.update(cells)
-        return ('correct',[]) if len(used)==60 else ('wrong',self.editable)
+        return ('correct',[]) if len(used)==self.view['rows']*self.view['cols'] else ('wrong',self.editable)
 
     def certify(self):
-        self.options=dict(placement_options(self.view['rows'],self.view['cols']))
+        self.options=placement_options(self.view['rows'],self.view['cols'],self.view['shapes'])
+        self.piece_colors=dict(zip(self.view['shapes'],self.view['palette']))
         if self.check(self.solution)[0]!='correct':raise ValueError('Ungültiger Pentomino-Lösungsnachweis')
         self.analysis.update(unique=False,logical_solvable=False,rules_verified=True,model_role='example_solution',
                              solution_method='exact_cover_witness_and_independent_tiling_validation',search_branches=None)
 
 
 def pentomino(seed,difficulty):
-    rng=random.Random(seed);rows,cols=(6,10) if difficulty=='mittel' else (5,12)
+    rng = random.Random(seed)
+    rows, cols = (6, 10) if difficulty == 'mittel' else (5, 12)
+    pairs = 2 if difficulty == 'mittel' else 3
+    base_options = placement_options(rows, cols)
     for _ in range(8):
-        try:solution=pentomino_solution(rows,cols,rng);break
-        except TimeoutError:continue
-    else:raise ValueError('Pentomino-Suche hat das Versuchslimit erreicht')
-    options=placement_options(rows,cols);keys=tuple(SHAPES)
-    p=PentominoPuzzle('pentomino-puzzle','Pentomino Puzzle',
-        'Lege die zwölf verschiedenen Teile aus je fünf Quadraten lückenlos in das Rechteck. '
+        try:
+            base_solution = pentomino_solution(rows, cols, rng)
+        except TimeoutError:
+            continue
+        base_tiles = {
+            name: {divmod(point, cols) for point in base_options[name][index]}
+            for name, index in base_solution.items()
+        }
+        tiles = mix_tiles(base_tiles, pairs, rng)
+        if tiles is not None:
+            break
+    else:
+        raise ValueError('Für diese Teilemischung wurde im Versuchslimit keine Belegung gefunden')
+
+    shapes = {name: list(SHAPES[name] if name in SHAPES else normalize_shape(cells))
+              for name, cells in tiles.items()}
+    options = placement_options(rows, cols, shapes)
+    solution = {name: options[name].index(tuple(sorted(row * cols + col for row, col in cells)))
+                for name, cells in tiles.items()}
+    keys = tuple(shapes)
+    puzzle = PentominoPuzzle('pentomino-puzzle','Pentomino Puzzle',
+        'Lege die zwölf verschiedenen Teile aus vier, fünf oder sechs Quadraten lückenlos in das Rechteck. '
         'Jedes Teil wird genau einmal benutzt; Teile dürfen sich nicht überlappen. '
-        'Ziehe rechts eine Figur mit gedrückter Maustaste ins Feld und lasse sie passend am Raster los. Drehe sie mit R oder spiegle sie mit M. Alternativ: Teil wählen und seinen linken oberen '
-        'Begrenzungspunkt im Feld an. Ein Klick auf ein gelegtes Teil nimmt es wieder auf. '
+        'Ziehe eine Figur aus der Auswahl ins Feld und lasse sie passend am Raster los. Drehe sie mit R oder spiegle sie mit M. '
+        'Du kannst auch ein Teil wählen und im Raster auf die obere linke Ecke seines Umrisses klicken. '
+        'Ein Klick auf ein gelegtes Teil nimmt es wieder auf. '
         'Jede vollständige gültige Belegung zählt.',
         Model({name:set(range(len(options[name]))) for name in keys},[Table(keys,(tuple(solution[k] for k in keys),))]),
-        solution,{},dict(kind='activity',mode='pentomino',rows=rows,cols=cols,shapes={name:list(points) for name,points in SHAPES.items()},palette=list(PIECE_COLORS)),seed,difficulty)
-    p.certify();return p
+        solution,{},dict(kind='activity',mode='pentomino',rows=rows,cols=cols,shapes=shapes,palette=list(PIECE_COLORS)),seed,difficulty)
+    puzzle.certify()
+    return puzzle

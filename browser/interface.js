@@ -9,6 +9,7 @@ const fonts = new Map();
 const images = new Map();
 const pendingDraw = new Set();
 const preferencesKey = "simons-raetselatelier.settings";
+const runtimeVersion = new URL(document.currentScript.src).search;
 let engine, frame, audio, currentDialog;
 const dialogs = [];
 
@@ -717,7 +718,7 @@ function start() {
     }
     let preferences = "{}";
     try { preferences = localStorage.getItem(preferencesKey) || "{}"; } catch { /* optional storage */ }
-    try { engine = new Worker("browser/worker.js"); }
+    try { engine = new Worker("browser/worker.js" + runtimeVersion); }
     catch {
         startupFailure("Der Browser konnte die Rätsel-Engine nicht starten.");
         return;

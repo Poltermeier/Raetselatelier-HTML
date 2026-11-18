@@ -4,7 +4,7 @@ import tkinter as tk
 from .board_canvas import BoardEntry
 
 from .pentomino_ui import PentominoDragUI
-from .pentomino import SHAPES,PIECE_COLORS,transform_shape
+from .pentomino import transform_shape
 from .pipes import rotate_pipe,STEPS
 from .workshop_games import ALPHABET,shift_board,slide_targets
 
@@ -178,26 +178,27 @@ class WorkshopUI(PentominoDragUI):
 
     def paint_pentomino(self):
         p=self.puzzle;v=p.view;left,top,step=self.workshop_geometry;right=left+v['cols']*step+32
-        self.activity_text(28,24,f'Gelegte Teile: {len(self.activity_state["placements"])} / 12')
+        self.activity_text(28,24,f'Gelegte Teile: {len(self.activity_state["placements"])} / {len(v["shapes"])}')
         for r in range(v['rows']):
             for c in range(v['cols']):
                 x,y=left+c*step,top+r*step
                 self.canvas.create_rectangle(x,y,x+step,y+step,fill=PAPER,outline='#bccabd',tags=('activity-board','pentomino-cell'))
         for name,index in self.activity_state['placements'].items():
-            color=PIECE_COLORS[list(SHAPES).index(name)]
+            color=p.piece_colors[name]
             for point in p.options[name][index]:
                 r,c=divmod(point,v['cols']);x,y=left+c*step,top+r*step
                 self.canvas.create_rectangle(x+1,y+1,x+step-1,y+step-1,fill=color,outline=INK,tags=('activity-board','pentomino-piece'))
                 self.canvas.create_text(x+step/2,y+step/2,text=name,fill='white',font=('Helvetica',11,'bold'),tags=('activity-board',))
-        for i,(name,shape) in enumerate(SHAPES.items()):
+        dx,dy=self.pentomino_palette_offset;tile=self.pentomino_palette_step
+        for i,(name,shape) in enumerate(v['shapes'].items()):
             r,c=divmod(i,3);x,y=right+c*105,65+r*107;selected=self.activity_selected==name;placed=name in self.activity_state['placements']
             self.canvas.create_rectangle(x,y,x+97,y+99,fill='#f4e4c7' if selected else PAPER,
                                          outline='#aa762d' if selected else '#c3cfc2',width=3 if selected else 1,tags=('activity-board','pentomino-palette'))
             self.canvas.create_text(x+80,y+15,text=name,fill=INK,font=('Helvetica',12,'bold'),tags=('activity-board',))
             points=transform_shape(shape,self.workshop_turns,self.workshop_mirror) if selected else shape
             for dr,dc in points:
-                xx,yy=x+8+dc*16,y+12+dr*16
-                self.canvas.create_rectangle(xx,yy,xx+16,yy+16,fill='#d9ddd6' if placed else PIECE_COLORS[i],outline=INK,tags=('activity-board',))
+                xx,yy=x+dx+dc*tile,y+dy+dr*tile
+                self.canvas.create_rectangle(xx,yy,xx+tile,yy+tile,fill='#d9ddd6' if placed else p.piece_colors[name],outline=INK,tags=('activity-board',))
             self.workshop_hitboxes.append((x,y,x+97,y+99,('piece',name)))
         self.canvas.configure(scrollregion=(0,0,right+335,605),cursor='hand2')
 
@@ -286,7 +287,7 @@ class WorkshopUI(PentominoDragUI):
                     if point in self.puzzle.options[placed][index]:
                         del s['placements'][placed];self.activity_selected=placed;self.workshop_turns=0;self.workshop_mirror=False;self.on_change();return
                 return
-            shape=transform_shape(SHAPES[name],self.workshop_turns,self.workshop_mirror)
+            shape=transform_shape(v['shapes'][name],self.workshop_turns,self.workshop_mirror)
             if any(r+dr>=v['rows'] or c+dc>=v['cols'] for dr,dc in shape):return
             cells=tuple((r+dr)*v['cols']+c+dc for dr,dc in shape)
             occupied={point for other,index in s['placements'].items() for point in self.puzzle.options[other][index]}
@@ -321,13 +322,13 @@ class WorkshopUI(PentominoDragUI):
         return self.puzzle.check(self.workshop_entries())[0]
 
     def on_workshop_change(self):
-        self.paint_workshop();mode=self.puzzle.view['mode'];s=self.activity_state
+        self.paint_workshop();v=self.puzzle.view;mode=v['mode'];s=self.activity_state
         if self.workshop_state_result()=='correct':self.show_success();return
         self.hide_success(reset=True);self.dismiss_error(reset=True)
         text=('Buchstaben einsetzen · alle gleichen Zeichen ändern sich gemeinsam.' if mode=='crypto' else
               'Mit den vier Zahlen und Rechenzeichen 24 erreichen.' if mode=='target24' else
               'Alle Eingänge bestimmen, sodass die markierten Messpunkte stimmen.' if mode=='circuit' else
-              f'{len(s["placements"])} von 12 Teilen gelegt · R dreht, M spiegelt.' if mode=='pentomino' else
+              f'{len(s["placements"])} von {len(v["shapes"])} Teilen gelegt · R dreht, M spiegelt.' if mode=='pentomino' else
               f'{len(s["moves"])} Verschiebungen · stelle das Zielbild her.' if mode=='row-shift' else
               f'{len(s["moves"])} Drehungen · verbinde alle Rohranschlüsse passend.')
         self.status.configure(text=text,foreground=INK)
