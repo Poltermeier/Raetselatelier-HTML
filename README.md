@@ -12,6 +12,11 @@ python start_local.py
 
 Nach dem Download läuft das Atelier offline. Es lädt die Rätsel-Engine und alle weiteren Dateien vom eigenen Rechner. Alternativ kann ein beliebiger statischer Webserver den Projektordner bereitstellen. Der direkte Aufruf per Doppelklick auf `index.html` ist wegen der Browserregeln für Web Worker ungeeignet.
 
+## Online spielen
+
+Das Rätselatelier ist über Github Pages auch online verfügbar. Kein Download notwendig. Dies ermöglicht das nutzen auch auf Tablets, Smartphones etc. 
+
+Link: https://poltermeier.github.io/Raetselatelier-HTML/
 
 ## Weiterentwicklung
 
