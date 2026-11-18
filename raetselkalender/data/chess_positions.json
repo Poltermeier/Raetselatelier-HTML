@@ -1,0 +1,1551 @@
+{
+  "schema": 1,
+  "source": "https://database.lichess.org/#puzzles",
+  "license": "CC0-1.0",
+  "records": [
+    {
+      "id": "01MsO",
+      "fen": "5rk1/2p3b1/3pq3/P4rB1/1PP1p1Q1/7P/5P1K/2R2R2 b - - 0 36",
+      "best_move": "e6e5",
+      "pv": [
+        "e6e5",
+        "f2f4",
+        "e4f3",
+        "h2h1",
+        "f5g5",
+        "c1e1",
+        "g5g4",
+        "e1e5",
+        "g4h4"
+      ],
+      "difficulty": "schwer",
+      "kind": "best",
+      "mate": null,
+      "rating": 2214,
+      "themes": [
+        "crushing",
+        "discoveredAttack",
+        "discoveredCheck",
+        "enPassant",
+        "middlegame",
+        "short"
+      ],
+      "source": "https://lichess.org/training/01MsO",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "cp": 724
+          },
+          "runner_up": {
+            "cp": 0
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "cp": 729
+          },
+          "runner_up": {
+            "cp": -106
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": null,
+      "digest": "5a88f5fb21e11f544cf386715dfc3343416d7f1c2b4a327d5baec36499acd1c4"
+    },
+    {
+      "id": "01Pkt",
+      "fen": "8/p6p/6p1/1P2p3/Pk2K3/5P2/6PP/8 b - - 5 34",
+      "best_move": "b4a4",
+      "pv": [
+        "b4a4",
+        "h2h4",
+        "a4b5",
+        "h4h5",
+        "a7a5",
+        "e4d3",
+        "g6h5",
+        "g2g3",
+        "a5a4"
+      ],
+      "difficulty": "mittel",
+      "kind": "best",
+      "mate": null,
+      "rating": 1143,
+      "themes": [
+        "crushing",
+        "defensiveMove",
+        "endgame",
+        "long",
+        "pawnEndgame"
+      ],
+      "source": "https://lichess.org/training/01Pkt",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "cp": 457
+          },
+          "runner_up": {
+            "cp": 0
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "cp": 552
+          },
+          "runner_up": {
+            "cp": 0
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": null,
+      "digest": "5615a0bc96ca5b241d0046b95ca82d0c2754faf49d1a9af1b695bc9cd5e5c5e0"
+    },
+    {
+      "id": "00jCD",
+      "fen": "r4r1k/ppp1b1pp/3q1n2/6B1/8/1QN5/PPP2PPP/R4RK1 b - - 4 14",
+      "best_move": "f6g4",
+      "pv": [
+        "f6g4",
+        "g2g3",
+        "e7g5",
+        "c3e4",
+        "d6g6",
+        "a1e1",
+        "b7b6",
+        "b3c3",
+        "g5d8"
+      ],
+      "difficulty": "mittel",
+      "kind": "best",
+      "mate": null,
+      "rating": 1319,
+      "themes": [
+        "advantage",
+        "discoveredAttack",
+        "middlegame",
+        "short"
+      ],
+      "source": "https://lichess.org/training/00jCD",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "cp": 584
+          },
+          "runner_up": {
+            "cp": -142
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "cp": 617
+          },
+          "runner_up": {
+            "cp": -140
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": null,
+      "digest": "fdaef834396874608950988bf24c08f68c5e6f50a84140952ee4edcf767ef6fd"
+    },
+    {
+      "id": "02wic",
+      "fen": "r1bq1rk1/4bpp1/1p3n1p/pNp1p3/4P2B/P2B4/1PPQ1PPP/R4RK1 b - - 1 14",
+      "best_move": "c5c4",
+      "pv": [
+        "c5c4",
+        "f1d1",
+        "c4d3",
+        "d2d3",
+        "d8d3",
+        "c2d3",
+        "c8d7",
+        "d3d4",
+        "d7b5"
+      ],
+      "difficulty": "schwer",
+      "kind": "best",
+      "mate": null,
+      "rating": 2234,
+      "themes": [
+        "crushing",
+        "long",
+        "middlegame"
+      ],
+      "source": "https://lichess.org/training/02wic",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "cp": 635
+          },
+          "runner_up": {
+            "cp": 40
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "cp": 625
+          },
+          "runner_up": {
+            "cp": 28
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": null,
+      "digest": "1879651ffa9183dc0161f3423ae50eae8a8bb9179a2482c43f10588a6df498c3"
+    },
+    {
+      "id": "017u3",
+      "fen": "r2q1rk1/4bppp/p3bn2/1p2N3/5B2/2N5/PP3PPP/R2QR1K1 w - - 2 20",
+      "best_move": "e5c6",
+      "pv": [
+        "e5c6",
+        "d8e8",
+        "c6e7",
+        "e8e7",
+        "f4d6",
+        "e7d8",
+        "d6f8",
+        "d8f8",
+        "d1f3"
+      ],
+      "difficulty": "schwer",
+      "kind": "best",
+      "mate": null,
+      "rating": 1874,
+      "themes": [
+        "advantage",
+        "kingsideAttack",
+        "opening",
+        "skewer",
+        "veryLong"
+      ],
+      "source": "https://lichess.org/training/017u3",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "cp": 531
+          },
+          "runner_up": {
+            "cp": 0
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "cp": 527
+          },
+          "runner_up": {
+            "cp": 0
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": null,
+      "digest": "88d999c77e9c5f76594f70ea2e05b4a712550b2c58f49c2719a2c946fbf31a84"
+    },
+    {
+      "id": "03FPz",
+      "fen": "2k2b1r/ppp1p1pp/3r4/5p2/3PB3/2P1BQ1q/PP3P2/RN3RK1 b - - 1 15",
+      "best_move": "d6g6",
+      "pv": [
+        "d6g6",
+        "e3g5",
+        "g6g5",
+        "f3g2",
+        "g5g2",
+        "e4g2",
+        "h3h6",
+        "b1a3",
+        "e7e6"
+      ],
+      "difficulty": "mittel",
+      "kind": "best",
+      "mate": null,
+      "rating": 1201,
+      "themes": [
+        "advantage",
+        "middlegame",
+        "short"
+      ],
+      "source": "https://lichess.org/training/03FPz",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "cp": 645
+          },
+          "runner_up": {
+            "cp": -761
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "cp": 665
+          },
+          "runner_up": {
+            "cp": -762
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": null,
+      "digest": "feba1585e9b52588ab30b82e2df4970b05daaceacfe199a9ee976193b1e64ca9"
+    },
+    {
+      "id": "01SN2",
+      "fen": "8/r7/P1p5/3p4/3K4/1P4kp/2P5/R7 w - - 2 45",
+      "best_move": "d4c5",
+      "pv": [
+        "d4c5",
+        "g3f2",
+        "c5b6",
+        "a7a8",
+        "a6a7",
+        "c6c5",
+        "b6c5",
+        "f2e3",
+        "b3b4"
+      ],
+      "difficulty": "schwer",
+      "kind": "best",
+      "mate": null,
+      "rating": 1721,
+      "themes": [
+        "crushing",
+        "endgame",
+        "master",
+        "rookEndgame",
+        "short"
+      ],
+      "source": "https://lichess.org/training/01SN2",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "cp": 498
+          },
+          "runner_up": {
+            "cp": 0
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "cp": 563
+          },
+          "runner_up": {
+            "cp": 0
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": null,
+      "digest": "0be6b983de5a1b147bf08b457a09867af8d289f009053d170d69761ad81a8c74"
+    },
+    {
+      "id": "0050w",
+      "fen": "5rk1/1p2p2p/p2p4/2pPb2R/2P1P3/1P1BKPrR/8/8 w - - 5 31",
+      "best_move": "h3g3",
+      "pv": [
+        "h3g3",
+        "e5g3",
+        "h5g5",
+        "g8f7",
+        "g5g3",
+        "f8h8",
+        "f3f4",
+        "h7h5",
+        "e4e5"
+      ],
+      "difficulty": "mittel",
+      "kind": "best",
+      "mate": null,
+      "rating": 1120,
+      "themes": [
+        "crushing",
+        "endgame",
+        "fork",
+        "long"
+      ],
+      "source": "https://lichess.org/training/0050w",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "cp": 629
+          },
+          "runner_up": {
+            "cp": -174
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "cp": 657
+          },
+          "runner_up": {
+            "cp": -138
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": null,
+      "digest": "5b2c60f64bbb00ad8c28e743ee3a77e75fb407495122d46fdcde2fafb34f97f6"
+    },
+    {
+      "id": "01kKD",
+      "fen": "2k3rr/pp1q1p2/3p1p2/1p1N4/1P1QP2p/P4bP1/2P2P1P/R4RK1 b - - 0 20",
+      "best_move": "d7h3",
+      "pv": [
+        "d7h3",
+        "d4c3",
+        "c8b8",
+        "c3c7",
+        "b8a8",
+        "c7d8",
+        "g8d8",
+        "d5f4",
+        "h3g4"
+      ],
+      "difficulty": "schwer",
+      "kind": "best",
+      "mate": null,
+      "rating": 1863,
+      "themes": [
+        "crushing",
+        "defensiveMove",
+        "middlegame",
+        "veryLong"
+      ],
+      "source": "https://lichess.org/training/01kKD",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "cp": 882
+          },
+          "runner_up": {
+            "cp": 0
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "cp": 918
+          },
+          "runner_up": {
+            "cp": 0
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": null,
+      "digest": "ff4ff394bcbd121c72e0c101d4430e33bafc1019de75b098357ebc6d9d7348dc"
+    },
+    {
+      "id": "02u8i",
+      "fen": "5r2/2q1Qpk1/6p1/1p1p1bNn/3P3P/pPr2P2/P3N3/K2R2R1 w - - 4 28",
+      "best_move": "g5e6",
+      "pv": [
+        "g5e6",
+        "f5e6",
+        "g1g6",
+        "g7h7",
+        "g6h6",
+        "h7h6",
+        "e7g5",
+        "h6h7",
+        "g5h5"
+      ],
+      "difficulty": "schwer",
+      "kind": "best",
+      "mate": null,
+      "rating": 2240,
+      "themes": [
+        "attraction",
+        "crushing",
+        "deflection",
+        "discoveredAttack",
+        "master",
+        "middlegame",
+        "pin",
+        "sacrifice",
+        "veryLong"
+      ],
+      "source": "https://lichess.org/training/02u8i",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "cp": 551
+          },
+          "runner_up": {
+            "cp": -86
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "cp": 864
+          },
+          "runner_up": {
+            "cp": -47
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": null,
+      "digest": "ef6229a38508383fde109fa131a64edff506e797f6a9f0c8c5759ccf2e188b97"
+    },
+    {
+      "id": "03IJa",
+      "fen": "5rk1/1R3ppp/1p1Q4/q7/8/6PP/p4P1K/8 w - - 0 39",
+      "best_move": "b7b8",
+      "pv": [
+        "b7b8",
+        "h7h5",
+        "b8f8",
+        "g8h7",
+        "d6d3",
+        "f7f5",
+        "f8f5",
+        "h7g8",
+        "d3c4"
+      ],
+      "difficulty": "schwer",
+      "kind": "best",
+      "mate": null,
+      "rating": 1745,
+      "themes": [
+        "crushing",
+        "endgame",
+        "short"
+      ],
+      "source": "https://lichess.org/training/03IJa",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "cp": 940
+          },
+          "runner_up": {
+            "cp": -846
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "cp": 954
+          },
+          "runner_up": {
+            "cp": -968
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": null,
+      "digest": "8997051eb0f921691de11b344f9938eb73638734ac1fe486e00305bee95362c6"
+    },
+    {
+      "id": "01FXr",
+      "fen": "7r/1P2bk2/p3p1p1/2Np1p2/Q2P4/4P3/4BKPq/R7 b - - 0 28",
+      "best_move": "e7h4",
+      "pv": [
+        "e7h4",
+        "f2f1",
+        "h2h1"
+      ],
+      "difficulty": "mittel",
+      "kind": "mate",
+      "mate": 2,
+      "rating": 1242,
+      "themes": [
+        "mate",
+        "mateIn2",
+        "middlegame",
+        "short"
+      ],
+      "source": "https://lichess.org/training/01FXr",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "mate": 2
+          },
+          "runner_up": {
+            "cp": -170
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "mate": 2
+          },
+          "runner_up": {
+            "cp": -443
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": 1639,
+      "digest": "4d381adc7b03aa505be44f4dbd55196dc52bf03a38ce379d4c0945992335cf82"
+    },
+    {
+      "id": "036i1",
+      "fen": "4B3/8/1p5p/2p2bp1/PPkp1p2/2P2P1P/3K2P1/8 w - - 1 41",
+      "best_move": "e8f7",
+      "pv": [
+        "e8f7",
+        "f5e6",
+        "f7e6"
+      ],
+      "difficulty": "mittel",
+      "kind": "mate",
+      "mate": 2,
+      "rating": 1591,
+      "themes": [
+        "bishopEndgame",
+        "endgame",
+        "mate",
+        "mateIn2",
+        "short"
+      ],
+      "source": "https://lichess.org/training/036i1",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "mate": 2
+          },
+          "runner_up": {
+            "cp": -47
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "mate": 2
+          },
+          "runner_up": {
+            "cp": -28
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": 333,
+      "digest": "debf014ece6c7e0f78f0c89ecf1b728d7700ab2dcf8ab97d1a7a11d8c967d77e"
+    },
+    {
+      "id": "03Pky",
+      "fen": "2r1k2r/pp1n1ppp/4p3/3pN3/Q2P4/P3P3/5PPP/2q2RK1 w k - 0 18",
+      "best_move": "a4d7",
+      "pv": [
+        "a4d7",
+        "e8f8",
+        "d7f7"
+      ],
+      "difficulty": "mittel",
+      "kind": "mate",
+      "mate": 2,
+      "rating": 1146,
+      "themes": [
+        "mate",
+        "mateIn2",
+        "middlegame",
+        "short"
+      ],
+      "source": "https://lichess.org/training/03Pky",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "mate": 2
+          },
+          "runner_up": {
+            "cp": -604
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "mate": 2
+          },
+          "runner_up": {
+            "cp": -647
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": 955,
+      "digest": "e35762297be5e5d1ab5894d23d0c6a397b96e437b42ac00d7132b06d35277c71"
+    },
+    {
+      "id": "02K8m",
+      "fen": "r4rk1/p4ppp/1p2p3/4b3/7q/P1NR4/1PQ2PPP/R5K1 w - - 2 20",
+      "best_move": "d3h3",
+      "pv": [
+        "d3h3",
+        "h4h3",
+        "g2h3",
+        "a8c8",
+        "a1d1",
+        "e5c3",
+        "b2c3",
+        "h7h6",
+        "d1d7"
+      ],
+      "difficulty": "mittel",
+      "kind": "best",
+      "mate": null,
+      "rating": 1324,
+      "themes": [
+        "advantage",
+        "middlegame",
+        "short"
+      ],
+      "source": "https://lichess.org/training/02K8m",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "cp": 564
+          },
+          "runner_up": {
+            "cp": -104
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "cp": 626
+          },
+          "runner_up": {
+            "cp": -99
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": null,
+      "digest": "fb4af4a0a39e8a022b88e2dda7d03a8f84b828ee8c57116ea1ceb546433a2517"
+    },
+    {
+      "id": "01GBu",
+      "fen": "5r1k/3p2bp/p4pp1/qp1Pr3/8/1Q4B1/PP2RPPP/4R1K1 b - - 0 23",
+      "best_move": "a5e1",
+      "pv": [
+        "a5e1",
+        "e2e1",
+        "e5e1"
+      ],
+      "difficulty": "mittel",
+      "kind": "mate",
+      "mate": 2,
+      "rating": 1233,
+      "themes": [
+        "backRankMate",
+        "mate",
+        "mateIn2",
+        "middlegame",
+        "short",
+        "xRayAttack"
+      ],
+      "source": "https://lichess.org/training/01GBu",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "mate": 2
+          },
+          "runner_up": {
+            "cp": -45
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "mate": 2
+          },
+          "runner_up": {
+            "cp": -23
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": 1277,
+      "digest": "e828a757c2e2f805d0d51728a3c7614d0643ef5fa6362dcadb6efda872d97f5f"
+    },
+    {
+      "id": "03JeC",
+      "fen": "5rk1/3PQppp/p7/6P1/8/3q4/P1p3PP/4R2K w - - 0 31",
+      "best_move": "e7f8",
+      "pv": [
+        "e7f8",
+        "g8f8",
+        "e1e8"
+      ],
+      "difficulty": "mittel",
+      "kind": "mate",
+      "mate": 2,
+      "rating": 1597,
+      "themes": [
+        "attraction",
+        "endgame",
+        "mate",
+        "mateIn2",
+        "sacrifice",
+        "short"
+      ],
+      "source": "https://lichess.org/training/03JeC",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "mate": 2
+          },
+          "runner_up": {
+            "cp": -40
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "mate": 2
+          },
+          "runner_up": {
+            "cp": 0
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": 1719,
+      "digest": "1df0b141cc964c312dbdada9f7c51e8975711612fb5402949c4963821d83ef81"
+    },
+    {
+      "id": "01n5R",
+      "fen": "7r/pbk4r/2pqR3/2Np2p1/3P2p1/2P2QP1/PP3R1P/6K1 b - - 0 27",
+      "best_move": "g4f3",
+      "pv": [
+        "g4f3",
+        "e6d6",
+        "c7d6",
+        "f2f3",
+        "b7c8",
+        "f3f6",
+        "d6c7",
+        "c5d3",
+        "h7h2"
+      ],
+      "difficulty": "schwer",
+      "kind": "best",
+      "mate": null,
+      "rating": 1863,
+      "themes": [
+        "advantage",
+        "middlegame",
+        "short"
+      ],
+      "source": "https://lichess.org/training/01n5R",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "cp": 627
+          },
+          "runner_up": {
+            "cp": -578
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "cp": 679
+          },
+          "runner_up": {
+            "cp": -592
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": null,
+      "digest": "c2b292ac58e7ce44edc80851c48bec6db273433452c92ad1ce59c5916f12559b"
+    },
+    {
+      "id": "02PP0",
+      "fen": "r3r1k1/5pp1/7p/pPq5/P2Q4/5P2/6P1/R2R2K1 b - - 2 33",
+      "best_move": "e8e1",
+      "pv": [
+        "e8e1",
+        "g1f2",
+        "c5d4",
+        "d1d4",
+        "e1a1",
+        "b5b6",
+        "a1b1",
+        "d4d6",
+        "b1b4"
+      ],
+      "difficulty": "mittel",
+      "kind": "best",
+      "mate": null,
+      "rating": 1377,
+      "themes": [
+        "crushing",
+        "endgame",
+        "long"
+      ],
+      "source": "https://lichess.org/training/02PP0",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "cp": 788
+          },
+          "runner_up": {
+            "cp": -48
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "cp": 813
+          },
+          "runner_up": {
+            "cp": -32
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": null,
+      "digest": "6cd2a9f099ee83ad30573eb85abe1c8c5be4bd23b9895cccc626813317198840"
+    },
+    {
+      "id": "02fS6",
+      "fen": "r1b2rk1/pppp1ppp/8/8/1KBbP3/3Q2N1/PPq4P/R1B4R b - - 1 15",
+      "best_move": "a7a5",
+      "pv": [
+        "a7a5",
+        "b4a3",
+        "d4c5",
+        "b2b4",
+        "c5b4"
+      ],
+      "difficulty": "schwer",
+      "kind": "mate",
+      "mate": 3,
+      "rating": 1726,
+      "themes": [
+        "discoveredCheck",
+        "doubleCheck",
+        "long",
+        "mate",
+        "mateIn3",
+        "middlegame"
+      ],
+      "source": "https://lichess.org/training/02fS6",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "mate": 3
+          },
+          "runner_up": {
+            "cp": -87
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "mate": 3
+          },
+          "runner_up": {
+            "cp": -82
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": 60196,
+      "digest": "87223805a1e6458398ab6bb222aeb1b66475a35ef98854022214858d859edfc0"
+    },
+    {
+      "id": "02QYB",
+      "fen": "r3k2r/pp3ppp/2n1p3/2b1P3/Q1Bp4/P1n2NB1/1q3PPP/RR4K1 w kq - 2 16",
+      "best_move": "a4c6",
+      "pv": [
+        "a4c6",
+        "b7c6",
+        "b1b2",
+        "e8g8",
+        "b2c2",
+        "a7a5",
+        "g3f4",
+        "f8b8",
+        "f4c1"
+      ],
+      "difficulty": "mittel",
+      "kind": "best",
+      "mate": null,
+      "rating": 1447,
+      "themes": [
+        "advantage",
+        "middlegame",
+        "short"
+      ],
+      "source": "https://lichess.org/training/02QYB",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "cp": 485
+          },
+          "runner_up": {
+            "cp": -314
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "cp": 484
+          },
+          "runner_up": {
+            "cp": -322
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": null,
+      "digest": "ee46f4f30296fb3ae3de6b670fa99e32284b44c2af260b2c804a6ef2b7b73e4b"
+    },
+    {
+      "id": "00Nte",
+      "fen": "r4k2/8/2p3Bb/4p1R1/3q4/PQ6/2K2P2/1N6 b - - 0 30",
+      "best_move": "d4f2",
+      "pv": [
+        "d4f2",
+        "b1d2",
+        "h6g5",
+        "b3f3",
+        "f2f3",
+        "d2f3",
+        "g5f4",
+        "c2b3",
+        "f8e7"
+      ],
+      "difficulty": "mittel",
+      "kind": "best",
+      "mate": null,
+      "rating": 1689,
+      "themes": [
+        "advantage",
+        "intermezzo",
+        "long",
+        "middlegame"
+      ],
+      "source": "https://lichess.org/training/00Nte",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "cp": 520
+          },
+          "runner_up": {
+            "cp": -606
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "cp": 533
+          },
+          "runner_up": {
+            "cp": -641
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": null,
+      "digest": "da201c253dd2d1c0275f45c4028a4fb92a9b2761099277cb6e1dcc9d4318c365"
+    },
+    {
+      "id": "03eks",
+      "fen": "5r1k/p5pp/1p3qn1/2pBp3/2PpP1Q1/PP6/2K4R/8 w - - 2 31",
+      "best_move": "h2h7",
+      "pv": [
+        "h2h7",
+        "h8h7",
+        "g4h5"
+      ],
+      "difficulty": "mittel",
+      "kind": "mate",
+      "mate": 2,
+      "rating": 1166,
+      "themes": [
+        "attraction",
+        "endgame",
+        "mate",
+        "mateIn2",
+        "sacrifice",
+        "short"
+      ],
+      "source": "https://lichess.org/training/03eks",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "mate": 2
+          },
+          "runner_up": {
+            "cp": -596
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "mate": 2
+          },
+          "runner_up": {
+            "cp": -614
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": 1669,
+      "digest": "7f7f0d35c34336c0ef3f58240074c71b25ad3368e8597834e64feba8655d12ee"
+    },
+    {
+      "id": "02TfH",
+      "fen": "rnbqk2r/pp2b3/2p1p1pp/3pN2Q/3P1P2/8/PPPN1PPP/R3K2R w KQkq - 0 11",
+      "best_move": "h5g6",
+      "pv": [
+        "h5g6",
+        "e8f8",
+        "g6f7"
+      ],
+      "difficulty": "mittel",
+      "kind": "mate",
+      "mate": 2,
+      "rating": 1116,
+      "themes": [
+        "mate",
+        "mateIn2",
+        "middlegame",
+        "short"
+      ],
+      "source": "https://lichess.org/training/02TfH",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "mate": 2
+          },
+          "runner_up": {
+            "cp": 90
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "mate": 2
+          },
+          "runner_up": {
+            "cp": 0
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": 2087,
+      "digest": "e26f8998c07818620e7bb7f7588ef507cf511c39632d89c34f465a0601013b76"
+    },
+    {
+      "id": "032t1",
+      "fen": "8/1p1r4/p3R1p1/2p1R2p/2Pr4/5kPP/PP5K/8 w - - 0 37",
+      "best_move": "e6f6",
+      "pv": [
+        "e6f6",
+        "d4f4",
+        "f6f4"
+      ],
+      "difficulty": "mittel",
+      "kind": "mate",
+      "mate": 2,
+      "rating": 1430,
+      "themes": [
+        "endgame",
+        "mate",
+        "mateIn2",
+        "rookEndgame",
+        "short"
+      ],
+      "source": "https://lichess.org/training/032t1",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "mate": 2
+          },
+          "runner_up": {
+            "cp": 17
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "mate": 2
+          },
+          "runner_up": {
+            "cp": 18
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": 823,
+      "digest": "b9450ccd3db3c8e4de763af1ed99b6ed939f95cc6df893529ef6c68763d93d0a"
+    },
+    {
+      "id": "01BeL",
+      "fen": "8/6QR/pr5p/6p1/5p1k/q6P/2P2PPK/8 b - - 7 39",
+      "best_move": "a3g3",
+      "pv": [
+        "a3g3",
+        "f2g3",
+        "f4g3",
+        "h2h1",
+        "b6b1"
+      ],
+      "difficulty": "schwer",
+      "kind": "mate",
+      "mate": 3,
+      "rating": 1521,
+      "themes": [
+        "endgame",
+        "long",
+        "mate",
+        "mateIn3",
+        "sacrifice"
+      ],
+      "source": "https://lichess.org/training/01BeL",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "mate": 3
+          },
+          "runner_up": {
+            "cp": -282
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "mate": 3
+          },
+          "runner_up": {
+            "cp": -564
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": 22088,
+      "digest": "7fd70707cc53f23608b11eec01dcc7fe37183f6ba1c199036ea360b8a7b35f50"
+    },
+    {
+      "id": "02IqG",
+      "fen": "r5k1/p4pn1/4pBp1/1p1r4/3P1Q1R/2q4P/6P1/6K1 w - - 4 36",
+      "best_move": "h4h8",
+      "pv": [
+        "h4h8",
+        "g8h8",
+        "f4h6",
+        "h8g8",
+        "h6g7"
+      ],
+      "difficulty": "schwer",
+      "kind": "mate",
+      "mate": 3,
+      "rating": 1773,
+      "themes": [
+        "attraction",
+        "long",
+        "mate",
+        "mateIn3",
+        "middlegame",
+        "sacrifice"
+      ],
+      "source": "https://lichess.org/training/02IqG",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "mate": 3
+          },
+          "runner_up": {
+            "cp": 0
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "mate": 3
+          },
+          "runner_up": {
+            "cp": 0
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": 28052,
+      "digest": "2d495313e200deace3f5317b3bc1d7481964237edde833b08d0e4b01da4fbede"
+    },
+    {
+      "id": "03JMe",
+      "fen": "5b1r/ppQnkppp/8/1q1p4/8/4PbBP/P4P2/2R1K1R1 w - - 2 20",
+      "best_move": "c7d6",
+      "pv": [
+        "c7d6",
+        "e7d8",
+        "c1c8",
+        "d8c8",
+        "d6c7"
+      ],
+      "difficulty": "schwer",
+      "kind": "mate",
+      "mate": 3,
+      "rating": 1956,
+      "themes": [
+        "attraction",
+        "long",
+        "mate",
+        "mateIn3",
+        "middlegame",
+        "sacrifice"
+      ],
+      "source": "https://lichess.org/training/03JMe",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "mate": 3
+          },
+          "runner_up": {
+            "cp": -854
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "mate": 3
+          },
+          "runner_up": {
+            "cp": -854
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": 36383,
+      "digest": "83ba2729b66eb645f3117701f84f4b663fefc2925ae3ffc4098e01978e58099d"
+    },
+    {
+      "id": "037fO",
+      "fen": "rnb1k1nr/ppp2ppp/5q2/4N2Q/4p3/3P4/PPP3PP/RNB2BKR b kq - 2 7",
+      "best_move": "f6b6",
+      "pv": [
+        "f6b6",
+        "d3d4",
+        "b6d4",
+        "c1e3",
+        "d4e3"
+      ],
+      "difficulty": "schwer",
+      "kind": "mate",
+      "mate": 3,
+      "rating": 1698,
+      "themes": [
+        "kingsideAttack",
+        "long",
+        "mate",
+        "mateIn3",
+        "opening"
+      ],
+      "source": "https://lichess.org/training/037fO",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "mate": 3
+          },
+          "runner_up": {
+            "cp": -524
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "mate": 3
+          },
+          "runner_up": {
+            "cp": -521
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": 48834,
+      "digest": "9915a4218c01b90d37073c267debc508db4c22d0c86ddc35fa990640fe967d5e"
+    },
+    {
+      "id": "0212b",
+      "fen": "r3kb1r/ppp2p1p/5Q2/4p3/2B1P3/3P3P/P1q3PK/8 w kq - 0 16",
+      "best_move": "c4f7",
+      "pv": [
+        "c4f7",
+        "e8d7",
+        "f6e6",
+        "d7d8",
+        "e6e8"
+      ],
+      "difficulty": "schwer",
+      "kind": "mate",
+      "mate": 3,
+      "rating": 2051,
+      "themes": [
+        "attackingF2F7",
+        "endgame",
+        "long",
+        "mate",
+        "mateIn3"
+      ],
+      "source": "https://lichess.org/training/0212b",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "mate": 3
+          },
+          "runner_up": {
+            "cp": 0
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "mate": 3
+          },
+          "runner_up": {
+            "cp": 0
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": 19556,
+      "digest": "2ab17edaeb97fd42d7bd4e0028c9a6c8de63f38069c7a849a5591663f79b6dfc"
+    },
+    {
+      "id": "02pbx",
+      "fen": "1k3r2/2p3pp/3bQ3/p7/8/2N1P3/1PP1q1PP/3R2K1 b - - 2 25",
+      "best_move": "e2f2",
+      "pv": [
+        "e2f2",
+        "g1h1",
+        "f2f1",
+        "d1f1",
+        "f8f1"
+      ],
+      "difficulty": "schwer",
+      "kind": "mate",
+      "mate": 3,
+      "rating": 1501,
+      "themes": [
+        "endgame",
+        "long",
+        "mate",
+        "mateIn3",
+        "sacrifice"
+      ],
+      "source": "https://lichess.org/training/02pbx",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "mate": 3
+          },
+          "runner_up": {
+            "cp": 142
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "mate": 3
+          },
+          "runner_up": {
+            "cp": 98
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": 56121,
+      "digest": "8ebb9d598d66f242f657432de64011c72c3d4b38d9bd0c37c865d7de90248842"
+    },
+    {
+      "id": "01oma",
+      "fen": "r4q1k/1p4pp/1n2Q1pN/p3P3/Pbp1P3/8/1P2p1PP/5RK1 w - - 0 26",
+      "best_move": "f1f8",
+      "pv": [
+        "f1f8",
+        "a8f8",
+        "e6g8",
+        "f8g8",
+        "h6f7"
+      ],
+      "difficulty": "schwer",
+      "kind": "mate",
+      "mate": 3,
+      "rating": 2024,
+      "themes": [
+        "kingsideAttack",
+        "long",
+        "mate",
+        "mateIn3",
+        "middlegame",
+        "sacrifice",
+        "smotheredMate"
+      ],
+      "source": "https://lichess.org/training/01oma",
+      "engine": "Stockfish 19",
+      "engine_checks": [
+        {
+          "depth": 16,
+          "best": {
+            "mate": 3
+          },
+          "runner_up": {
+            "cp": -440
+          }
+        },
+        {
+          "depth": 20,
+          "best": {
+            "mate": 3
+          },
+          "runner_up": {
+            "cp": -479
+          }
+        }
+      ],
+      "exact_mate_proof_nodes": 41716,
+      "digest": "bf8b9cb91076ddb6b77d9507950b786104634c446cea621c5386e309e256c18c"
+    }
+  ]
+}

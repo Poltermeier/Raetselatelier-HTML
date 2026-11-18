@@ -1,0 +1,117 @@
+:root {
+  color-scheme: light;
+  --background: #f6f3eb;
+  --paper: #fffef9;
+  --ink: #233a32;
+  --accent: #27644c;
+  --muted: #63736a;
+  --line: #d1d8cf;
+  font: 14px/1.45 Helvetica, Arial, sans-serif;
+  background: var(--background);
+  color: var(--ink);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+
+button, input, select {
+  color: inherit;
+  font: inherit;
+  min-width: 0;
+}
+
+button, select {
+  background: #faf9f3;
+  border: 1px solid #aebdb2;
+  border-radius: 5px;
+}
+
+button { padding: 8px 12px; cursor: pointer; }
+button:hover:enabled { background: #eaf1e9; }
+button:disabled, select:disabled { opacity: .55; cursor: default; }
+button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid #2471a6;
+  outline-offset: 2px;
+}
+button.accent { background: var(--accent); color: white; border-color: var(--accent); }
+button.accent:hover:enabled { background: #34775d; }
+
+input[type="text"], select { display: block; width: 100%; padding: 6px 8px; }
+input[type="text"] { background: var(--paper); border: 1px solid #aebdb2; border-radius: 4px; }
+
+.tk-widget { position: relative; min-width: 0; }
+.tk-frame, .tk-root, .tk-toplevel { display: flex; flex-direction: column; min-height: 0; }
+.tk-row { flex-direction: row; }
+.tk-entry > input, .tk-combobox > select, .tk-button > button { display: block; width: 100%; height: 100%; }
+.tk-button > button { display: flex; gap: 6px; align-items: center; justify-content: center; }
+.tk-label { white-space: pre-wrap; }
+.tk-checkbutton label { display: flex; align-items: center; gap: 8px; }
+.tk-scale input { width: 100%; }
+.tk-separator { height: 1px; min-height: 1px; background: var(--line); }
+.tk-scrollbar { display: none !important; }
+.tk-progressbar { height: 4px; border-radius: 2px; overflow: hidden; background: var(--line); visibility: hidden; }
+.tk-progressbar.running { visibility: visible; }
+.tk-progressbar.running::before {
+  content: ""; display: block; width: 30%; height: 100%; background: var(--accent);
+  animation: progress 1.2s ease-in-out infinite alternate;
+}
+@keyframes progress { to { transform: translateX(235%); } }
+
+.tk-role-shell { padding: 16px; min-height: 100vh; min-height: 100dvh; }
+.tk-role-header { align-items: center; justify-content: space-between; min-height: 37px; }
+.tk-role-header .tk-button { margin-left: auto; }
+.tk-role-body { min-height: 0; }
+.tk-role-sidebar { flex: 0 0 230px; width: 230px; }
+.tk-role-main { flex: 1 1 0; min-height: 0; }
+.tk-role-title { line-height: 1.15; margin: 0; }
+.tk-role-status { min-height: 22px; }
+.tk-role-board-holder { min-height: 360px; flex: 1 1 auto; }
+.tk-role-board { flex: 1 1 auto; min-height: 360px; overflow: auto; border-radius: 3px; }
+.tk-canvas { overflow: hidden; }
+.tk-role-board { overflow: auto; }
+.tk-canvas-surface, .tk-canvas-windows { position: absolute; inset: 0 auto auto 0; }
+.tk-canvas-windows { pointer-events: none; }
+.tk-canvas-windows > .tk-widget { position: absolute; pointer-events: auto; }
+.tk-canvas-content { position: relative; min-width: 100%; min-height: 100%; }
+.tk-role-board .tk-canvas-surface { touch-action: none; }
+.tk-role-board[data-drag="false"] .tk-canvas-surface { touch-action: pan-x pan-y; }
+.tk-canvas-windows input, .tk-canvas-windows select { padding: 1px 3px; }
+.tk-canvas-windows button { padding: 2px 5px; }
+.tk-entry .tk-label { user-select: none; overflow: hidden; line-height: 1.12; }
+.tk-role-success, .tk-role-error {
+  z-index: 4; border-radius: 7px; box-shadow: 0 12px 30px #233a3233;
+  max-width: calc(100% - 16px); max-height: calc(100% - 16px); overflow: auto;
+  flex: 0 0 auto;
+}
+.tk-role-success .tk-role-confetti { min-height: 70px; }
+.tk-toplevel, #message-dialog {
+  inset: 0; margin: auto; padding: 0; border: 1px solid var(--line); border-radius: 8px;
+  color: var(--ink); background: var(--paper); box-shadow: 0 16px 55px #233a3240;
+  max-width: calc(100vw - 24px); max-height: calc(100dvh - 24px);
+}
+.tk-toplevel:not([open]) { display: none; }
+dialog::backdrop { background: #233a3252; }
+.tk-menu { position: fixed; z-index: 8; padding: 5px; background: var(--paper); border: 1px solid var(--line); box-shadow: 0 6px 24px #233a3233; }
+.tk-menu button { display: block; width: 100%; margin-bottom: 3px; }
+#message-dialog { padding: 22px; width: 460px; }
+#message-dialog h2 { margin: 0 0 8px; font: 23px Georgia, serif; }
+#message-dialog p { white-space: pre-wrap; }
+#message-dialog form { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+#startup { padding: 22px; }
+#startup h1 { margin: 0; font: 26px Georgia, serif; }
+
+@media (min-width: 761px) {
+  .tk-role-app, .tk-role-shell { height: 100dvh; min-height: 690px; }
+}
+@media (max-width: 760px) {
+  .tk-role-shell { padding: 12px; }
+  .tk-role-body { flex-direction: column; gap: 22px; }
+  .tk-role-sidebar { flex: none; width: 100% !important; max-width: 100%; margin-right: 0 !important; }
+  .tk-role-main { flex: 0 0 auto !important; width: 100%; min-height: calc(100dvh - 12px); }
+  .tk-role-board-holder, .tk-role-board { min-height: 460px; }
+  .tk-role-board { height: min(68vh, 620px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tk-progressbar.running::before { animation: none; }
+}

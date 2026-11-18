@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f3eb">
+  <title>Simon's Rätselatelier</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="browser/style.css">
+  <script src="browser/interface.js" defer></script>
+</head>
+<body>
+  <div id="atelier"></div>
+  <div id="startup" role="status">
+    <h1>Simon's Rätselatelier</h1>
+    <p>Rätselatelier wird geladen …</p>
+  </div>
+  <dialog id="message-dialog" aria-labelledby="message-title">
+    <h2 id="message-title"></h2>
+    <p id="message-text"></p>
+    <form method="dialog">
+      <button value="cancel" id="message-cancel">Abbrechen</button>
+      <button value="ok" class="accent" id="message-ok">OK</button>
+    </form>
+  </dialog>
+  <noscript>Das Rätselatelier benötigt JavaScript.</noscript>
+</body>
+</html>
