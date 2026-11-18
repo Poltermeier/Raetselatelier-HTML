@@ -60,6 +60,8 @@ gui.ThreadPoolExecutor = lambda **options: BrowserExecutor()
 
 
 class BrowserApp(gui.App):
+    sudoku_diagonal_color = "#367db859"  # 35% opacity.
+
     def reset(self):
         if self.puzzle is None or self.busy or self.showing_solution:
             return

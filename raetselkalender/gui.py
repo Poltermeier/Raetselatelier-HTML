@@ -42,6 +42,8 @@ LINE = "#d1d8cf"
 
 
 class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, ClickBoardUI, HistoryUI, CampingUI, FeedbackUI, CalendarUI, PouringUI, MatrixUI, RouteUI, StrategyUI, SpringUI, ActivityUI, DiagonalUI, SettingsUI, WorkshopUI):
+    sudoku_diagonal_color = DIAGONAL_COLOR
+
     def __init__(self, root, type_id="random", seed=None, difficulty="schwer", *, board_scale=None, cat_size=6, pipe_size=5, settings_path=None):
         if type_id in BY_ID:
             type_id = BY_ID[type_id].id
@@ -634,7 +636,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             for a,b,c,d in ((0,0,cols,rows),(0,rows,cols,0)):
                 segment=(left+a*step,top+b*step,left+c*step,top+d*step)
                 self.diagonal_segments.append(segment)
-                self.canvas.create_line(*segment,fill=DIAGONAL_COLOR,width=4,tags=('sudoku-diagonal',))
+                self.canvas.create_line(*segment,fill=self.sudoku_diagonal_color,width=4,tags=('sudoku-diagonal',))
         regions = {k: i for i, g in enumerate(v.get("regions", [])) for k in g}
         if regions:
             for r in range(rows):
