@@ -79,10 +79,10 @@ input[type="text"] { background: var(--paper); border: 1px solid #aebdb2; border
 .tk-role-board[data-drag="false"] .tk-canvas-surface { touch-action: pan-x pan-y; }
 .tk-canvas-windows input, .tk-canvas-windows select { padding: 1px 3px; }
 .tk-canvas-windows button { padding: 2px 5px; }
-.tk-entry .tk-label { user-select: none; overflow: hidden; line-height: 1.12; }
+/* A tap on a note preview needs to reach the native input. */
+.tk-entry > .tk-label { pointer-events: none; user-select: none; overflow: hidden; line-height: 1.12; }
 .tk-role-diagonal-entry > input,
 .tk-role-diagonal-entry > .tk-label { background-color: transparent !important; }
-.tk-role-diagonal-entry > .tk-label { pointer-events: none; }
 .tk-role-success, .tk-role-error {
   z-index: 4; border-radius: 7px; box-shadow: 0 12px 30px #233a3233;
   max-width: calc(100% - 16px); max-height: calc(100% - 16px); overflow: auto;
