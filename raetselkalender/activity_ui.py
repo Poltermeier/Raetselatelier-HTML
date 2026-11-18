@@ -31,6 +31,22 @@ class ActivityUI:
         self.canvas.create_window(x,y,window=button,width=width,height=38,tags=('activity-controls',*tags))
         return button
 
+    def activity_solution_navigation(self, tag, y, show_step, current_step, last_step):
+        commands = (
+            ('Anfang', lambda: show_step(0)),
+            ('Zurück', lambda: show_step(current_step() - 1)),
+            ('Weiter', lambda: show_step(current_step() + 1)),
+            ('Ziel', lambda: show_step(last_step())),
+        )
+        return [self.activity_button(label, command, 102 + i * 162, y, 145, tags=(tag,))
+                for i, (label, command) in enumerate(commands)]
+
+    def update_activity_solution_navigation(self, tag, controls, step, last_step):
+        self.canvas.itemconfigure(tag, state='normal' if self.showing_solution else 'hidden')
+        for i, control in enumerate(controls):
+            endpoint = step == 0 if i < 2 else step >= last_step
+            control.configure(state='disabled' if self.busy or not self.showing_solution or endpoint else 'normal')
+
     def render_activity(self):
         self.activity_state=self.initial_activity_state();self.activity_selected=None
         self.activity_controls=[];self.activity_draft_vars=[]
@@ -52,13 +68,16 @@ class ActivityUI:
         elif mode=='solitaire':
             self.solitaire_solution_states=();self.solitaire_solution_step=0
             self.activity_button('Fertig – Score',self.finish_solitaire,510,540,tags=('peg-score-control',))
-            self.solitaire_navigation=[]
-            for label,command,x in (
-                ('Anfang',lambda:self.show_solitaire_step(0),102),
-                ('Zurück',lambda:self.show_solitaire_step(self.solitaire_solution_step-1),264),
-                ('Weiter',lambda:self.show_solitaire_step(self.solitaire_solution_step+1),426),
-                ('Ziel',lambda:self.show_solitaire_step(len(self.solitaire_solution_states)-1),588)):
-                self.solitaire_navigation.append(self.activity_button(label,command,x,540,145,tags=('peg-solution-controls',)))
+            self.solitaire_navigation = self.activity_solution_navigation(
+                'peg-solution-controls', 540, self.show_solitaire_step,
+                lambda: self.solitaire_solution_step, lambda: len(self.solitaire_solution_states) - 1)
+        elif mode == 'water-sort':
+            self.water_sort_solution_states = ()
+            self.water_sort_solution_moves = ()
+            self.water_sort_solution_step = 0
+            self.water_sort_navigation = self.activity_solution_navigation(
+                'sort-solution-controls', 422, self.show_water_sort_step,
+                lambda: self.water_sort_solution_step, lambda: len(self.water_sort_solution_moves))
         self.canvas.bind('<Button-1>',self.click_activity)
         self.paint_activity()
 
@@ -73,15 +92,14 @@ class ActivityUI:
             control.configure(state='disabled' if disabled else 'readonly' if isinstance(control,BoardCombobox) else 'normal')
         if mode=='solitaire':
             self.canvas.itemconfigure('peg-score-control',state='hidden' if self.showing_solution else 'normal')
-            self.canvas.itemconfigure('peg-solution-controls',state='normal' if self.showing_solution else 'hidden')
-            for i,control in enumerate(self.solitaire_navigation):
-                endpoint=self.solitaire_solution_step==0 if i<2 else self.solitaire_solution_step>=len(self.solitaire_solution_states)-1
-                control.configure(state='disabled' if self.busy or not self.showing_solution or endpoint else 'normal')
+            self.update_activity_solution_navigation('peg-solution-controls', self.solitaire_navigation,
+                self.solitaire_solution_step, len(self.solitaire_solution_states) - 1)
+        elif mode == 'water-sort':
+            self.update_activity_solution_navigation('sort-solution-controls', self.water_sort_navigation,
+                self.water_sort_solution_step, len(self.water_sort_solution_moves))
         elif mode=='row-shift':
-            self.canvas.itemconfigure('shift-solution-controls',state='normal' if self.showing_solution else 'hidden')
-            for i,control in enumerate(self.row_shift_navigation):
-                endpoint=self.row_shift_solution_step==0 if i<2 else self.row_shift_solution_step>=len(self.row_shift_solution_states)-1
-                control.configure(state='disabled' if self.busy or not self.showing_solution or endpoint else 'normal')
+            self.update_activity_solution_navigation('shift-solution-controls', self.row_shift_navigation,
+                self.row_shift_solution_step, len(self.row_shift_solution_states) - 1)
 
     def paint_activity(self):
         self.canvas.delete('activity-board')
@@ -251,7 +269,10 @@ class ActivityUI:
         v=self.puzzle.view;s=self.activity_state;capacity=v['capacity'];count=len(s['tubes'])
         unit=240/capacity
         self.water_geometry=(28,82,105,44)
-        self.activity_text(28,24,f'Umfüllvorgänge: {len(s["moves"])} · kürzester Weg: {self.puzzle.analysis["minimum_moves"]}')
+        if self.showing_solution:
+            self.activity_text(28, 24, f'Lösung · Schritt {self.water_sort_solution_step} von {len(self.water_sort_solution_moves)}')
+        else:
+            self.activity_text(28,24,f'Umfüllvorgänge: {len(s["moves"])} · kürzester Weg: {self.puzzle.analysis["minimum_moves"]}')
         for i,tube in enumerate(s['tubes']):
             x,bottom=70+i*105,330
             self.canvas.create_line(x-30,82,x-30,bottom,x+30,bottom,x+30,82,
@@ -269,14 +290,49 @@ class ActivityUI:
                 y=bottom-level*unit
                 self.canvas.create_rectangle(x-26,y-max(3,unit*fraction-3),x+26,y-1,fill=v['palette'][color],outline=PAPER,
                     tags=('activity-board','sort-layer'))
+            self.canvas.create_text(x, 348, text=str(i + 1), fill=INK, font=('Helvetica', 11, 'bold'),
+                                    tags=('activity-board', 'sort-vessel-number'))
         if animation is not None:
             source,target,factor,before=animation;sx,tx=70+source*105,70+target*105
             color=s['tubes'][target][-1]
             self.canvas.create_line(sx,80,sx,68,tx,68,tx,88,fill=v['palette'][color],width=6,arrow='last',
                 dash=(9,5),dashoffset=round(factor*24),tags=('activity-board','sort-stream'))
-        self.activity_text(28,370,'Quelle und Ziel anklicken · gleiche Farben zusammengießen.')
-        self.canvas.configure(scrollregion=(0,0,28+count*105,420),cursor='hand2')
-        self.paint_color_labels()
+        if self.showing_solution:
+            self.paint_water_sort_solution()
+        else:
+            self.activity_text(28,370,'Quelle und Ziel anklicken · gleiche Farben zusammengießen.')
+        self.canvas.configure(scrollregion=(0, 0, 28 + count * 105, 460),
+                              cursor='' if self.showing_solution else 'hand2')
+
+    def paint_water_sort_solution(self):
+        step = self.water_sort_solution_step
+        moves = self.water_sort_solution_moves
+        if step < len(moves):
+            source, target = moves[step]
+            states = self.water_sort_solution_states
+            amount = len(states[step][source]) - len(states[step + 1][source])
+            units = 'Schicht' if amount == 1 else 'Schichten'
+            self.canvas.itemconfigure(f'sort-vessel:{source}', fill='#a85c18')
+            self.canvas.itemconfigure(f'sort-vessel:{target}', fill=ACCENT, dash=(6, 4))
+            sx, tx = 70 + source * 105, 70 + target * 105
+            self.canvas.create_line(sx, 79, sx, 61, tx, 61, tx, 79, fill='#175ba2',
+                                    width=4, arrow='last', arrowshape=(12, 15, 6),
+                                    tags=('activity-board', 'sort-solution-arrow'))
+            message = f'Nächster Zug: Gefäß {source + 1} nach Gefäß {target + 1} · {amount} {units}'
+        else:
+            message = f'Ziel erreicht · {len(moves)} Umfüllvorgänge'
+        self.activity_text(28, 370, message)
+        self.status.configure(text=f'Lösungsansicht · Schritt {step} von {len(moves)} · {message}', foreground=INK)
+
+    def show_water_sort_step(self, step):
+        if (self.busy or not self.showing_solution or self.puzzle is None
+                or self.puzzle.view.get('mode') != 'water-sort' or not self.water_sort_solution_states):
+            return
+        step = max(0, min(step, len(self.water_sort_solution_moves)))
+        self.water_sort_solution_step = step
+        self.activity_state = dict(tubes=[list(tube) for tube in self.water_sort_solution_states[step]],
+                                   moves=list(self.water_sort_solution_moves[:step]))
+        self.paint_activity()
 
     def click_activity(self,event):
         if self.busy or self.showing_solution or getattr(self,'pour_animating',False):return
@@ -359,7 +415,8 @@ class ActivityUI:
         def frame(number=0):
             self.pour_job=None
             if epoch!=self.pour_epoch:return
-            self.canvas.delete('activity-board');self.paint_water_sort((source,target,number/12,before));self.update_activity_controls()
+            self.canvas.delete('activity-board');self.paint_water_sort((source,target,number/12,before))
+            self.paint_color_labels();self.update_activity_controls()
             if number<12:self.pour_job=self.root.after(30,lambda:frame(number+1))
             else:
                 self.pour_animating=False;self.on_activity_change()
@@ -391,24 +448,29 @@ class ActivityUI:
     def toggle_activity_solution(self):
         self.cancel_pour_animation();self.activity_selected=None
         self.showing_solution=not self.showing_solution
+        mode=self.puzzle.view['mode']
         if self.showing_solution:
-            self.saved_activity_state=deepcopy(self.activity_state);mode=self.puzzle.view['mode']
+            self.saved_activity_state=deepcopy(self.activity_state)
             if mode in WORKSHOP_MODES:self.activity_state=self.workshop_solution_state()
             elif mode=='sets':self.activity_state=dict(draft=[],found=[list(self.puzzle.sets[self.puzzle.solution[k]]) for k in self.puzzle.editable])
             elif mode=='mastermind':self.activity_state=dict(draft=list(self.puzzle.solution.values()),guesses=[])
             elif mode=='solitaire':
                 _,states=self.puzzle.check_moves(list(self.puzzle.solution.values()))
                 self.solitaire_solution_states=tuple(states);self.solitaire_solution_step=0
-                self.activity_state=dict(board=states[0],moves=[])
             elif mode=='matches':self.activity_state=dict(mask=sum(v<<i for i,v in enumerate(self.puzzle.solution.values())),moves=[None]*self.puzzle.view['moves_required'])
             else:
-                count=len(self.puzzle.view['initial']);moves=[divmod(v,count) for v in self.puzzle.solution.values()]
-                _,states=self.puzzle.check_moves(moves);self.activity_state=dict(tubes=[list(t) for t in states[-1]],moves=moves)
+                count = len(self.puzzle.view['initial'])
+                moves = tuple(divmod(self.puzzle.solution[key], count) for key in self.puzzle.editable)
+                _, states = self.puzzle.check_moves(moves)
+                self.water_sort_solution_moves = moves
+                self.water_sort_solution_states = tuple(states)
         else:self.activity_state=self.saved_activity_state
-        self.paint_activity()
         self.solution_button.configure(text='Zurück zu meinen Eingaben' if self.showing_solution else 'Lösung ansehen')
         self.reset_button.configure(state='disabled' if self.showing_solution else 'normal')
         self.update_notes_button()
-        self.status.configure(text='Lösungsansicht · deine Eingaben bleiben erhalten.' if self.showing_solution else 'Deine Eingaben wurden wiederhergestellt.',foreground=INK)
-        if self.showing_solution and self.puzzle.view['mode']=='solitaire':self.show_solitaire_step(0)
-        elif self.showing_solution and self.puzzle.view['mode']=='row-shift':self.show_row_shift_step(0)
+        if self.showing_solution and mode=='solitaire':self.show_solitaire_step(0)
+        elif self.showing_solution and mode=='row-shift':self.show_row_shift_step(0)
+        elif self.showing_solution and mode=='water-sort':self.show_water_sort_step(0)
+        else:
+            self.paint_activity()
+            self.status.configure(text='Lösungsansicht · deine Eingaben bleiben erhalten.' if self.showing_solution else 'Deine Eingaben wurden wiederhergestellt.',foreground=INK)
