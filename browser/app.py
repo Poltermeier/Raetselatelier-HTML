@@ -86,6 +86,10 @@ class BrowserApp(gui.App):
                  if len(coordinates) == 2 and all(part.isdecimal() for part in coordinates) else f"Rätselfeld {key}")
         tk.send("label", self.entries[key].id, label)
 
+    def register_diagonal_entry(self, key):
+        # Transparent inputs keep the board's diagonal visible through the cell.
+        tk.send("role", self.entries[key].id, "diagonal-entry")
+
     def fit_board(self):
         width = self.canvas.winfo_width()
         if self.puzzle is None or width >= 590 or width < 100:
