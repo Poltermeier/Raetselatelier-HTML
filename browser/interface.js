@@ -10,6 +10,7 @@ const images = new Map();
 const pendingDraw = new Set();
 const preferencesKey = "simons-raetselatelier.settings";
 const runtimeVersion = new URL(document.currentScript.src).search;
+const compactLayout = matchMedia("(max-width: 760px), (max-height: 600px) and (pointer: coarse)");
 let engine, frame, audio, currentDialog;
 const dialogs = [];
 
@@ -246,20 +247,39 @@ function setupCanvas(widget) {
     element.append(content);
     widget.items = [];
     widget.windowIds = new Set();
+    let touchStart = null;
+    const scrollMode = () => element.dataset.scrollMode === "true";
+    const moved = (event) => Math.hypot(event.clientX - touchStart.x, event.clientY - touchStart.y) > 8;
     const pointer = (sequence, event) => {
-        if (event.target.closest("[data-widget]") !== element) return;
+        if (scrollMode() || event.target.closest("[data-widget]") !== element) return;
         if (widget.bindings.has(sequence)) eventFor(widget, sequence, event);
     };
     element.addEventListener("pointerdown", (event) => {
-        if (event.target.closest("[data-widget]") !== element) return;
-        if (event.button === 0 && widget.bindings.has("<B1-Motion>")) element.setPointerCapture(event.pointerId);
+        if (scrollMode() || event.target.closest("[data-widget]") !== element) return;
+        const draggable = widget.bindings.has("<B1-Motion>");
+        if (event.pointerType === "touch" && !draggable) {
+            // Apply a touch tap after distinguishing it from a swipe.
+            touchStart = event.isPrimary ? { id: event.pointerId, x: event.clientX, y: event.clientY } : null;
+            return;
+        }
+        if (event.button === 0 && draggable) element.setPointerCapture(event.pointerId);
         if (event.button === 0) pointer("<Button-1>", event);
         if (event.button === 2) pointer("<Button-3>", event);
     });
     element.addEventListener("dblclick", (event) => pointer("<Double-Button-1>", event));
-    element.addEventListener("pointerup", (event) => pointer("<ButtonRelease-1>", event));
-    element.addEventListener("pointercancel", (event) => pointer("<ButtonRelease-1>", event));
+    element.addEventListener("pointerup", (event) => {
+        if (touchStart?.id === event.pointerId) {
+            if (!moved(event)) pointer("<Button-1>", event);
+            touchStart = null;
+        }
+        pointer("<ButtonRelease-1>", event);
+    });
+    element.addEventListener("pointercancel", (event) => {
+        if (touchStart?.id === event.pointerId) touchStart = null;
+        pointer("<ButtonRelease-1>", event);
+    });
     element.addEventListener("pointermove", (event) => {
+        if (touchStart?.id === event.pointerId && moved(event)) touchStart = null;
         if (event.buttons & 1) pointer("<B1-Motion>", event);
         else pointer("<Motion>", event);
     });
@@ -273,6 +293,45 @@ function setupCanvas(widget) {
     }, { passive: true });
     element.addEventListener("focus", () => eventFor(widget, "<FocusIn>"));
     element.addEventListener("blur", () => eventFor(widget, "<FocusOut>"));
+}
+
+function setupBoardScrollControls(widget) {
+    if (!navigator.maxTouchPoints) return;
+    const { element } = widget;
+    const toolbar = document.createElement("div");
+    toolbar.className = "board-scroll-controls";
+    toolbar.hidden = true;
+    const hint = document.createElement("p");
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.textContent = "Scrollmodus";
+    toggle.setAttribute("aria-pressed", "false");
+    element.id = `board-${widget.id}`;
+    toggle.setAttribute("aria-controls", element.id);
+    toggle.addEventListener("click", () => {
+        element.dataset.scrollMode = String(element.dataset.scrollMode !== "true");
+        updateBoardScrollControls(widget);
+    });
+    toolbar.append(toggle, hint);
+    element.before(toolbar);
+    widget.scrollControls = { toolbar, hint, toggle };
+}
+
+function updateBoardScrollControls(widget) {
+    if (!widget.scrollControls) return;
+    const { element, scrollControls: { toolbar, hint, toggle } } = widget;
+    const overflows = element.scrollWidth - element.clientWidth > 1 || element.scrollHeight - element.clientHeight > 1;
+    const draggable = element.dataset.drag === "true";
+    if (!overflows || !draggable) element.dataset.scrollMode = "false";
+    const scrolling = element.dataset.scrollMode === "true";
+    toolbar.hidden = !overflows;
+    toggle.hidden = !draggable;
+    toggle.classList.toggle("accent", scrolling);
+    toggle.setAttribute("aria-pressed", String(scrolling));
+    const message = !draggable ? "Wische, um den Rest des Spielfelds zu sehen." :
+        scrolling ? "Wische über das Spielfeld. Tippe erneut auf Scrollmodus, um weiterzuspielen." :
+            "Schalte zum Wischen den Scrollmodus ein.";
+    if (hint.textContent !== message) hint.textContent = message;
 }
 
 function selection(widget) {
@@ -500,6 +559,7 @@ function paint(widget) {
         if (!newWindows.has(id) && widgets.has(id)) widgets.get(id).element.hidden = true;
     }
     widget.windowIds = newWindows;
+    updateBoardScrollControls(widget);
     if (widget.focusAfterPaint && !widget.focusAfterPaint.element.hidden) {
         (widget.focusAfterPaint.input || widget.focusAfterPaint.element).focus({ preventScroll: true });
         widget.focusAfterPaint = null;
@@ -562,6 +622,7 @@ function role(widget, name) {
         widget.element.tabIndex = 0;
         widget.element.setAttribute("aria-label", "Rätselfläche");
         widget.element.dataset.drag = "false";
+        setupBoardScrollControls(widget);
     }
     if (name === "title") {
         widget.element.setAttribute("role", "heading");
@@ -617,7 +678,10 @@ function applyOperations(operations) {
                 if (active) observer.observe(widget.element);
                 else observer.unobserve(widget.element);
             }
-            if (sequence === "<B1-Motion>" && widget.kind === "Canvas") widget.element.dataset.drag = String(active);
+            if (sequence === "<B1-Motion>" && widget.kind === "Canvas") {
+                widget.element.dataset.drag = String(active);
+                if (!active) widget.element.dataset.scrollMode = "false";
+            }
             break;
         }
         case "focus":
@@ -642,7 +706,7 @@ function applyOperations(operations) {
             break;
         case "raise": widget.element.style.zIndex = "3"; break;
         case "reveal":
-            if (matchMedia("(max-width: 760px)").matches) widget.element.scrollIntoView({ block: "start" });
+            if (compactLayout.matches) widget.element.scrollIntoView({ block: "start" });
             break;
         case "progress": widget.element.classList.toggle("running", args[0]); break;
         case "dialog": dialogs.push([id, ...args]); showNextDialog(); break;

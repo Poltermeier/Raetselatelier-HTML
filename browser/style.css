@@ -75,8 +75,11 @@ input[type="text"] { background: var(--paper); border: 1px solid #aebdb2; border
 .tk-canvas-windows > .tk-widget { position: absolute; pointer-events: auto; }
 /* Only the scroll region contributes to the board's scrollable extent. */
 .tk-canvas-content { position: relative; min-width: 100%; min-height: 100%; overflow: clip; }
-.tk-role-board .tk-canvas-surface { touch-action: none; }
-.tk-role-board[data-drag="false"] .tk-canvas-surface { touch-action: pan-x pan-y; }
+.tk-role-board[data-drag="true"]:not([data-scroll-mode="true"]) .tk-canvas-surface { touch-action: none; }
+.tk-role-board[data-scroll-mode="true"] .tk-canvas-windows > .tk-widget { pointer-events: none; }
+.board-scroll-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; padding-bottom: 8px; }
+.board-scroll-controls p { margin: 0; color: var(--muted); font-size: 13px; }
+.board-scroll-controls button { min-height: 42px; }
 .tk-canvas-windows input, .tk-canvas-windows select { padding: 1px 3px; }
 .tk-canvas-windows button { padding: 2px 5px; }
 /* A tap on a note preview needs to reach the native input. */
@@ -116,13 +119,14 @@ dialog::backdrop { background: #233a3252; }
 @media (min-width: 761px) {
   .tk-role-app, .tk-role-shell { height: 100dvh; min-height: 690px; }
 }
-@media (max-width: 760px) {
+@media (max-width: 760px), (max-height: 600px) and (pointer: coarse) {
+  .tk-role-app, .tk-role-shell { height: auto; min-height: 100dvh; }
   .tk-role-shell { padding: 12px; }
   .tk-role-body { flex-direction: column; gap: 22px; }
   .tk-role-sidebar { flex: none; width: 100% !important; max-width: 100%; margin-right: 0 !important; }
   .tk-role-main { flex: 0 0 auto !important; width: 100%; min-height: calc(100dvh - 12px); }
-  .tk-role-board-holder, .tk-role-board { min-height: 460px; }
-  .tk-role-board { height: min(68vh, 620px); }
+  .tk-role-board-holder, .tk-role-board { flex: none !important; min-height: 0; }
+  .tk-role-board { height: clamp(230px, 68svh, 560px); }
 }
 @media (prefers-reduced-motion: reduce) {
   .tk-progressbar.running::before { animation: none; }
