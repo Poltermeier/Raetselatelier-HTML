@@ -1,5 +1,6 @@
 """Seeded German word puzzles using the bundled open-licensed lexicon."""
 from collections import Counter
+from dataclasses import dataclass
 from functools import lru_cache
 from importlib.resources import files
 import json
@@ -14,6 +15,14 @@ ALPHABET = "abcdefghijklmnopqrstuvwxyzäöüß"
 BITS = {letter: 1 << i for i, letter in enumerate(ALPHABET)}
 
 
+@dataclass(frozen=True)
+class Lexicon:
+    words: frozenset[str]
+    themes: dict[str, frozenset[str]]
+    wordle: tuple[str, ...]
+    bee_common: frozenset[str]
+
+
 def normalize_word(text):
     return unicodedata.normalize("NFC", text.strip()).lower()
 
@@ -26,7 +35,12 @@ def display_word(word):
 def lexicon():
     path = files("raetselkalender").joinpath("data", "german_words.json")
     data = json.loads(path.read_text(encoding="utf-8"))
-    return frozenset(data["words"]), tuple((theme, tuple(words)) for theme, words in data["themes"].items())
+    return Lexicon(
+        words=frozenset(data["words"]),
+        themes={theme: frozenset(words) for theme, words in data["themes"].items()},
+        wordle=tuple(data["wordle"]),
+        bee_common=frozenset(data["bee_common"]),
+    )
 
 
 def letter_mask(word):
@@ -35,8 +49,7 @@ def letter_mask(word):
 
 @lru_cache(maxsize=1)
 def workshop_lexicon():
-    words, _ = lexicon()
-    indexed = tuple((word, letter_mask(word)) for word in sorted(words)
+    indexed = tuple((word, letter_mask(word)) for word in sorted(lexicon().words)
                     if len(word) <= 9 and len(set(word)) == len(word))
     vowels = letter_mask("aeiouäöü")
     masks = tuple(sorted({mask for word, mask in indexed
@@ -67,9 +80,8 @@ def ring_readings(letters):
 
 @lru_cache(maxsize=2)
 def ring_candidates(difficulty):
-    _, themes = lexicon()
     lower, upper = (4, 10) if difficulty == "mittel" else (11, 16)
-    return tuple((theme, word) for theme, words in themes for word in words
+    return tuple((theme, word) for theme, words in lexicon().themes.items() for word in sorted(words)
                  if lower <= len(word) <= upper and ring_readings(word).intersection(words) == {word})
 
 
@@ -92,7 +104,7 @@ class WordPuzzle(Puzzle):
         elif len(word) != view["length"]:
             return f"Das Wort braucht genau {view['length']} Buchstaben."
         elif mode == "wortspur":
-            if word not in lexicon()[0]:
+            if word not in lexicon().words:
                 return "Dieses Wort steht nicht im deutschen Spielwortschatz."
         elif word != self.answer_words[0]:
             if word not in ring_readings(view["letters"]):
@@ -125,8 +137,7 @@ def make_word_puzzle(mode, title, rules, seed, difficulty, answers, **view):
 def wortspur(seed, difficulty):
     rng = random.Random(seed)
     length, attempts = (5, 6) if difficulty == "mittel" else (6, 5)
-    _, themes = lexicon()
-    word = rng.choice([word for _, words in themes for word in words if len(word) == length])
+    word = rng.choice([word for word in lexicon().wordle if len(word) == length])
     return make_word_puzzle("wortspur", "Wordle",
         f"Errate das deutsche Wort mit {length} Buchstaben in {attempts} Versuchen. "
         "Zu jedem Buchstaben erfährst du, ob er richtig steht, an anderer Stelle vorkommt oder fehlt. "
@@ -138,10 +149,13 @@ def buchstabenwerkstatt(seed, difficulty):
     rng = random.Random(seed)
     minimum, goal = (4, 8) if difficulty == "mittel" else (5, 12)
     indexed, masks = workshop_lexicon()
+    common = lexicon().bee_common
     for mask in rng.sample(masks, len(masks)):
         answers = tuple(word for word, bits in indexed if len(word) >= minimum and bits & mask == bits)
+        familiar = Counter(letter for word in answers if word in common for letter in word)
         letters = [letter for letter in ALPHABET if BITS[letter] & mask]
-        required = [letter for letter in letters if sum(letter in word for word in answers) >= goal + 8]
+        required = [letter for letter in letters if familiar[letter] >= goal
+                    and sum(letter in word for word in answers) >= goal + 8]
         if required:
             mandatory = rng.choice(required)
             rng.shuffle(letters)

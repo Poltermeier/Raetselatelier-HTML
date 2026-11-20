@@ -65,13 +65,32 @@ the bundled copy in the browser archive are adapted from the following
 - **OdeNet**, by Melanie Siegel, Francis Bond and contributors. The build
   extracts German lemmas from the lexical entries. [Pinned source and attribution](https://github.com/hdaSprachtechnologie/odenet/tree/8ba741223048c28f67d4c38560ea4c0ee89568bb)
 - **FrequencyWords**, by Hermit Dave, based on OpenSubtitles 2018. The build
-  uses the German frequency list to keep attested single words. [Pinned German list](https://github.com/hermitdave/FrequencyWords/blob/525f9b560de45753a5ea01069454e72e9aa541c6/content/2018/de/de_50k.txt) · [Attribution and data license](https://github.com/hermitdave/FrequencyWords/blob/525f9b560de45753a5ea01069454e72e9aa541c6/README.md)
+  uses the full German frequency list to keep attested single words. [Pinned German list](https://github.com/hermitdave/FrequencyWords/blob/525f9b560de45753a5ea01069454e72e9aa541c6/content/2018/de/de_full.txt) · [Attribution and data license](https://github.com/hermitdave/FrequencyWords/blob/525f9b560de45753a5ea01069454e72e9aa541c6/README.md)
+- **German POS Dictionary** from LanguageTool contributors. The data
+  originates from Morphy by Wolfgang Lezius and includes extensions by
+  korrekturen.de. The build uses lemmas, parts of speech and inflected
+  forms. [Pinned source](https://github.com/languagetool-org/german-pos-dict/tree/a0d7adc94c13c0532e087b839159452663f7ea93) · [Attribution and data license](https://github.com/languagetool-org/german-pos-dict/blob/a0d7adc94c13c0532e087b839159452663f7ea93/LICENSE)
 
 The derived data, including the editorial category selections for this project,
 are shared under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
-The build intersects the source vocabularies, normalizes case and Unicode,
-filters by German letter set and length, and adds curated category words.
+The build combines attested lemmas and inflected forms, normalizes case and
+Unicode, filters by German letter set and length, and adds curated category
+words for Wortring. Wordle draws its solutions from frequent attested base
+forms and the editorial selection. Spelling Bee uses frequency to make sure
+each set of letters contains enough familiar answers.
+
 To reproduce the dataset, download the pinned
-[OdeNet XML](https://raw.githubusercontent.com/hdaSprachtechnologie/odenet/8ba741223048c28f67d4c38560ea4c0ee89568bb/odenet_oneline.xml)
-and [German frequency data](https://raw.githubusercontent.com/hermitdave/FrequencyWords/525f9b560de45753a5ea01069454e72e9aa541c6/content/2018/de/de_50k.txt),
-then run `python tools/build_word_data.py odenet_oneline.xml de_50k.txt`.
+[OdeNet XML](https://raw.githubusercontent.com/hdaSprachtechnologie/odenet/8ba741223048c28f67d4c38560ea4c0ee89568bb/odenet_oneline.xml),
+[German frequency data](https://raw.githubusercontent.com/hermitdave/FrequencyWords/525f9b560de45753a5ea01069454e72e9aa541c6/content/2018/de/de_full.txt),
+and LanguageTool's
+[`german.dict`](https://raw.githubusercontent.com/languagetool-org/german-pos-dict/a0d7adc94c13c0532e087b839159452663f7ea93/src/main/resources/org/languagetool/resource/de/german.dict)
+and [`german.info`](https://raw.githubusercontent.com/languagetool-org/german-pos-dict/a0d7adc94c13c0532e087b839159452663f7ea93/src/main/resources/org/languagetool/resource/de/german.info).
+Keep the two dictionary files in the same directory. Unpack
+[Morfologik Tools 2.1.9](https://github.com/morfologik/morfologik-stemming/releases/tag/2.1.9)
+and run the following from the repository root, adjusting the paths to the
+downloaded source files and the extracted Morfologik package.
+
+```sh
+java -cp 'path/to/morfologik-tools-2.1.9/lib/*' morfologik.tools.Launcher dict_decompile -i german.dict -o german-forms.txt
+python tools/build_word_data.py odenet_oneline.xml de_full.txt german-forms.txt
+```

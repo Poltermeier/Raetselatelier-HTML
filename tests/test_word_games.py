@@ -1,7 +1,7 @@
 import unittest
 
 from raetselkalender.catalog import generate
-from raetselkalender.word_games import lexicon, normalize_word, ring_readings, word_feedback
+from raetselkalender.word_games import lexicon, normalize_word, ring_candidates, ring_readings, word_feedback
 
 
 class GermanWordGames(unittest.TestCase):
@@ -14,7 +14,7 @@ class GermanWordGames(unittest.TestCase):
         self.assertEqual(normalize_word("  GROẞE ÄHRE  "), "große ähre")
 
     def test_wordle_has_valid_targets_and_attempt_limits_without_a_hint(self):
-        words, _ = lexicon()
+        data = lexicon()
         for difficulty, length, attempts in (("mittel", 5, 6), ("schwer", 6, 5)):
             puzzle = generate("wordle", 42, difficulty)
             answer = puzzle.answer_words[0]
@@ -22,10 +22,22 @@ class GermanWordGames(unittest.TestCase):
             self.assertEqual(len(answer), length)
             self.assertEqual(puzzle.view["attempts"], attempts)
             self.assertNotIn("theme", puzzle.view)
-            self.assertIn(answer, words)
+            self.assertIn(answer, data.words)
+            self.assertIn(answer, data.wordle)
             self.assertEqual(puzzle.word_error(answer), "")
             self.assertTrue(puzzle.is_solved([answer]))
             self.assertNotIn("solution", puzzle.export())
+
+    def test_wordle_accepts_inflections_and_draws_from_a_broader_target_list(self):
+        data = lexicon()
+        for difficulty, guess in (("mittel", "bäume"), ("schwer", "tische")):
+            puzzle = generate("wordle", 42, difficulty)
+            self.assertEqual(puzzle.word_error(guess), "")
+            self.assertNotIn(guess, data.wordle)
+            targets = [word for word in data.wordle if len(word) == len(guess)]
+            self.assertGreater(len(targets), 500)
+        self.assertGreater(len(data.words), 50_000)
+        self.assertNotIn("delhi", data.wordle)
 
     def test_workshop_requires_dictionary_letters_and_distinct_words(self):
         for difficulty in ("mittel", "schwer"):
@@ -36,6 +48,7 @@ class GermanWordGames(unittest.TestCase):
                 self.assertEqual(len(set(view["letters"])), 9)
                 self.assertEqual(view["goal"], 8 if difficulty == "mittel" else 12)
                 self.assertGreaterEqual(len(puzzle.answer_words), view["goal"] + 8)
+                self.assertGreaterEqual(len(lexicon().bee_common.intersection(puzzle.answer_words)), view["goal"])
                 self.assertTrue(all(not puzzle.word_error(word) for word in puzzle.answer_words))
                 self.assertTrue(all(len(word) == len(set(word)) for word in puzzle.answer_words))
                 repeated = view["required"] * view["minimum"]
@@ -45,17 +58,14 @@ class GermanWordGames(unittest.TestCase):
                 self.assertTrue(puzzle.is_solved(list(puzzle.answer_words[:view["goal"]])))
 
     def test_ring_replays_every_position_in_either_direction(self):
-        _, themes = lexicon()
-        themes = dict(themes)
+        themes = lexicon().themes
         seen = set()
-        longest = 0
         for seed in range(20):
             for difficulty in ("mittel", "schwer"):
                 puzzle = generate("wortring", seed, difficulty)
                 letters = puzzle.view["letters"]
                 if difficulty == "schwer":
                     self.assertTrue(11 <= len(letters) <= 16)
-                    longest = max(longest, len(letters))
                 directions = puzzle.ring_direction
                 indexes = [(puzzle.ring_start + directions * i) % len(letters) for i in range(len(letters))]
                 expected = "".join(letters[i] for i in indexes)
@@ -70,4 +80,12 @@ class GermanWordGames(unittest.TestCase):
                 self.assertEqual(puzzle.export(True)["solution"]["Startfeld"], puzzle.ring_start + 1)
                 seen.add(directions)
         self.assertEqual(seen, {-1, 1})
-        self.assertEqual(longest, 16)
+        self.assertEqual(max(len(word) for _, word in ring_candidates("schwer")), 16)
+
+    def test_ring_has_new_topics_and_words_in_both_difficulties(self):
+        middle = ring_candidates("mittel")
+        hard = ring_candidates("schwer")
+        self.assertIn(("Weltraum und Astronomie", "planet"), middle)
+        self.assertIn(("Schule und Unterricht", "taschenrechner"), hard)
+        self.assertGreater(len(middle), 800)
+        self.assertGreater(len(hard), 500)
