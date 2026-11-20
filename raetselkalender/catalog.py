@@ -22,6 +22,7 @@ from .moving_games import solitaire,water_sort
 from .line_generators import abknicker,light_rays
 from .workshop_games import cryptogram,target24,circuits,row_shift
 from .pentomino import pentomino
+from .word_games import wortspur, buchstabenwerkstatt, wortring
 from .pipes import pipes,PIPE_SIZES
 from .puzzle import LogicalProofMissing
 from .chess_engine import stockfish_path,stockfish_missing_message
@@ -130,6 +131,9 @@ CATALOG = [
     PuzzleType('pentomino-puzzle','Pentomino Puzzle',pentomino),
     PuzzleType('row-shift','Row Shift',row_shift),
     PuzzleType('pipes','Pipes',pipes),
+    PuzzleType('wortspur', 'Wortspur', wortspur),
+    PuzzleType('buchstabenwerkstatt', 'Buchstabenwerkstatt', buchstabenwerkstatt),
+    PuzzleType('wortring', 'Wortring', wortring),
 ]
 BY_ID = {p.id: p for p in CATALOG}
 # Keep older command lines and exported type IDs usable.

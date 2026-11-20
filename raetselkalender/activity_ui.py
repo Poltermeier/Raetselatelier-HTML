@@ -8,14 +8,17 @@ from tkinter import ttk
 from .board_canvas import BoardCombobox
 from .moving_games import PEG_CELLS,PEG_HOPS,peg_move,sort_pour,sorted_water
 from .workshop_games import WORKSHOP_MODES
+from .word_games import WORD_MODES
+from .word_ui import WordGamesUI
 
 INK,ACCENT,PAPER='#233a32','#27644c','#fffef9'
 
 
-class ActivityUI:
+class ActivityUI(WordGamesUI):
     def initial_activity_state(self):
         v=self.puzzle.view;mode=v['mode']
         if mode in WORKSHOP_MODES:return self.initial_workshop_state()
+        if mode in WORD_MODES:return dict(words=[], draft='', path=[])
         if mode=='sets':return dict(draft=[],found=[])
         if mode=='mastermind':return dict(draft=[-1]*4,guesses=[])
         if mode=='solitaire':return dict(board=v['initial'],moves=[])
@@ -53,6 +56,8 @@ class ActivityUI:
         mode=self.puzzle.view['mode']
         if mode in WORKSHOP_MODES:
             self.render_workshop();return
+        if mode in WORD_MODES:
+            self.render_word_game();return
         if mode=='sets':
             self.activity_button('Set bestätigen',self.confirm_set,340,510)
         elif mode=='mastermind':
@@ -88,6 +93,7 @@ class ActivityUI:
         if mode=='mastermind':
             guesses=self.activity_state['guesses']
             disabled|=len(guesses)>=self.puzzle.view['attempt_limit'] or bool(guesses and self.puzzle.feedback(guesses[-1])==(4,0))
+        if mode in WORD_MODES:disabled|=self.word_game_finished()
         for control in self.activity_controls:
             control.configure(state='disabled' if disabled else 'readonly' if isinstance(control,BoardCombobox) else 'normal')
         if mode=='solitaire':
@@ -106,7 +112,8 @@ class ActivityUI:
         mode=self.puzzle.view['mode']
         if mode in WORKSHOP_MODES:
             self.paint_workshop();return
-        if mode=='sets':self.paint_sets()
+        if mode in WORD_MODES:self.paint_word_game()
+        elif mode=='sets':self.paint_sets()
         elif mode=='mastermind':self.paint_mastermind()
         elif mode=='solitaire':self.paint_solitaire()
         elif mode=='matches':self.paint_matches()
@@ -423,6 +430,8 @@ class ActivityUI:
         frame()
 
     def on_activity_change(self):
+        if self.puzzle.view['mode'] in WORD_MODES:
+            self.on_word_game_change();return
         if self.puzzle.view['mode'] in WORKSHOP_MODES:
             self.on_workshop_change();return
         self.paint_activity();s=self.activity_state;mode=self.puzzle.view['mode']
@@ -452,6 +461,7 @@ class ActivityUI:
         if self.showing_solution:
             self.saved_activity_state=deepcopy(self.activity_state)
             if mode in WORKSHOP_MODES:self.activity_state=self.workshop_solution_state()
+            elif mode in WORD_MODES:self.activity_state=self.initial_activity_state()
             elif mode=='sets':self.activity_state=dict(draft=[],found=[list(self.puzzle.sets[self.puzzle.solution[k]]) for k in self.puzzle.editable])
             elif mode=='mastermind':self.activity_state=dict(draft=list(self.puzzle.solution.values()),guesses=[])
             elif mode=='solitaire':

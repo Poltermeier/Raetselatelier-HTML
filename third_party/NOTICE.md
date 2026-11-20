@@ -55,3 +55,23 @@ The unmodified browser runtime files in `runtime/pyodide/` are from
 [Mozilla Public License 2.0](pyodide-LICENSE.txt). The standard library bundles
 [Python 3.12.7](https://github.com/python/cpython/tree/v3.12.7) under the
 [Python Software Foundation License](CPython-LICENSE.txt).
+
+## German word puzzles
+
+The German game vocabulary in `raetselkalender/data/german_words.json` and
+the bundled copy in the browser archive are adapted from the following
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) sources.
+
+- **OdeNet**, by Melanie Siegel, Francis Bond and contributors. The build
+  extracts German lemmas from the lexical entries. [Pinned source and attribution](https://github.com/hdaSprachtechnologie/odenet/tree/8ba741223048c28f67d4c38560ea4c0ee89568bb)
+- **FrequencyWords**, by Hermit Dave, based on OpenSubtitles 2018. The build
+  uses the German frequency list to keep attested single words. [Pinned German list](https://github.com/hermitdave/FrequencyWords/blob/525f9b560de45753a5ea01069454e72e9aa541c6/content/2018/de/de_50k.txt) · [Attribution and data license](https://github.com/hermitdave/FrequencyWords/blob/525f9b560de45753a5ea01069454e72e9aa541c6/README.md)
+
+The derived data, including the editorial category selections for this project,
+are shared under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+The build intersects the source vocabularies, normalizes case and Unicode,
+filters by German letter set and length, and adds curated category words.
+To reproduce the dataset, download the pinned
+[OdeNet XML](https://raw.githubusercontent.com/hdaSprachtechnologie/odenet/8ba741223048c28f67d4c38560ea4c0ee89568bb/odenet_oneline.xml)
+and [German frequency data](https://raw.githubusercontent.com/hermitdave/FrequencyWords/525f9b560de45753a5ea01069454e72e9aa541c6/content/2018/de/de_50k.txt),
+then run `python tools/build_word_data.py odenet_oneline.xml de_50k.txt`.

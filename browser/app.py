@@ -88,6 +88,10 @@ class BrowserApp(gui.App):
                  if len(coordinates) == 2 and all(part.isdecimal() for part in coordinates) else f"Rätselfeld {key}")
         tk.send("label", self.entries[key].id, label)
 
+    def render_word_game(self):
+        super().render_word_game()
+        tk.send("label", self.word_entry.id, "Wort eingeben")
+
     def register_diagonal_entry(self, key):
         # Transparent inputs keep the board's diagonal visible through the cell.
         tk.send("role", self.entries[key].id, "diagonal-entry")

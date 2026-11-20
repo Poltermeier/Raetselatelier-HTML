@@ -1,6 +1,6 @@
 # Simon's Rätselatelier im Browser
 
-Webport von [Raetselkalender-Generator](https://github.com/Poltermeier/Raetselkalender-Generator/tree/acf15a5799e1503f36a30726b63a7b60b43d378a) mit allen **64 Rätseltypen** und den Schwierigkeitsstufen *Mittel* und *Schwer*. Die Bedienung entspricht der Desktop-App, mit Rätselauswahl, Regeln und Spielfeld, Notizen, Rückgängig, Lösungsansicht und JSON-Export ohne Lösung. Die Einstellungen für Ton und Farbblindheitsmodus bleiben im jeweiligen Browser gespeichert.
+Webport von [Raetselkalender-Generator](https://github.com/Poltermeier/Raetselkalender-Generator/tree/acf15a5799e1503f36a30726b63a7b60b43d378a) mit **67 Rätseltypen** und den Schwierigkeitsstufen *Mittel* und *Schwer*. Die Bedienung entspricht der Desktop-App, mit Rätselauswahl, Regeln und Spielfeld, Notizen, Rückgängig, Lösungsansicht und JSON-Export ohne Lösung. Die Einstellungen für Ton und Farbblindheitsmodus bleiben im jeweiligen Browser gespeichert.
 
 ## Lokal starten
 
@@ -17,6 +17,14 @@ Nach dem Download läuft das Atelier offline. Es lädt die Rätsel-Engine und al
 Das Rätselatelier ist über Github Pages auch online verfügbar. Kein Download notwendig. Dies ermöglicht das nutzen auch auf Tablets, Smartphones etc. 
 
 Link: https://poltermeier.github.io/Raetselatelier-HTML/
+
+## Deutsche Worträtsel
+
+- **Wortspur** gibt nach jedem Versuch Rückmeldung zur Position der Buchstaben. Auf „Mittel“ hilft zusätzlich ein Themenhinweis.
+- **Buchstabenwerkstatt** stellt acht Buchstaben zur Auswahl. Jede Eingabe muss den markierten Pflichtbuchstaben enthalten.
+- **Wortring** nennt ein Thema. Man kann bei jedem Feld anfangen und in beide Richtungen lesen. Alle Felder müssen genau einmal verwendet werden.
+
+Die Wortdaten sind offline verfügbar. [Quellen, Lizenz und Erstellung der Wortliste](third_party/NOTICE.md#german-word-puzzles)
 
 ## Weiterentwicklung
 
