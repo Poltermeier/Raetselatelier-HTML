@@ -87,6 +87,27 @@ input[type="text"] { background: var(--paper); border: 1px solid #aebdb2; border
   font-size: 22px !important;
   font-weight: 700 !important;
 }
+.tk-role-group-tile, .tk-role-case-person { container-type: inline-size; }
+.tk-role-group-tile > button, .tk-role-case-person > button {
+  display: block;
+  padding: 2px 3px;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  font: 700 clamp(9px, 14cqw, 15px)/1.25 system-ui, sans-serif !important;
+}
+.tk-role-group-tile > button:not(.accent):not(.deduction-resolved) {
+  background: #f7f6ee;
+}
+.tk-canvas-windows .deduction-resolved { background: #e4eee4; border-color: #8eae96; opacity: 1; }
+.tk-canvas-windows .deduction-linked { background: #fbebc9; border: 2px solid #8a6322; opacity: 1; }
+.tk-role-case-clue {
+  display: flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-inline-start: 3px solid var(--accent);
+  font: 500 clamp(12px, 3.4vw, 14px)/1.25 system-ui, sans-serif !important;
+}
+.tk-role-case-room { font: 700 12px/1 system-ui, sans-serif !important; }
 /* A tap on a note preview needs to reach the native input. */
 .tk-entry > .tk-label { pointer-events: none; user-select: none; overflow: hidden; line-height: 1.12; }
 .tk-role-diagonal-entry > input,

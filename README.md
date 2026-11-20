@@ -1,6 +1,6 @@
 # Simon's Rätselatelier im Browser
 
-Webport von [Raetselkalender-Generator](https://github.com/Poltermeier/Raetselkalender-Generator/tree/acf15a5799e1503f36a30726b63a7b60b43d378a) mit **67 Rätseltypen** und den Schwierigkeitsstufen *Mittel* und *Schwer*. Die Bedienung entspricht der Desktop-App, mit Rätselauswahl, Regeln und Spielfeld, Notizen, Rückgängig, Lösungsansicht und JSON-Export ohne Lösung. Die Einstellungen für Ton und Farbblindheitsmodus bleiben im jeweiligen Browser gespeichert.
+Webport von [Raetselkalender-Generator](https://github.com/Poltermeier/Raetselkalender-Generator/tree/acf15a5799e1503f36a30726b63a7b60b43d378a) mit **69 Rätseltypen** und den Schwierigkeitsstufen *Mittel* und *Schwer*. Die Bedienung entspricht der Desktop-App, mit Rätselauswahl, Regeln und Spielfeld, Notizen, Rückgängig, Lösungsansicht und JSON-Export ohne Lösung. Die Einstellungen für Ton und Farbblindheitsmodus bleiben im jeweiligen Browser gespeichert.
 
 ## Lokal starten
 
@@ -23,8 +23,13 @@ Link: https://poltermeier.github.io/Raetselatelier-HTML/
 - **Wordle** gibt nach jedem Versuch Rückmeldung zur Position der Buchstaben. Auf „Mittel“ suchst du ein Fünf-Buchstaben-Wort in sechs Versuchen. Auf „Schwer“ sind es sechs Buchstaben in fünf Versuchen. Die Lösungen stammen überwiegend aus gängigen Grundformen. Als Versuche gelten auch belegte gebeugte Formen.
 - **Spelling Bee** ordnet acht Buchstaben um den Pflichtbuchstaben an. Jeder Buchstabe darf pro Wort einmal vorkommen. Das Ziel sind acht Wörter auf „Mittel“ und zwölf auf „Schwer“. Der Wortschatz umfasst auch belegte Plurale und andere gebeugte Formen.
 - **Wortring** nennt ein Thema. Man kann bei jedem Feld anfangen und in beide Richtungen lesen. Alle Felder müssen genau einmal verwendet werden. Auf „Schwer“ haben die Wörter elf bis 16 Buchstaben.
+- **Gruppen** zeigt 16 Wörter auf einem Raster. Wähle jeweils vier Wörter, die zu demselben Thema gehören, und prüfe deine Auswahl. Auf „Schwer“ können Wörter in mehrere Kategorien passen. Zu jedem Rätsel prüft der Generator, dass die im Wortkatalog erfassten Kategorien genau eine vollständige Einteilung erlauben.
 
 Die Wortdaten sind offline verfügbar. [Quellen, Lizenz und Erstellung der Wortliste](third_party/NOTICE.md#german-word-puzzles)
+
+## Ermittlungsakte
+
+Blättere durch die Spuren und nutze die Hinweise, um alle Personen als „Eingeweiht“ oder „Unbeteiligt“ einzuordnen. Die aktuelle Spur hebt die betreffenden Personen hervor. Mit „Akte prüfen“ reichst du deine Zuordnung ein. Auf „Mittel“ ermittelst du zu neun, auf „Schwer“ zu zwölf Personen. Jeder Fall wird auf eine eindeutige Lösung geprüft, die sich aus den Spuren herleiten lässt. Die Fälle sind eigene Rätsel des Ateliers, inspiriert vom Ermittlungsprinzip von [Clues by Sam](https://cluesbysam.com).
 
 ## Weiterentwicklung
 

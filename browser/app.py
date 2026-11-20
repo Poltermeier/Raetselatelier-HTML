@@ -97,6 +97,18 @@ class BrowserApp(gui.App):
             if letter == self.puzzle.view["required"]:
                 tk.send("label", button.id, f"Pflichtbuchstabe {display_word(letter)}")
 
+    def render_deduction(self):
+        super().render_deduction()
+        if self.puzzle.view["mode"] == "gruppen":
+            for button in self.group_buttons:
+                tk.send("role", button.id, "group-tile")
+        else:
+            for button in self.case_people.values():
+                tk.send("role", button.id, "case-person")
+            for room in self.case_rooms:
+                tk.send("role", room.id, "case-room")
+            tk.send("role", self.case_clue.id, "case-clue")
+
     def register_diagonal_entry(self, key):
         # Transparent inputs keep the board's diagonal visible through the cell.
         tk.send("role", self.entries[key].id, "diagonal-entry")

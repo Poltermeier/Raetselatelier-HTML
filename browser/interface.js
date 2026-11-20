@@ -140,7 +140,7 @@ function setOptions(widget, changed) {
         }
     }
     if (kind === "Button") {
-        input.classList.toggle("accent", ["Accent.TButton", "NotesOn.TButton", "DifficultyOn.TButton"].includes(options.style));
+        input.classList.toggle("accent", ["Accent.TButton", "NotesOn.TButton", "DifficultyOn.TButton", "DeductionSelected.TButton"].includes(options.style));
         if ("text" in changed || "image" in changed) {
             input.replaceChildren();
             if (options.image) {
@@ -162,6 +162,11 @@ function setOptions(widget, changed) {
             input.setAttribute("aria-pressed", options.style === "DifficultyOn.TButton");
         }
         if ((options.text || "").startsWith("Notizen")) input.setAttribute("aria-pressed", options.style === "NotesOn.TButton");
+        if (options.style?.startsWith("Deduction")) {
+            input.setAttribute("aria-pressed", options.style === "DeductionSelected.TButton");
+            input.classList.toggle("deduction-linked", options.style === "DeductionLinked.TButton");
+            input.classList.toggle("deduction-resolved", options.style === "DeductionResolved.TButton");
+        }
     }
     if (kind === "Label" && "text" in changed) element.textContent = options.text || "";
     if (kind === "Checkbutton" && "text" in changed) widget.label.textContent = options.text;
@@ -630,6 +635,9 @@ function role(widget, name) {
     }
     if (name === "sidebar") widget.element.setAttribute("aria-label", "Rätsel auswählen");
     if (name === "status") widget.element.setAttribute("role", "status");
+    if (name === "case-clue") widget.element.setAttribute("aria-live", "polite");
+    if (name === "case-room") widget.element.setAttribute("role", "heading");
+    if (name === "case-room") widget.element.setAttribute("aria-level", "2");
     if (name === "main") widget.element.setAttribute("role", "main");
     if (name === "success" || name === "error") {
         widget.element.setAttribute("role", "group");

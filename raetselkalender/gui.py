@@ -84,6 +84,14 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         style.configure("TFrame", background=BG)
         style.configure("TLabel", background=BG, foreground=INK, font=("Helvetica", 10))
         style.configure("TButton", font=("Helvetica", 10), padding=(12, 8))
+        for name, background, foreground in (
+            ("Deduction", "#f7f6ee", INK),
+            ("DeductionSelected", ACCENT, "white"),
+            ("DeductionLinked", "#fbebc9", INK),
+            ("DeductionResolved", "#e4eee4", INK),
+        ):
+            style.configure(f"{name}.TButton", font=("Helvetica", 9, "bold"), padding=(3, 2),
+                            background=background, foreground=foreground, justify="center")
         style.configure("Accent.TButton", background=ACCENT, foreground="white")
         style.map("Accent.TButton", background=[("active", "#34775d")])
         style.configure("NotesOn.TButton", background=ACCENT, foreground="white")

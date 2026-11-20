@@ -94,3 +94,9 @@ downloaded source files and the extracted Morfologik package.
 java -cp 'path/to/morfologik-tools-2.1.9/lib/*' morfologik.tools.Launcher dict_decompile -i german.dict -o german-forms.txt
 python tools/build_word_data.py odenet_oneline.xml de_full.txt german-forms.txt
 ```
+
+**Gruppen** uses the editorial themes from `german_words.json` on the
+medium difficulty and the project's original German category dataset in
+[`raetselkalender/data/gruppen.json`](../raetselkalender/data/gruppen.json)
+on hard. The grouping dataset is shared under
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).

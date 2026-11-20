@@ -23,6 +23,8 @@ from .line_generators import abknicker,light_rays
 from .workshop_games import cryptogram,target24,circuits,row_shift
 from .pentomino import pentomino
 from .word_games import wortspur, buchstabenwerkstatt, wortring
+from .gruppen import gruppen
+from .ermittlungsakte import ermittlungsakte
 from .pipes import pipes,PIPE_SIZES
 from .puzzle import LogicalProofMissing
 from .chess_engine import stockfish_path,stockfish_missing_message
@@ -134,6 +136,8 @@ CATALOG = [
     PuzzleType('wortspur', 'Wordle', wortspur),
     PuzzleType('buchstabenwerkstatt', 'Spelling Bee', buchstabenwerkstatt),
     PuzzleType('wortring', 'Wortring', wortring),
+    PuzzleType('gruppen', 'Gruppen', gruppen),
+    PuzzleType('ermittlungsakte', 'Ermittlungsakte', ermittlungsakte),
 ]
 BY_ID = {p.id: p for p in CATALOG}
 BY_ID["wordle"] = BY_ID["wortspur"]

@@ -10,15 +10,17 @@ from .moving_games import PEG_CELLS,PEG_HOPS,peg_move,sort_pour,sorted_water
 from .workshop_games import WORKSHOP_MODES
 from .word_games import WORD_MODES
 from .word_ui import WordGamesUI
+from .deduction_ui import MODES as DEDUCTION_MODES, DeductionUI
 
 INK,ACCENT,PAPER='#233a32','#27644c','#fffef9'
 
 
-class ActivityUI(WordGamesUI):
+class ActivityUI(WordGamesUI, DeductionUI):
     def initial_activity_state(self):
         v=self.puzzle.view;mode=v['mode']
         if mode in WORKSHOP_MODES:return self.initial_workshop_state()
         if mode in WORD_MODES:return dict(words=[], draft='', path=[])
+        if mode in DEDUCTION_MODES:return self.initial_deduction_state()
         if mode=='sets':return dict(draft=[],found=[])
         if mode=='mastermind':return dict(draft=[-1]*4,guesses=[])
         if mode=='solitaire':return dict(board=v['initial'],moves=[])
@@ -58,6 +60,8 @@ class ActivityUI(WordGamesUI):
             self.render_workshop();return
         if mode in WORD_MODES:
             self.render_word_game();return
+        if mode in DEDUCTION_MODES:
+            self.render_deduction();return
         if mode=='sets':
             self.activity_button('Set bestätigen',self.confirm_set,340,510)
         elif mode=='mastermind':
@@ -114,6 +118,8 @@ class ActivityUI(WordGamesUI):
         mode=self.puzzle.view['mode']
         if mode in WORKSHOP_MODES:
             self.paint_workshop();return
+        if mode in DEDUCTION_MODES:
+            self.paint_deduction();return
         if mode in WORD_MODES:self.paint_word_game()
         elif mode=='sets':self.paint_sets()
         elif mode=='mastermind':self.paint_mastermind()
@@ -432,6 +438,8 @@ class ActivityUI(WordGamesUI):
         frame()
 
     def on_activity_change(self):
+        if self.puzzle.view['mode'] in DEDUCTION_MODES:
+            self.on_deduction_change();return
         if self.puzzle.view['mode'] in WORD_MODES:
             self.on_word_game_change();return
         if self.puzzle.view['mode'] in WORKSHOP_MODES:
@@ -470,7 +478,7 @@ class ActivityUI(WordGamesUI):
                 _,states=self.puzzle.check_moves(list(self.puzzle.solution.values()))
                 self.solitaire_solution_states=tuple(states);self.solitaire_solution_step=0
             elif mode=='matches':self.activity_state=dict(mask=sum(v<<i for i,v in enumerate(self.puzzle.solution.values())),moves=[None]*self.puzzle.view['moves_required'])
-            else:
+            elif mode=='water-sort':
                 count = len(self.puzzle.view['initial'])
                 moves = tuple(divmod(self.puzzle.solution[key], count) for key in self.puzzle.editable)
                 _, states = self.puzzle.check_moves(moves)
