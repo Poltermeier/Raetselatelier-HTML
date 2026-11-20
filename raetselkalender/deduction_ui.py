@@ -14,7 +14,7 @@ class DeductionUI:
     def initial_deduction_state(self):
         if self.puzzle.view["mode"] == GROUPS:
             return dict(words=list(self.puzzle.view["words"]), selected=[], found=[])
-        return dict(entries={}, checked=False)
+        return dict(entries={})
 
     def render_deduction(self):
         if self.puzzle.view["mode"] == GROUPS:
@@ -145,15 +145,29 @@ class DeductionUI:
 
     def render_case(self):
         self.case_clue_index = 0
+        self.case_solution_index = 0
         self.case_feedback = ""
+        self.case_heading = tk.Label(self.canvas, text="", anchor="w", font=("Helvetica", 12, "bold"),
+                                     background="#fffef9", foreground=INK)
         self.case_clue = tk.Label(self.canvas, text="", anchor="w", justify="left", wraplength=398,
                                   font=("Helvetica", 12), background="#eef3ec", foreground=INK, padx=9)
-        self.extra_widgets.append(self.case_clue)
+        self.case_prompt = tk.Label(self.canvas, text="", anchor="w", justify="left", wraplength=402,
+                                    font=("Helvetica", 11), background="#fffef9", foreground=INK)
+        self.extra_widgets.extend((self.case_heading, self.case_clue, self.case_prompt))
+        self.canvas.create_window(25, 17, window=self.case_heading, width=408, height=24, anchor="nw")
         self.canvas.create_window(25, 47, window=self.case_clue, width=408, height=68, anchor="nw")
-        self.case_previous = self.activity_button("Vorige Spur", lambda: self.turn_case_clue(-1), 93, 142, 136,
+        self.canvas.create_window(25, 171, window=self.case_prompt, width=408, height=33,
+                                  anchor="nw", tags=("case-actions",))
+        self.case_previous = self.activity_button("Vorige Spur", lambda: self.turn_case_clue(-1), 90, 142, 130,
                                                   height=44, style="TButton")
-        self.case_next = self.activity_button("Nächste Spur", lambda: self.turn_case_clue(1), 239, 142, 136,
+        self.case_next = self.activity_button("Nächste Spur", lambda: self.turn_case_clue(1), 238, 142, 150,
                                               height=44, style="TButton")
+        self.case_roles = [
+            self.activity_button(role, lambda value=value: self.mark_case_person(value),
+                                 128 + value * 202, 231, 194, tags=("case-actions",),
+                                 height=48, style="TButton")
+            for value, role in enumerate(ROLES)
+        ]
         self.case_people = {}
         self.case_rooms = []
         view = self.puzzle.view
@@ -162,103 +176,100 @@ class DeductionUI:
                              background="#fffef9", foreground=INK)
             self.extra_widgets.append(label)
             self.case_rooms.append(label)
-            self.canvas.create_window(25, 170 + row * 79, window=label, width=408, height=18, anchor="nw")
-            stride = 416 / len(people)
+            self.canvas.create_window(25, 268 + row * 78, window=label, width=408, height=18, anchor="nw")
+            stride = 420 / len(people)
             for column, name in enumerate(people):
                 self.case_people[name] = self.activity_button(
                     name, lambda person=name: self.select_case_person(person),
-                    21 + (column + .5) * stride, 214 + row * 79, stride - 8, height=52,
+                    17 + (column + .5) * stride, 316 + row * 78, stride - 4, height=56,
                     style="Deduction.TButton", tags=("case-person",),
                 )
-        self.case_roles = [
-            self.activity_button(role, lambda value=value: self.mark_case_person(value),
-                                 90 + value * 139, 454, 130, tags=("case-actions",), height=44, style="TButton")
-            for value, role in enumerate(ROLES)
-        ]
-        self.case_clear = self.activity_button("Leeren", lambda: self.mark_case_person(None),
-                                               365, 454, 130, tags=("case-actions",), height=44, style="TButton")
-        self.case_check = self.activity_button("Akte prüfen", self.check_case, 229, 510, 194,
-                                               tags=("case-actions",), height=44)
+
+    def case_clues(self):
+        confirmed = ((step["person"] for step in self.puzzle.logical_steps)
+                     if self.showing_solution else self.activity_state["entries"])
+        return self.puzzle.revealed_clues(confirmed)
 
     def turn_case_clue(self, step):
         if self.busy:
             return
-        index = max(0, min(len(self.puzzle.view["clues"]) - 1, self.case_clue_index + step))
-        if index != self.case_clue_index:
-            self.case_clue_index = index
-            self.paint_activity()
-
-    def select_case_person(self, name):
-        if self.busy or self.showing_solution or self.activity_state["checked"] or name in self.puzzle.givens:
-            return
-        self.activity_selected = None if self.activity_selected == name else name
+        if self.showing_solution:
+            self.case_solution_index += step
+        else:
+            self.case_clue_index += step
         self.paint_activity()
 
-    def mark_case_person(self, value):
-        state = self.activity_state
-        name = self.activity_selected
-        if (self.busy or self.showing_solution or state["checked"]
-                or name is None or name in self.puzzle.givens):
+    def select_case_person(self, name):
+        if self.busy or self.showing_solution:
             return
-        entries = state["entries"]
-        if value is None:
-            entries.pop(name, None)
-        else:
-            entries[name] = value
-        self.on_change()
-
-    def check_case(self):
-        state = self.activity_state
-        if self.busy or self.showing_solution or state["checked"]:
-            return
-        result, wrong = self.puzzle.check(state["entries"])
-        if result == "correct":
-            state["checked"] = True
+        had_feedback = bool(self.case_feedback)
+        self.case_feedback = ""
+        entries = self.activity_state["entries"]
+        if name in entries:
+            self.case_clue_index = list(entries).index(name) + 1
             self.activity_selected = None
-            self.on_change()
-        elif result == "wrong":
-            self.case_feedback = ("Eine Zuordnung stimmt noch nicht." if len(wrong) == 1
-                                  else f"{len(wrong)} Zuordnungen stimmen noch nicht.")
         else:
-            self.case_feedback = "Ordne zuerst alle Personen zu."
-        if result != "correct":
-            self.paint_activity()
-            self.status.configure(text=self.case_feedback, foreground=ERROR)
+            self.activity_selected = None if self.activity_selected == name else name
+        self.paint_activity()
+        if had_feedback:
+            self.status.configure(text=f"{len(entries)} von {len(self.case_people)} Personen zugeordnet.", foreground=INK)
+
+    def mark_case_person(self, value):
+        name = self.activity_selected
+        if self.busy or self.showing_solution or name is None:
+            return
+        entries = self.activity_state["entries"]
+        result = self.puzzle.classify(name, value, entries)
+        if result == "correct":
+            entries[name] = value
+            self.activity_selected = None
+            self.case_clue_index = len(entries)
+            self.on_change()
+            return
+        if result == "invalid":
+            return
+        self.case_feedback = {
+            "wrong": "Die Spuren belegen die andere Rolle.",
+            "undetermined": "Die offenen Spuren lassen beide Rollen zu.",
+            "unproven": "Die Ableitung konnte gerade nicht geprüft werden.",
+        }[result]
+        self.paint_activity()
+        self.status.configure(text=self.case_feedback, foreground=ERROR)
 
     def paint_case(self):
-        view = self.puzzle.view
-        count = len(view["clues"])
-        index = self.case_clue_index
-        clue = view["clues"][index]
-        state = self.activity_state
-        disabled = self.busy or self.showing_solution or state["checked"]
-        self.word_text(25, 20, f"Spur {index + 1} von {count}", size=14, bold=True)
-        if self.case_clue.cget("text") != clue["text"]:
-            self.case_clue.configure(text=clue["text"])
+        clues = self.case_clues()
+        index_attr = "case_solution_index" if self.showing_solution else "case_clue_index"
+        index = max(0, min(getattr(self, index_attr), len(clues) - 1))
+        setattr(self, index_attr, index)
+        source, clue = clues[index]
+        heading = f"Spur von {source}" if source else "Startspur"
+        self.case_heading.configure(text=f"{heading} · {index + 1}/{len(clues)}")
+        if self.case_clue.cget("text") != clue.text:
+            self.case_clue.configure(text=clue.text)
         self.case_previous.configure(state="disabled" if self.busy or index == 0 else "normal")
-        self.case_next.configure(state="disabled" if self.busy or index == count - 1 else "normal")
-        entries = self.puzzle.solution if self.showing_solution else self.puzzle.givens | state["entries"]
+        self.case_next.configure(state="disabled" if self.busy or index == len(clues) - 1 else "normal")
+        entries = self.puzzle.solution if self.showing_solution else self.activity_state["entries"]
+        related = set(clue.rule.keys)
         for name, button in self.case_people.items():
             known = name in entries
             role = ROLES[entries[name]] if known else "Offen"
             self.update_deduction_tile(
-                button, f"{name}\n{role}", selected=self.activity_selected == name and not disabled,
-                related=name in clue["people"], resolved=known, disabled=disabled or name in self.puzzle.givens,
+                button, f"{name}\n{role}", selected=self.activity_selected == name,
+                related=name in related, resolved=known, disabled=self.busy or self.showing_solution,
             )
         self.canvas.itemconfigure("case-actions", state="hidden" if self.showing_solution else "normal")
-        editing = not disabled and self.activity_selected is not None
+        editing = not self.busy and not self.showing_solution and self.activity_selected is not None
         for button in self.case_roles:
             button.configure(state="normal" if editing else "disabled")
-        self.case_clear.configure(state="normal" if editing and self.activity_selected in entries else "disabled")
-        self.case_check.configure(state="disabled" if disabled else "normal")
         if not self.showing_solution:
-            label = f"Gewählt: {self.activity_selected}" if self.activity_selected else "Person auswählen"
-            if state["checked"]:
-                label = "Akte abgeschlossen"
-            self.word_text(25, 411, label, size=12, color=MUTED)
-            if self.case_feedback:
-                self.word_text(25, 544, self.case_feedback, size=11, color=ERROR, width=408)
-        self.canvas.configure(scrollregion=(0, 0, BOARD_WIDTH, 414 if self.showing_solution else 573))
+            done, total = len(entries), len(self.case_people)
+            self.word_text(327, 137, f"{done}/{total} geklärt", size=11, color=MUTED)
+            if self.activity_selected:
+                prompt = f"Gewählt: {self.activity_selected}"
+            else:
+                prompt = "Akte abgeschlossen." if done == total else "Wähle eine Person auf dem Raster."
+            self.case_prompt.configure(text=self.case_feedback or prompt, foreground=ERROR if self.case_feedback else INK)
+        self.canvas.configure(scrollregion=(0, 0, 440, 597))
 
     def paint_deduction(self):
         if self.puzzle.view["mode"] == GROUPS:
@@ -274,9 +285,12 @@ class DeductionUI:
             text = f'{len(state["found"])} von 4 Gruppen gefunden.'
         else:
             self.case_feedback = ""
-            finished = state["checked"]
-            assigned = len(state["entries"]) + len(self.puzzle.givens)
-            text = f"{assigned} von {len(self.puzzle.model.domains)} Personen zugeordnet."
+            assigned = len(state["entries"])
+            total = len(self.case_people)
+            finished = assigned == total
+            text = f"{assigned} von {total} Personen zugeordnet."
+            if assigned:
+                text += f" Spur von {next(reversed(state['entries']))} freigeschaltet."
         self.paint_activity()
         if finished:
             self.show_success()

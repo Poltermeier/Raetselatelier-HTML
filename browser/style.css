@@ -108,6 +108,13 @@ input[type="text"] { background: var(--paper); border: 1px solid #aebdb2; border
   font: 500 clamp(12px, 3.4vw, 14px)/1.25 system-ui, sans-serif !important;
 }
 .tk-role-case-room { font: 700 12px/1 system-ui, sans-serif !important; }
+.tk-role-case-heading { font: 700 clamp(12px, 3.8vw, 15px)/1.2 system-ui, sans-serif !important; }
+.tk-role-case-prompt { font: 500 clamp(11px, 3.2vw, 13px)/1.2 system-ui, sans-serif !important; }
+.tk-role-case-person > button {
+  padding-inline: 1px;
+  white-space: pre;
+  font-size: clamp(8.5px, 14cqw, 15px) !important;
+}
 /* A tap on a note preview needs to reach the native input. */
 .tk-entry > .tk-label { pointer-events: none; user-select: none; overflow: hidden; line-height: 1.12; }
 .tk-role-diagonal-entry > input,

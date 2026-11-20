@@ -636,8 +636,10 @@ function role(widget, name) {
     if (name === "sidebar") widget.element.setAttribute("aria-label", "Rätsel auswählen");
     if (name === "status") widget.element.setAttribute("role", "status");
     if (name === "case-clue") widget.element.setAttribute("aria-live", "polite");
-    if (name === "case-room") widget.element.setAttribute("role", "heading");
-    if (name === "case-room") widget.element.setAttribute("aria-level", "2");
+    if (name === "case-room" || name === "case-heading") {
+        widget.element.setAttribute("role", "heading");
+        widget.element.setAttribute("aria-level", name === "case-heading" ? "2" : "3");
+    }
     if (name === "main") widget.element.setAttribute("role", "main");
     if (name === "success" || name === "error") {
         widget.element.setAttribute("role", "group");

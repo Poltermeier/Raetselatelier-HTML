@@ -107,7 +107,9 @@ class BrowserApp(gui.App):
                 tk.send("role", button.id, "case-person")
             for room in self.case_rooms:
                 tk.send("role", room.id, "case-room")
+            tk.send("role", self.case_heading.id, "case-heading")
             tk.send("role", self.case_clue.id, "case-clue")
+            tk.send("role", self.case_prompt.id, "case-prompt")
 
     def register_diagonal_entry(self, key):
         # Transparent inputs keep the board's diagonal visible through the cell.

@@ -29,7 +29,7 @@ Die Wortdaten sind offline verfügbar. [Quellen, Lizenz und Erstellung der Wortl
 
 ## Ermittlungsakte
 
-Blättere durch die Spuren und nutze die Hinweise, um alle Personen als „Eingeweiht“ oder „Unbeteiligt“ einzuordnen. Die aktuelle Spur hebt die betreffenden Personen hervor. Mit „Akte prüfen“ reichst du deine Zuordnung ein. Auf „Mittel“ ermittelst du zu neun, auf „Schwer“ zu zwölf Personen. Jeder Fall wird auf eine eindeutige Lösung geprüft, die sich aus den Spuren herleiten lässt. Die Fälle sind eigene Rätsel des Ateliers, inspiriert vom Ermittlungsprinzip von [Clues by Sam](https://cluesbysam.com).
+Auf einem Raster mit fünf Spalten und vier Reihen ermittelst du zu 20 Personen. Am Anfang steht eine einzige Spur offen. Wähle eine Person und ordne ihr „Schuldig“ oder „Unschuldig“ zu. Das Spiel bestätigt eine Zuordnung erst, wenn die freigegebenen Spuren genau diesen Status erzwingen. Jede bestätigte Person öffnet eine eigene Aussage, auf die du über ihre Kachel oder über die Spurnavigation zugreifen kannst. „Schwer“ kombiniert mehrere Aussagen, um weitere Personen zu bestimmen. Alle Fälle lassen sich Schritt für Schritt ohne Raten lösen. Die Fälle sind eigene Rätsel des Ateliers, inspiriert vom Ermittlungsprinzip von [Clues by Sam](https://cluesbysam.com).
 
 ## Weiterentwicklung
 

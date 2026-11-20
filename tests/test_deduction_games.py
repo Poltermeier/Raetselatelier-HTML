@@ -41,28 +41,61 @@ class GruppenTests(unittest.TestCase):
 
 
 class ErmittlungsakteTests(unittest.TestCase):
-    def test_public_evidence_proves_every_person_without_search(self):
-        for difficulty, size in (("mittel", 9), ("schwer", 12)):
-            for seed in range(30):
+    def test_certified_progression_reveals_one_statement_per_person(self):
+        for difficulty in ("mittel", "schwer"):
+            for seed in range(20):
                 puzzle = generate("ermittlungsakte", seed, difficulty)
-                people = {name for room in puzzle.view["people"] for name in room}
-                self.assertEqual(len(people), size)
-                self.assertEqual(people, puzzle.model.domains.keys())
-                self.assertEqual(len(puzzle.givens), 1)
-                self.assertEqual(len(puzzle.view["clues"]), 1 + len(puzzle.model.constraints))
-                for clue, constraint in zip(puzzle.view["clues"][1:], puzzle.model.constraints):
-                    self.assertEqual(tuple(clue["people"]), constraint.keys)
-                deduction = deduce(puzzle.model, puzzle.givens)
-                self.assertTrue(deduction.solved)
-                self.assertEqual({key: next(iter(values)) for key, values in deduction.domains.items()},
-                                 puzzle.solution)
-                entries = {name: puzzle.solution[name] for name in puzzle.editable}
-                self.assertEqual(puzzle.check(entries), ("correct", []))
-                first = next(iter(entries))
-                self.assertEqual(puzzle.check(entries | {first: 1 - entries[first]}), ("wrong", [first]))
-                self.assertEqual(puzzle.check({}), ("incomplete", []))
+                rows = puzzle.view["people"]
+                self.assertEqual([len(row) for row in rows], [5, 5, 5, 5])
+                self.assertEqual({name for row in rows for name in row}, puzzle.model.domains.keys())
+                self.assertEqual(puzzle.givens, {})
+                self.assertEqual(puzzle.export()["view"]["clues"], [puzzle.opening.export()])
                 self.assertNotIn("solution", puzzle.export())
+                self.assertNotIn("statements", puzzle.export())
                 self.assertNotIn("logical_proof", puzzle.export())
-                self.assertTrue(puzzle.export(True)["logical_proof"])
+                self.assertEqual(puzzle.export(True)["statements"].keys(), puzzle.model.domains.keys())
+
+                confirmed = {}
+                self.assertEqual(puzzle.revealed_clues(confirmed), [(None, puzzle.opening)])
+                for step in puzzle.logical_steps:
+                    name, value = step["person"], step["value"]
+                    self.assertEqual(puzzle.classify(name, value, confirmed), "correct")
+                    self.assertEqual(puzzle.classify(name, 1 - value, confirmed), "wrong")
+                    confirmed[name] = value
+                    self.assertEqual(len(puzzle.revealed_clues(confirmed)), 1 + len(confirmed))
+                    self.assertEqual(puzzle.revealed_clues(confirmed)[-1], (name, puzzle.statements[name]))
+                    self.assertEqual(puzzle.classify(name, value, confirmed), "invalid")
+                self.assertEqual(confirmed, puzzle.solution)
             self.assertEqual(generate("ermittlungsakte", 42, difficulty).export(True),
                              generate("ermittlungsakte", 42, difficulty).export(True))
+
+    def test_hidden_evidence_cannot_validate_even_a_correct_guess(self):
+        puzzle = generate("ermittlungsakte", 42, "mittel")
+        start, left, right = [step["person"] for step in puzzle.logical_steps[:3]]
+        self.assertEqual(puzzle.classify(left, puzzle.solution[left], {}), "undetermined")
+        self.assertEqual(puzzle.classify(left, 1 - puzzle.solution[left], {}), "undetermined")
+        self.assertEqual(puzzle.classify(start, puzzle.solution[start], {}), "correct")
+
+        # Both people unlocked by the first statement can be marked in either order.
+        confirmed = {start: puzzle.solution[start]}
+        self.assertEqual(puzzle.classify(right, puzzle.solution[right], confirmed), "correct")
+        confirmed[right] = puzzle.solution[right]
+        self.assertEqual(puzzle.classify(left, puzzle.solution[left], confirmed), "correct")
+        confirmed[left] = puzzle.solution[left]
+        self.assertEqual([name for name, _ in puzzle.revealed_clues(confirmed)], [None, start, right, left])
+
+    def test_hard_case_can_require_combining_two_released_statements(self):
+        puzzle = generate("ermittlungsakte", 42, "schwer")
+        confirmed = {}
+        for step in puzzle.logical_steps:
+            name, value = step["person"], step["value"]
+            options = deduce(puzzle.visible_model(confirmed), trace=False).domains[name]
+            if options == {0, 1}:
+                earlier = dict(list(confirmed.items())[:-1])
+                self.assertEqual(puzzle.classify(name, value, earlier), "undetermined")
+                self.assertEqual(puzzle.classify(name, value, confirmed), "correct")
+                self.assertEqual(puzzle.classify(name, 1 - value, confirmed), "wrong")
+                break
+            confirmed[name] = value
+        else:
+            self.fail("This case should require a deduction from overlapping clues.")
