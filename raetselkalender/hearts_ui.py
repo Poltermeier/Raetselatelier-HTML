@@ -8,6 +8,7 @@ DIRECTIONS = {1: "links", -1: "rechts", 2: "gegenüber"}
 INK, ACCENT, MUTED = "#233a32", "#27644c", "#63736a"
 CARD_WIDTH, CARD_HEIGHT = 66, 84
 HAND_TOP, HAND_ROW_GAP = 337, 92
+BOT_DELAY_MS, TRICK_PAUSE_MS = 550, 950
 
 
 def hand_rows(count, zoom, board_width):
@@ -30,6 +31,7 @@ class HeartsUI:
         self.hearts_game = HeartsMatch(self.puzzle.seed, self.puzzle.difficulty)
         self.hearts_selection = []
         self.hearts_pause = False
+        self.hearts_last_trick, self.hearts_last_winner = (), None
         self.hearts_received = ()
         return {}
 
@@ -78,6 +80,7 @@ class HeartsUI:
         self.hearts_game.start_round()
         self.hearts_received = ()
         self.hearts_pause = False
+        self.hearts_last_trick, self.hearts_last_winner = (), None
         self.on_hearts_change()
 
     def play_hearts_card(self, card):
@@ -88,17 +91,18 @@ class HeartsUI:
         game = self.hearts_game
         if (self.hearts_timer is None and (self.hearts_pause or
                 (game.stage == "play" and game.turn != 0))):
-            delay = 950 if self.hearts_pause else 310
+            delay = TRICK_PAUSE_MS if self.hearts_pause else BOT_DELAY_MS
             self.hearts_timer = self.root.after(delay, lambda: self.advance_hearts(game))
 
     def advance_hearts(self, game):
-        self.hearts_timer = None
-        if self.puzzle.type_id != "hearts" or game is not self.hearts_game:
+        if self.puzzle is None or self.puzzle.type_id != "hearts" or game is not self.hearts_game:
             return
+        self.hearts_timer = None
         if self.busy:
             self.schedule_hearts_turn()
             return
         if self.hearts_pause:
+            self.hearts_last_trick, self.hearts_last_winner = game.last_trick, game.last_winner
             self.hearts_pause = False
             self.on_hearts_change()
         elif game.stage == "play" and game.turn != 0:
@@ -118,7 +122,7 @@ class HeartsUI:
 
     def paint_hearts(self):
         game = self.hearts_game
-        finished_round = game.stage in ("between", "over")
+        finished_round = game.stage in ("between", "over") and not self.hearts_pause
         self.word_text(17, 16, f"Runde {game.round_number}", size=15, bold=True)
         self.word_text(300, 19, "Ziel · wenige Punkte", size=10, color=MUTED)
         for player, name in enumerate(SEATS):
@@ -132,22 +136,25 @@ class HeartsUI:
                 self.word_text(x + 61, 62, f"+{game.points[player]}", size=10, color=MUTED)
 
         self.word_text(17, 130, "Aktueller Stich", size=13, bold=True)
-        self.draw_hearts_trick(game.trick, 153, "current")
+        current_trick = game.last_trick if self.hearts_pause else game.trick
+        latest = current_trick[-1][0] if current_trick else None
+        self.draw_hearts_trick(current_trick, 153, "current", latest=latest)
         if self.hearts_received and not game.history and game.stage == "play":
             self.word_text(17, 207, "Erhalten · " + "   ".join(map(card_text, self.hearts_received)),
                            size=10, color=MUTED)
 
-        if game.last_trick:
-            taken = sum(penalty(card) for _, card in game.last_trick)
-            winner = "Dein Stich" if game.last_winner == 0 else f"Stich an {SEATS[game.last_winner]}"
+        if self.hearts_last_trick:
+            taken = sum(penalty(card) for _, card in self.hearts_last_trick)
+            winner = ("Dein Stich" if self.hearts_last_winner == 0
+                      else f"Stich an {SEATS[self.hearts_last_winner]}")
             last_result = f"{winner} · {taken} Punkt{'e' if taken != 1 else ''}"
         else:
             last_result = "Noch keiner gespielt"
         self.word_text(17, 230, "Letzter Stich", size=13, bold=True)
         self.word_text(184, 232, last_result, size=10, color=MUTED)
-        self.draw_hearts_trick(game.last_trick, 252, "last", winner=game.last_winner)
+        self.draw_hearts_trick(self.hearts_last_trick, 252, "last", winner=self.hearts_last_winner)
 
-        if not finished_round:
+        if game.hands[0]:
             self.word_text(17, 314, "Deine Hand", size=13, bold=True)
         hand_bottom = self.show_hearts_hand(game)
         footer = 327 if finished_round else hand_bottom + 12
@@ -159,18 +166,23 @@ class HeartsUI:
         self.hearts_pass.configure(state="normal" if passing and len(self.hearts_selection) == 3 and not self.busy else "disabled")
         self.canvas.itemconfigure("hearts-round", state="normal" if next_round else "hidden")
         self.hearts_round.configure(state="normal" if next_round and not self.busy else "disabled")
-        text = self.hearts_status(game)
+        text = self.hearts_status(game, current_trick)
         self.word_text(17, footer, text, size=11 if finished_round else 10,
                        width=402, bold=finished_round)
         self.status.configure(text=text, foreground=ACCENT if game.stage == "over" and 0 in game.winners() else INK)
         self.canvas.configure(scrollregion=(0, 0, 440, 620))
 
-    def draw_hearts_trick(self, trick, y, slot, *, winner=None):
+    def draw_hearts_trick(self, trick, y, slot, *, winner=None, latest=None):
         cards = dict(trick)
-        for player in range(4):
-            self.draw_playing_card(24 + player * 105, y, 75, 48, cards.get(player),
-                                   label="–", active=player == winner,
+        for player, name in enumerate(SEATS):
+            x = 24 + player * 105
+            self.draw_playing_card(x, y, 75, 48, cards.get(player),
+                                   active=player == winner, marked=player == latest,
                                    tags=(f"hearts-{slot}:{player}",))
+            self.canvas.create_text(x+5, y+26, text=name, anchor="nw",
+                                    fill=INK if player in cards else MUTED,
+                                    font=("Helvetica", 11, "bold"),
+                                    tags=("activity-board", f"hearts-{slot}-name:{player}"))
 
     def show_hearts_hand(self, game):
         hand = game.hands[0]
@@ -199,10 +211,18 @@ class HeartsUI:
             button.configure(text=card_text(card), style=style, state="normal" if enabled and not self.busy else "disabled")
         return HAND_TOP + max(0, len(rows) - 1) * HAND_ROW_GAP + CARD_HEIGHT + 10
 
-    def hearts_status(self, game):
+    def hearts_status(self, game, current_trick):
         if game.stage == "pass":
             recipient = SEATS[game.offset % 4]
             return f"{len(self.hearts_selection)} von 3 Karten gewählt · weiter an {recipient} ({DIRECTIONS[game.offset]})."
+        if current_trick:
+            player, card = current_trick[-1]
+            played = f"Du spielst {card_text(card)}." if player == 0 else f"{SEATS[player]} spielt {card_text(card)}."
+            if self.hearts_pause:
+                result = "Du gewinnst den Stich." if game.last_winner == 0 else f"Der Stich geht an {SEATS[game.last_winner]}."
+                return f"{played} {result}"
+        else:
+            played = ""
         if game.stage == "over":
             winners = game.winners()
             if winners == (0,):
@@ -214,6 +234,5 @@ class HeartsUI:
             if moon is not None:
                 return ("Du holst alle 26 Punkte." if moon == 0 else f"{SEATS[moon]} holt alle 26 Punkte.") + " Die anderen erhalten je 26."
             return "Runde beendet · die Punkte wurden addiert."
-        if self.hearts_pause:
-            return "Stich ausgewertet."
-        return "Du bist am Zug." if game.turn == 0 else f"{SEATS[game.turn]} ist am Zug."
+        turn = "Du bist am Zug." if game.turn == 0 else f"{SEATS[game.turn]} ist am Zug."
+        return f"{played} {turn}".strip()
