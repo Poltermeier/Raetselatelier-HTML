@@ -27,11 +27,11 @@ class ActivityUI(WordGamesUI):
 
     def activity_signature(self):return json.dumps(self.activity_state,sort_keys=True)
 
-    def activity_button(self,text,command,x,y,width=210,*,tags=()):
-        button=ttk.Button(self.canvas,text=text,command=command,style='Accent.TButton')
+    def activity_button(self,text,command,x,y,width=210,*,tags=(),height=38,style='Accent.TButton'):
+        button=ttk.Button(self.canvas,text=text,command=command,style=style)
         self.extra_widgets.append(button)
         self.activity_controls.append(button)
-        self.canvas.create_window(x,y,window=button,width=width,height=38,tags=('activity-controls',*tags))
+        self.canvas.create_window(x,y,window=button,width=width,height=height,tags=('activity-controls',*tags))
         return button
 
     def activity_solution_navigation(self, tag, y, show_step, current_step, last_step):
@@ -96,6 +96,8 @@ class ActivityUI(WordGamesUI):
         if mode in WORD_MODES:disabled|=self.word_game_finished()
         for control in self.activity_controls:
             control.configure(state='disabled' if disabled else 'readonly' if isinstance(control,BoardCombobox) else 'normal')
+        if mode=='buchstabenwerkstatt':
+            self.update_spelling_letters(disabled)
         if mode=='solitaire':
             self.canvas.itemconfigure('peg-score-control',state='hidden' if self.showing_solution else 'normal')
             self.update_activity_solution_navigation('peg-solution-controls', self.solitaire_navigation,

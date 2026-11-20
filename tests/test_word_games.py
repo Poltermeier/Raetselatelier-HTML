@@ -13,12 +13,15 @@ class GermanWordGames(unittest.TestCase):
         self.assertEqual(word_feedback("aab", "baa"), ("present", "exact", "present"))
         self.assertEqual(normalize_word("  GROẞE ÄHRE  "), "große ähre")
 
-    def test_word_trail_has_valid_targets_in_both_lengths(self):
+    def test_wordle_has_valid_targets_and_attempt_limits_without_a_hint(self):
         words, _ = lexicon()
-        for difficulty, length in (("mittel", 5), ("schwer", 6)):
-            puzzle = generate("wortspur", 42, difficulty)
+        for difficulty, length, attempts in (("mittel", 5, 6), ("schwer", 6, 5)):
+            puzzle = generate("wordle", 42, difficulty)
             answer = puzzle.answer_words[0]
+            self.assertEqual(puzzle.title, "Wordle")
             self.assertEqual(len(answer), length)
+            self.assertEqual(puzzle.view["attempts"], attempts)
+            self.assertNotIn("theme", puzzle.view)
             self.assertIn(answer, words)
             self.assertEqual(puzzle.word_error(answer), "")
             self.assertTrue(puzzle.is_solved([answer]))
@@ -27,11 +30,16 @@ class GermanWordGames(unittest.TestCase):
     def test_workshop_requires_dictionary_letters_and_distinct_words(self):
         for difficulty in ("mittel", "schwer"):
             for seed in (0, 1, 42, 31415, 65535):
-                puzzle = generate("buchstabenwerkstatt", seed, difficulty)
+                puzzle = generate("spelling-bee", seed, difficulty)
                 view = puzzle.view
-                self.assertEqual(len(set(view["letters"])), 8)
-                self.assertGreaterEqual(len(puzzle.answer_words), view["goal"] + 12)
+                self.assertEqual(puzzle.title, "Spelling Bee")
+                self.assertEqual(len(set(view["letters"])), 9)
+                self.assertEqual(view["goal"], 8 if difficulty == "mittel" else 12)
+                self.assertGreaterEqual(len(puzzle.answer_words), view["goal"] + 8)
                 self.assertTrue(all(not puzzle.word_error(word) for word in puzzle.answer_words))
+                self.assertTrue(all(len(word) == len(set(word)) for word in puzzle.answer_words))
+                repeated = view["required"] * view["minimum"]
+                self.assertIn("höchstens einmal", puzzle.word_error(repeated))
                 self.assertTrue(puzzle.word_error("zzz"))
                 self.assertFalse(puzzle.is_solved([puzzle.answer_words[0]] * view["goal"]))
                 self.assertTrue(puzzle.is_solved(list(puzzle.answer_words[:view["goal"]])))
@@ -40,10 +48,14 @@ class GermanWordGames(unittest.TestCase):
         _, themes = lexicon()
         themes = dict(themes)
         seen = set()
+        longest = 0
         for seed in range(20):
             for difficulty in ("mittel", "schwer"):
                 puzzle = generate("wortring", seed, difficulty)
                 letters = puzzle.view["letters"]
+                if difficulty == "schwer":
+                    self.assertTrue(11 <= len(letters) <= 16)
+                    longest = max(longest, len(letters))
                 directions = puzzle.ring_direction
                 indexes = [(puzzle.ring_start + directions * i) % len(letters) for i in range(len(letters))]
                 expected = "".join(letters[i] for i in indexes)
@@ -58,3 +70,4 @@ class GermanWordGames(unittest.TestCase):
                 self.assertEqual(puzzle.export(True)["solution"]["Startfeld"], puzzle.ring_start + 1)
                 seen.add(directions)
         self.assertEqual(seen, {-1, 1})
+        self.assertEqual(longest, 16)

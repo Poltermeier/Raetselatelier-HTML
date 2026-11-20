@@ -82,6 +82,11 @@ input[type="text"] { background: var(--paper); border: 1px solid #aebdb2; border
 .board-scroll-controls button { min-height: 42px; }
 .tk-canvas-windows input, .tk-canvas-windows select { padding: 1px 3px; }
 .tk-canvas-windows button { padding: 2px 5px; }
+.tk-role-spelling-letter > button {
+  border-radius: 50%;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+}
 /* A tap on a note preview needs to reach the native input. */
 .tk-entry > .tk-label { pointer-events: none; user-select: none; overflow: hidden; line-height: 1.12; }
 .tk-role-diagonal-entry > input,

@@ -20,9 +20,9 @@ Link: https://poltermeier.github.io/Raetselatelier-HTML/
 
 ## Deutsche Worträtsel
 
-- **Wortspur** gibt nach jedem Versuch Rückmeldung zur Position der Buchstaben. Auf „Mittel“ hilft zusätzlich ein Themenhinweis.
-- **Buchstabenwerkstatt** stellt acht Buchstaben zur Auswahl. Jede Eingabe muss den markierten Pflichtbuchstaben enthalten.
-- **Wortring** nennt ein Thema. Man kann bei jedem Feld anfangen und in beide Richtungen lesen. Alle Felder müssen genau einmal verwendet werden.
+- **Wordle** gibt nach jedem Versuch Rückmeldung zur Position der Buchstaben. Auf „Mittel“ suchst du ein Fünf-Buchstaben-Wort in sechs Versuchen. Auf „Schwer“ sind es sechs Buchstaben in fünf Versuchen.
+- **Spelling Bee** ordnet acht Buchstaben um den Pflichtbuchstaben an. Jeder Buchstabe darf pro Wort einmal vorkommen. Das Ziel sind acht Wörter auf „Mittel“ und zwölf auf „Schwer“.
+- **Wortring** nennt ein Thema. Man kann bei jedem Feld anfangen und in beide Richtungen lesen. Alle Felder müssen genau einmal verwendet werden. Auf „Schwer“ haben die Wörter elf bis 16 Buchstaben.
 
 Die Wortdaten sind offline verfügbar. [Quellen, Lizenz und Erstellung der Wortliste](third_party/NOTICE.md#german-word-puzzles)
 

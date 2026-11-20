@@ -10,6 +10,7 @@ import tkinter as tk
 
 from raetselkalender import catalog, gui, settings_ui
 from raetselkalender.preferences import normalize_preferences
+from raetselkalender.word_games import display_word
 
 # The browser has a bundled UCI engine accessed by the chess adapter.
 catalog.stockfish_path = lambda: "browser-stockfish"
@@ -91,6 +92,10 @@ class BrowserApp(gui.App):
     def render_word_game(self):
         super().render_word_game()
         tk.send("label", self.word_entry.id, "Wort eingeben")
+        for letter, button in self.spelling_buttons.items():
+            tk.send("role", button.id, "spelling-letter")
+            if letter == self.puzzle.view["required"]:
+                tk.send("label", button.id, f"Pflichtbuchstabe {display_word(letter)}")
 
     def register_diagonal_entry(self, key):
         # Transparent inputs keep the board's diagonal visible through the cell.

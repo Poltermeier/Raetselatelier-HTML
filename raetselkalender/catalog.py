@@ -131,11 +131,13 @@ CATALOG = [
     PuzzleType('pentomino-puzzle','Pentomino Puzzle',pentomino),
     PuzzleType('row-shift','Row Shift',row_shift),
     PuzzleType('pipes','Pipes',pipes),
-    PuzzleType('wortspur', 'Wortspur', wortspur),
-    PuzzleType('buchstabenwerkstatt', 'Buchstabenwerkstatt', buchstabenwerkstatt),
+    PuzzleType('wortspur', 'Wordle', wortspur),
+    PuzzleType('buchstabenwerkstatt', 'Spelling Bee', buchstabenwerkstatt),
     PuzzleType('wortring', 'Wortring', wortring),
 ]
 BY_ID = {p.id: p for p in CATALOG}
+BY_ID["wordle"] = BY_ID["wortspur"]
+BY_ID["spelling-bee"] = BY_ID["buchstabenwerkstatt"]
 # Keep older command lines and exported type IDs usable.
 BY_ID["katzenraetsel"] = BY_ID["katzensuche"]
 BY_ID["rechenfreunde"] = BY_ID["rechenfreude"]

@@ -8,6 +8,7 @@ from .word_games import ALPHABET, display_word, normalize_word, word_feedback
 INK, ACCENT, PAPER = "#233a32", "#27644c", "#fffef9"
 MUTED, LINE = "#63736a", "#c5d0c7"
 WORD_WIDTH = 460
+CIRCLE_INPUT_Y = 390
 MARKS = {
     "exact": ("✓", "#d9eee0", "#27644c"),
     "present": ("↔", "#f6e8c7", "#694900"),
@@ -17,8 +18,9 @@ MARKS = {
 
 class WordGamesUI:
     def render_word_game(self):
-        ring = self.puzzle.view["mode"] == "wortring"
-        y = 334 if ring else 134
+        mode = self.puzzle.view["mode"]
+        y = 134 if mode == "wortspur" else CIRCLE_INPUT_Y
+        self.spelling_buttons = {}
         self.word_variable = tk.StringVar()
         self.word_entry = BoardEntry(self.canvas, textvariable=self.word_variable, font=("Helvetica", 17),
                                      bg=PAPER, fg=INK, justify="left", highlightthickness=1,
@@ -33,10 +35,39 @@ class WordGamesUI:
         self.canvas.create_window(138, y, window=self.word_entry, width=222, height=42,
                                   tags=("word-game-controls",))
         self.activity_button("Wort prüfen", self.submit_word, 348, y, 150, tags=("word-game-controls",))
-        if ring:
-            self.activity_button("Auswahl leeren", self.clear_word_draft, 230, 383, 164, tags=("word-game-controls",))
+        if mode != "wortspur":
+            self.activity_button("Auswahl leeren", self.clear_word_draft, 230, y + 49, 164, tags=("word-game-controls",))
+        if mode == "wortring":
             self.canvas.bind("<Button-1>", self.click_word_ring)
+        elif mode == "buchstabenwerkstatt":
+            self.create_spelling_letters()
         self.paint_activity()
+
+    def create_spelling_letters(self):
+        view = self.puzzle.view
+        required = view["required"]
+        center_x, center_y, radius = 230, 197, 105
+        positions = [(required, center_x, center_y)]
+        for index, letter in enumerate(letter for letter in view["letters"] if letter != required):
+            angle = math.tau * (index + .5) / 8 - math.pi / 2
+            positions.append((letter, center_x + radius * math.cos(angle), center_y + radius * math.sin(angle)))
+        for letter, x, y in positions:
+            style = "Accent.TButton" if letter == required else "TButton"
+            self.spelling_buttons[letter] = self.activity_button(
+                display_word(letter), lambda value=letter: self.add_spelling_letter(value),
+                x, y, 76, height=76, style=style, tags=("spelling-letter",))
+
+    def update_spelling_letters(self, disabled=False):
+        used = normalize_word(self.word_variable.get())
+        for letter, button in self.spelling_buttons.items():
+            button.configure(state="disabled" if disabled or letter in used else "normal")
+
+    def add_spelling_letter(self, letter):
+        if self.busy or self.showing_solution or self.word_game_finished():
+            return
+        word = normalize_word(self.word_variable.get())
+        if letter not in word and len(word) < len(self.spelling_buttons):
+            self.word_variable.set(display_word(word + letter))
 
     def word_game_finished(self):
         words = self.activity_state["words"]
@@ -49,6 +80,8 @@ class WordGamesUI:
         if self.activity_state["path"]:
             self.activity_state["path"] = []
             self.paint_activity()
+        if self.spelling_buttons:
+            self.update_spelling_letters(self.word_game_finished())
 
     def clear_word_draft(self):
         if self.busy or self.showing_solution or self.word_game_finished():
@@ -126,8 +159,6 @@ class WordGamesUI:
             self.word_text(26, 58, display_word(target), size=24, color=ACCENT, bold=True)
             return 130
         self.word_text(26, 24, f'{view["length"]} Buchstaben · {len(words)} von {view["attempts"]} Versuchen', size=14, bold=True)
-        if view["theme"]:
-            self.word_text(26, 54, f'Thema: {view["theme"]}')
         self.word_text(26, 171, "✓ Richtig     ↔ Andere Position     – Fehlt", size=11, color=MUTED)
         for row, word in enumerate(reversed(words)):
             y = 206 + row * 44
@@ -146,29 +177,24 @@ class WordGamesUI:
         view = self.puzzle.view
         found = self.activity_state["words"]
         self.word_text(26, 24, f'Pflichtbuchstabe: {display_word(view["required"])}', size=14, bold=True)
-        for i, letter in enumerate(view["letters"]):
-            x = 26 + i * 50
-            required = letter == view["required"]
-            self.canvas.create_rectangle(x, 61, x + 43, 104, fill="#d9eee0" if required else PAPER,
-                                          outline=ACCENT if required else LINE, width=2 if required else 1,
-                                          tags=("activity-board", "workshop-letter"))
-            self.canvas.create_text(x + 21.5, 82.5, text=display_word(letter), fill=ACCENT if required else INK,
-                                    font=("Helvetica", 17, "bold"), tags=("activity-board",))
         words = self.puzzle.answer_words if self.showing_solution else reversed(found)
         heading = "Mögliche Wörter" if self.showing_solution else f'{len(found)} von {view["goal"]} Wörtern gefunden'
-        self.word_text(26, 121 if self.showing_solution else 177, heading, size=13, bold=True)
-        start = 158 if self.showing_solution else 216
+        heading_y = 368 if self.showing_solution else 481
+        self.word_text(26, heading_y, heading, size=13, bold=True)
+        start = heading_y + 40
         words = tuple(words)
         for i, word in enumerate(words):
             self.word_text(26 + (i % 2) * 210, start + (i // 2) * 27, display_word(word))
-        return max(250, start + ((len(words) + 1) // 2) * 27 + 20)
+        return start + ((len(words) + 1) // 2) * 27 + 20
 
     def paint_word_ring(self):
         puzzle = self.puzzle
         view = puzzle.view
         letters = view["letters"]
         count = len(letters)
-        center_x, center_y, radius = 230, 181, 103
+        center_x, center_y, radius = 230, 211, 127
+        self.ring_letter_radius = min(23, radius * math.sin(math.pi / count) - 3)
+        letter_radius = self.ring_letter_radius
         state = self.activity_state
         self.word_text(26, 20, f'Thema: {view["theme"]}', size=14, bold=True, width=410)
         self.canvas.create_oval(center_x - radius, center_y - radius, center_x + radius, center_y + radius,
@@ -181,7 +207,8 @@ class WordGamesUI:
             x, y = center_x + radius * math.cos(angle), center_y + radius * math.sin(angle)
             picked = i in path
             self.ring_centers.append((x, y))
-            self.canvas.create_oval(x - 23, y - 23, x + 23, y + 23, fill="#d9eee0" if picked else PAPER,
+            self.canvas.create_oval(x - letter_radius, y - letter_radius, x + letter_radius, y + letter_radius,
+                                   fill="#d9eee0" if picked else PAPER,
                                    outline=ACCENT if picked else LINE, width=2, tags=("activity-board", f"ring-letter:{i}"))
             self.canvas.create_text(x, y, text=display_word(letter), fill=INK,
                                     font=("Helvetica", 17, "bold"), tags=("activity-board",))
@@ -193,15 +220,16 @@ class WordGamesUI:
         if self.showing_solution:
             word = display_word(puzzle.answer_words[0])
             sense = "im Uhrzeigersinn" if direction == 1 else "gegen den Uhrzeigersinn"
-            self.word_text(26, 324, word, size=21, color=ACCENT, bold=True)
-            self.word_text(26, 363, f'Bei Feld 1 beginnen und {sense} lesen.', width=408)
-        return 425
+            self.word_text(26, 373, word, size=20, color=ACCENT, bold=True)
+            self.word_text(26, 414, f'Bei Feld 1 beginnen und {sense} lesen.', width=408)
+        return 480
 
     def click_word_ring(self, event):
         if self.busy or self.showing_solution or self.word_game_finished():
             return
         x, y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
-        index = next((i for i, (a, b) in enumerate(self.ring_centers) if math.hypot(x-a, y-b) <= 23), None)
+        index = next((i for i, (a, b) in enumerate(self.ring_centers)
+                      if math.hypot(x-a, y-b) <= self.ring_letter_radius), None)
         if index is None:
             return
         state = self.activity_state

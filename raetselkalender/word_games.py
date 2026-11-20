@@ -36,8 +36,11 @@ def letter_mask(word):
 @lru_cache(maxsize=1)
 def workshop_lexicon():
     words, _ = lexicon()
-    indexed = tuple((word, letter_mask(word)) for word in sorted(words))
-    masks = tuple(sorted({mask for _, mask in indexed if mask.bit_count() == 8}))
+    indexed = tuple((word, letter_mask(word)) for word in sorted(words)
+                    if len(word) <= 9 and len(set(word)) == len(word))
+    vowels = letter_mask("aeiouäöü")
+    masks = tuple(sorted({mask for word, mask in indexed
+                          if len(word) == 9 and (mask & vowels).bit_count() >= 2}))
     return indexed, masks
 
 
@@ -65,7 +68,7 @@ def ring_readings(letters):
 @lru_cache(maxsize=2)
 def ring_candidates(difficulty):
     _, themes = lexicon()
-    lower, upper = (4, 6) if difficulty == "mittel" else (7, 10)
+    lower, upper = (4, 10) if difficulty == "mittel" else (11, 16)
     return tuple((theme, word) for theme, words in themes for word in words
                  if lower <= len(word) <= upper and ring_readings(word).intersection(words) == {word})
 
@@ -75,10 +78,13 @@ class WordPuzzle(Puzzle):
         view = self.view
         mode = view["mode"]
         if mode == "buchstabenwerkstatt":
-            if not view["minimum"] <= len(word) <= 15:
-                return f"Das Wort braucht mindestens {view['minimum']} und höchstens 15 Buchstaben."
+            maximum = len(view["letters"])
+            if not view["minimum"] <= len(word) <= maximum:
+                return f"Das Wort braucht zwischen {view['minimum']} und {maximum} Buchstaben."
             if not set(word) <= set(view["letters"]):
                 return "Verwende nur die angezeigten Buchstaben."
+            if len(set(word)) != len(word):
+                return "Verwende jeden Buchstaben im Wort höchstens einmal."
             if view["required"] not in word:
                 return f"{display_word(view['required'])} muss im Wort vorkommen."
             if word not in self.answer_words:
@@ -118,31 +124,31 @@ def make_word_puzzle(mode, title, rules, seed, difficulty, answers, **view):
 
 def wortspur(seed, difficulty):
     rng = random.Random(seed)
-    length, attempts = (5, 8) if difficulty == "mittel" else (6, 7)
+    length, attempts = (5, 6) if difficulty == "mittel" else (6, 5)
     _, themes = lexicon()
-    theme, word = rng.choice([(theme, word) for theme, words in themes for word in words if len(word) == length])
-    return make_word_puzzle("wortspur", "Wortspur",
+    word = rng.choice([word for _, words in themes for word in words if len(word) == length])
+    return make_word_puzzle("wortspur", "Wordle",
         f"Errate das deutsche Wort mit {length} Buchstaben in {attempts} Versuchen. "
         "Zu jedem Buchstaben erfährst du, ob er richtig steht, an anderer Stelle vorkommt oder fehlt. "
         "Ä, Ö, Ü und ß zählen als eigene Buchstaben.",
-        seed, difficulty, (word,), length=length, attempts=attempts, theme=theme if difficulty == "mittel" else "")
+        seed, difficulty, (word,), length=length, attempts=attempts)
 
 
 def buchstabenwerkstatt(seed, difficulty):
     rng = random.Random(seed)
-    minimum, goal = (4, 6) if difficulty == "mittel" else (5, 10)
+    minimum, goal = (4, 8) if difficulty == "mittel" else (5, 12)
     indexed, masks = workshop_lexicon()
-    for mask in rng.sample(masks, min(128, len(masks))):
+    for mask in rng.sample(masks, len(masks)):
         answers = tuple(word for word, bits in indexed if len(word) >= minimum and bits & mask == bits)
         letters = [letter for letter in ALPHABET if BITS[letter] & mask]
-        required = [letter for letter in letters if sum(letter in word for word in answers) >= goal + 12]
-        if required and sum(letter in "aeiouäöü" for letter in letters) >= 2:
+        required = [letter for letter in letters if sum(letter in word for word in answers) >= goal + 8]
+        if required:
             mandatory = rng.choice(required)
             rng.shuffle(letters)
-            return make_word_puzzle("buchstabenwerkstatt", "Buchstabenwerkstatt",
+            return make_word_puzzle("buchstabenwerkstatt", "Spelling Bee",
                 f"Finde {goal} verschiedene deutsche Wörter mit mindestens {minimum} Buchstaben. "
-                "Verwende nur die acht angezeigten Buchstaben. Der markierte Pflichtbuchstabe muss in jedem Wort vorkommen. "
-                "Du darfst Buchstaben mehrfach verwenden.",
+                "Verwende die neun angezeigten Buchstaben. Der Pflichtbuchstabe in der Mitte gehört in jedes Wort. "
+                "Jeder Buchstabe darf pro Wort höchstens einmal vorkommen.",
                 seed, difficulty, (word for word in answers if mandatory in word),
                 letters=letters, required=mandatory, minimum=minimum, goal=goal)
     raise ValueError("Für diesen Seed konnte keine ausreichend ergiebige Buchstabenauswahl erzeugt werden.")
