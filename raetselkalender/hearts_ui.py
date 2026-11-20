@@ -1,5 +1,7 @@
 """Hearts table, simultaneous passing, and paced opponent turns."""
-from .hearts import HeartsMatch, penalty
+from time import monotonic
+
+from .hearts import HeartsMatch, hearts_hand_order, penalty
 from .hearts_ai import choose_card, choose_pass
 from .playing_cards import card_text, red
 
@@ -9,7 +11,9 @@ INK, ACCENT, MUTED = "#233a32", "#27644c", "#63736a"
 LEAD_COLOR = "#185b86"
 CARD_WIDTH, CARD_HEIGHT = 54, 78
 HAND_TOP, HAND_ROW_GAP = 337, 90
-BOT_DELAY_MS, TRICK_PAUSE_MS = 550, 950
+BOT_DELAY_MS, TRICK_PAUSE_MS = 1000, 950
+FLIGHT_SECONDS = .28
+TRICK_TOP, TRICK_WIDTH, TRICK_HEIGHT = 153, 75, 48
 
 
 def hand_spacing(count):
@@ -24,11 +28,14 @@ def hand_rows(count, zoom):
 
 
 class HeartsUI:
+    animate_hearts_cards = True
+
     def cancel_hearts_timer(self):
-        timer = getattr(self, "hearts_timer", None)
-        if timer is not None:
-            self.root.after_cancel(timer)
-        self.hearts_timer = None
+        for timer in (getattr(self, "hearts_timer", None), getattr(self, "hearts_flight_timer", None)):
+            if timer is not None:
+                self.root.after_cancel(timer)
+        self.hearts_timer = self.hearts_flight_timer = None
+        self.hearts_flight = None
 
     def reset_hearts_match(self):
         self.cancel_hearts_timer()
@@ -54,9 +61,9 @@ class HeartsUI:
 
     def select_hearts_card(self, index):
         game = self.hearts_game
-        if self.busy or self.hearts_pause or index >= len(game.hands[0]):
+        if self.busy or self.hearts_pause or self.hearts_flight or index >= len(game.hands[0]):
             return
-        card = game.hands[0][index]
+        card = sorted(game.hands[0], key=hearts_hand_order)[index]
         if game.stage == "pass":
             if card in self.hearts_selection:
                 self.hearts_selection.remove(card)
@@ -64,7 +71,7 @@ class HeartsUI:
                 self.hearts_selection.append(card)
             self.on_hearts_change()
         elif game.stage == "play" and game.turn == 0 and card in game.observation(0).legal():
-            self.play_hearts_card(card)
+            self.play_hearts_card(card, hand_index=index)
 
     def pass_hearts_cards(self):
         game = self.hearts_game
@@ -73,7 +80,7 @@ class HeartsUI:
         outgoing = [tuple(self.hearts_selection)]
         outgoing.extend(choose_pass(game.observation(player), game.difficulty, game.bot_rngs[player])
                         for player in range(1, 4))
-        self.hearts_received = tuple(sorted(outgoing[-game.offset % 4]))
+        self.hearts_received = tuple(sorted(outgoing[-game.offset % 4], key=hearts_hand_order))
         game.exchange(outgoing)
         self.hearts_selection.clear()
         self.on_hearts_change()
@@ -87,13 +94,53 @@ class HeartsUI:
         self.hearts_last_trick, self.hearts_last_winner = (), None
         self.on_hearts_change()
 
-    def play_hearts_card(self, card):
-        self.hearts_pause = self.hearts_game.play(card)
+    def play_hearts_card(self, card, *, hand_index=None):
+        game = self.hearts_game
+        if not self.animate_hearts_cards:
+            self.hearts_pause = game.play(card)
+            self.on_hearts_change()
+            return
+        source = (self.canvas.coords(f"hearts-card:{hand_index}") if hand_index is not None
+                  else (64 + game.turn * 105, 84))
+        self.hearts_flight = game.turn, card, source, hand_index, monotonic()
         self.on_hearts_change()
+        self.hearts_flight_timer = self.root.after(25, lambda: self.advance_hearts_flight(game))
+
+    def advance_hearts_flight(self, game):
+        if self.puzzle is None or self.puzzle.type_id != "hearts" or game is not self.hearts_game:
+            return
+        self.hearts_flight_timer = None
+        if not self.hearts_flight:
+            return
+        _, card, _, _, started = self.hearts_flight
+        if not self.busy and monotonic() - started >= FLIGHT_SECONDS:
+            self.hearts_flight = None
+            self.hearts_pause = game.play(card)
+            self.on_hearts_change()
+            return
+        if not self.busy:
+            self.paint_hearts_flight()
+        self.hearts_flight_timer = self.root.after(100 if self.busy else 25, lambda: self.advance_hearts_flight(game))
+
+    def paint_hearts_flight(self):
+        self.canvas.delete("hearts-flight")
+        player, card, (source_x, source_y), hand_index, started = self.hearts_flight
+        elapsed = min(1, (monotonic() - started) / FLIGHT_SECONDS)
+        progress = 1 - (1 - elapsed) ** 2
+        width = CARD_WIDTH + (TRICK_WIDTH - CARD_WIDTH) * progress
+        initial_height = CARD_HEIGHT if hand_index is not None else TRICK_HEIGHT
+        height = initial_height + (TRICK_HEIGHT - initial_height) * progress
+        target_x = 24 + player * 105 + TRICK_WIDTH / 2
+        target_y = TRICK_TOP + TRICK_HEIGHT / 2
+        x = source_x + (target_x - source_x) * progress - width / 2
+        y = source_y + (target_y - source_y) * progress - height / 2 - 56 * elapsed * (1 - elapsed)
+        self.canvas.create_rectangle(x+3, y+5, x+width+3, y+height+5, fill="#a1afa3", outline="",
+                                     tags=("activity-board", "hearts-flight"))
+        self.draw_playing_card(x, y, width, height, card, marked=True, tags=("hearts-flight",), text_tags=("hearts-flight",))
 
     def schedule_hearts_turn(self):
         game = self.hearts_game
-        if (self.hearts_timer is None and (self.hearts_pause or
+        if (self.hearts_timer is None and not self.hearts_flight and (self.hearts_pause or
                 (game.stage == "play" and game.turn != 0))):
             delay = TRICK_PAUSE_MS if self.hearts_pause else BOT_DELAY_MS
             self.hearts_timer = self.root.after(delay, lambda: self.advance_hearts(game))
@@ -145,7 +192,7 @@ class HeartsUI:
             leader, card = current_trick[0]
             self.word_text(184, 132, f"Ausspiel · {SEATS[leader]} {card_text(card)}", size=10, color=LEAD_COLOR, bold=True)
         latest = current_trick[-1][0] if current_trick else None
-        self.draw_hearts_trick(current_trick, 153, "current", latest=latest)
+        self.draw_hearts_trick(current_trick, TRICK_TOP, "current", latest=latest)
         if self.hearts_received and not game.history and game.stage == "play":
             self.word_text(17, 207, "Erhalten · " + "   ".join(map(card_text, self.hearts_received)),
                            size=10, color=MUTED)
@@ -178,13 +225,15 @@ class HeartsUI:
                        width=402, bold=finished_round)
         self.status.configure(text=text, foreground=ACCENT if game.stage == "over" and 0 in game.winners() else INK)
         self.canvas.configure(scrollregion=(0, 0, 440, 620))
+        if self.hearts_flight:
+            self.paint_hearts_flight()
 
     def draw_hearts_trick(self, trick, y, slot, *, winner=None, latest=None):
         cards = dict(trick)
         leader = trick[0][0] if trick else None
         for player, name in enumerate(SEATS):
             x = 24 + player * 105
-            self.draw_playing_card(x, y, 75, 48, cards.get(player),
+            self.draw_playing_card(x, y, TRICK_WIDTH, TRICK_HEIGHT, cards.get(player),
                                    active=player == winner, marked=player == latest,
                                    tags=(f"hearts-{slot}:{player}",))
             self.canvas.create_text(x+5, y+26, text=name, anchor="nw",
@@ -197,9 +246,10 @@ class HeartsUI:
                                         tags=("activity-board", f"hearts-{slot}-lead:{player}"))
 
     def show_hearts_hand(self, game):
-        hand = game.hands[0]
+        hand = sorted(game.hands[0], key=hearts_hand_order)
+        moving = self.hearts_flight[3] if self.hearts_flight else None
         legal = (game.observation(0).legal() if game.stage == "play" and game.turn == 0
-                 and not self.hearts_pause else ())
+                 and not self.hearts_pause and not self.hearts_flight else ())
         rows = hand_rows(len(hand), self.canvas.zoom)
         self.hearts_hand_rows = rows
         positions = []
@@ -210,7 +260,7 @@ class HeartsUI:
                 bend = 10 * (offset / max((count - 1) / 2, 1)) ** 2
                 positions.append((220 + offset * step, HAND_TOP + row * HAND_ROW_GAP + CARD_HEIGHT / 2 + bend))
         for index, button in enumerate(self.hearts_cards):
-            visible = index < len(hand)
+            visible = index < len(hand) and index != moving
             self.canvas.itemconfigure(f"hearts-card:{index}", state="normal" if visible else "hidden")
             if not visible:
                 continue

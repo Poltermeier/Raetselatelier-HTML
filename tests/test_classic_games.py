@@ -5,7 +5,7 @@ import unittest
 from raetselkalender.catalog import generate
 from raetselkalender.freecell import FreeState, capacity, free_move, initial_state
 from raetselkalender.hearts import (QUEEN_SPADES, TWO_CLUBS, HeartsMatch, hand_scores, legal_cards,
-                                    penalty, public_voids, trick_winner)
+                                    hearts_hand_order, penalty, public_voids, trick_winner)
 from raetselkalender.hearts_ai import choose_card, choose_pass, possible_hands
 from raetselkalender.mahjong import blockers, group, mahjong_move, open_tiles
 from raetselkalender.playing_cards import DECK, suit
@@ -52,6 +52,10 @@ class SolitaireGames(unittest.TestCase):
 
 
 class HeartsRules(unittest.TestCase):
+    def test_hand_order_puts_each_ace_after_the_king_of_its_suit(self):
+        expected = [color * 13 + rank for color in range(4) for rank in (*range(1, 13), 0)]
+        self.assertEqual(sorted(DECK, key=hearts_hand_order), expected)
+
     def test_opening_follow_suit_points_and_broken_hearts(self):
         heart, diamond = 40, 14
         self.assertEqual(legal_cards((TWO_CLUBS, heart), (), True, False), (TWO_CLUBS,))

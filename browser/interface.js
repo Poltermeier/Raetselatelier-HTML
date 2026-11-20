@@ -835,6 +835,6 @@ function start() {
             try { localStorage.setItem(preferencesKey, data.json); } catch { /* private browsing restrictions */ }
         }
     };
-    post({ kind: "start", preferences });
+    post({ kind: "start", preferences, reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches });
 }
 start();

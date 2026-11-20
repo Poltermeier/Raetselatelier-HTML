@@ -19,6 +19,10 @@ def hearts_rank(card):
     return (rank(card) - 1) % 13  # Two low, ace high.
 
 
+def hearts_hand_order(card):
+    return suit(card), hearts_rank(card)
+
+
 def penalty(card):
     return 13 if card == QUEEN_SPADES else int(suit(card) == HEARTS)
 

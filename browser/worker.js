@@ -4,6 +4,7 @@ const timers = new Map();
 let python;
 let dispatch;
 let preferences = "{}";
+let reducedMotion = false;
 let booted = false;
 
 globalThis.atelierEmit = (json) => postMessage({ type: "operations", json });
@@ -18,6 +19,7 @@ globalThis.atelierCancelTimer = (id) => {
     timers.delete(id);
 };
 globalThis.atelierPreferences = () => preferences;
+globalThis.atelierReducedMotion = () => reducedMotion;
 globalThis.atelierSave = (json) => {
     preferences = json;
     postMessage({ type: "preferences", json });
@@ -135,6 +137,7 @@ app = start()
 onmessage = ({ data }) => {
     if (data.kind === "start") {
         preferences = data.preferences;
+        reducedMotion = Boolean(data.reducedMotion);
         start().catch((error) => {
             console.error(error);
             postMessage({ type: "startup-error", message: String(error) });

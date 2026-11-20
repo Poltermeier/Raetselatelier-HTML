@@ -5,7 +5,7 @@ import json
 import random
 import secrets
 
-from js import atelierSound, atelierSave, atelierPreferences
+from js import atelierSound, atelierSave, atelierPreferences, atelierReducedMotion
 import tkinter as tk
 
 from raetselkalender import catalog, gui, settings_ui
@@ -61,6 +61,8 @@ gui.ThreadPoolExecutor = lambda **options: BrowserExecutor()
 
 
 class BrowserApp(gui.App):
+    animate_hearts_cards = not atelierReducedMotion()
+
     sudoku_diagonal_color = "#367db859"  # 35% opacity.
 
     def set_assist_invalid(self, entry, invalid):

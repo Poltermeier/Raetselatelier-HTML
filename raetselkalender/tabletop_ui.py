@@ -79,38 +79,56 @@ class TabletopUI:
         available = set(open_tiles(board, self.mahjong_geometry))
         self.tabletop_hits = []
         left = min(x for x, _, _ in tiles)
+        columns = 1 + (max(x for x, _, _ in tiles) - left) / 2
+        pitch = min(34, 416 / columns)
+        origin = (WIDTH - columns * pitch) / 2
+        width, height = pitch - 5, 33
+        depth_x, depth_y = 4, 6
         self.word_text(16, top - 29 if not self.showing_solution else top,
                        f"{board.bit_count()} Steine · {len(available)} frei", size=12, bold=True)
+        legend_y = top - 29 if not self.showing_solution else top
+        self.canvas.create_rectangle(261, legend_y+3, 271, legend_y+13, fill="#fffdf4",
+                                     outline="#246a54", width=2, tags=("activity-board",))
+        self.word_text(277, legend_y, "Grüner Rand · frei", size=10, color=MUTED)
         if self.showing_solution:
             top += 30
-        bottom = top
+        bottom = top + 27
         for index in sorted(range(len(tiles)), key=lambda i: (tiles[i][2], tiles[i][1], tiles[i][0])):
             if not board & (1 << index):
                 continue
             x, y, layer = tiles[index]
-            x = 15 + (x - left) * 13.5 + layer * 2
-            y = top + y * 18 - layer * 3
+            x = origin + (x - left) * pitch / 2 + layer * 5
+            y = top + y * 20 - layer * 9
             hint = suggested and index in suggested
             selected = index == self.activity_selected
             open_face = index in available
-            tag = ("activity-board", f"mahjong-tile:{index}")
-            self.canvas.create_rectangle(x + 2, y + 3, x + 28, y + 39, fill="#c0c9b9",
-                                         outline="#859e89", tags=("activity-board",))
-            self.canvas.create_rectangle(x, y, x + 26, y + 36,
-                                         fill="#e4f1f7" if hint else "#dfebd7" if selected else PAPER if open_face else "#e8e9de",
-                                         outline="#225a92" if hint else ACCENT if selected else LINE,
-                                         width=2 if hint or selected else 1, tags=tag)
-            self.draw_mahjong_face(x, y, faces[index])
-            self.tabletop_hits.append((x, y, x + 26, y + 36, index))
-            bottom = max(bottom, y + 40)
+            right, base = x + width, y + height
+            body = ("activity-board", f"mahjong-body:{index}")
+            if layer:
+                self.canvas.create_rectangle(x+2, y+2, right+depth_x+2, base+depth_y+2,
+                                             fill="#75887b", outline="", tags=body)
+            side, front = ("#477562", "#80a28c") if open_face else ("#7b8f81", "#a3b1a2")
+            self.canvas.create_polygon(right, y, right+depth_x, y+depth_y, right+depth_x, base+depth_y,
+                                       right, base, fill=side, outline=side, tags=body)
+            self.canvas.create_polygon(x, base, right, base, right+depth_x, base+depth_y,
+                                       x+depth_x, base+depth_y, fill=front, outline=side, tags=body)
+            fill = "#deeffa" if hint else "#f8e4b6" if selected else "#fffdf4" if open_face else "#e1e6df"
+            edge = "#225a92" if hint else "#9a6419" if selected else "#246a54" if open_face else "#a2ada2"
+            self.canvas.create_rectangle(x, y, right, base, fill=fill, outline=edge,
+                                         width=2 if open_face else 1,
+                                         tags=("activity-board", f"mahjong-tile:{index}"))
+            self.draw_mahjong_face(x + width / 2, y, faces[index], open_face)
+            self.tabletop_hits.append((x, y, right+depth_x, base+depth_y, index))
+            bottom = max(bottom, base + depth_y)
         self.canvas.configure(scrollregion=(0, 0, WIDTH, max(bottom + 22, top + 405)))
 
-    def draw_mahjong_face(self, x, y, face):
+    def draw_mahjong_face(self, center, y, face, available):
+        dimmed = "#68716c"
         if face < 27:
             family, value = divmod(face, 9)
             label, color = (("●", "#8d3b42"), ("║", "#2b6a4e"), ("◇", "#364d78"))[family]
             symbol, size = label, 11
-            self.canvas.create_text(x + 13, y + 11, text=str(value + 1), fill=color,
+            self.canvas.create_text(center, y + 10, text=str(value + 1), fill=color if available else dimmed,
                                     font=("Helvetica", 12, "bold"), tags=("activity-board",))
         else:
             if face < 31:
@@ -123,12 +141,12 @@ class TabletopUI:
                 symbol, color = str(face - 37), "#72551d"
             size = 11
             emblem = "◈" if face >= 38 else "✿" if face >= 34 else "◆"
-            self.canvas.create_text(x + 13, y + 9, text=emblem, fill=color,
+            self.canvas.create_text(center, y + 9, text=emblem, fill=color if available else dimmed,
                                     font=("Helvetica", 8, "bold"), tags=("activity-board",))
-        self.canvas.create_text(x + 13, y + 24, text=symbol, fill=color,
+        self.canvas.create_text(center, y + 23, text=symbol, fill=color if available else dimmed,
                                 font=("Helvetica", size, "bold"), tags=("activity-board",))
 
-    def draw_playing_card(self, x, y, width, height, card, *, label="", active=False, marked=False, tags=()):
+    def draw_playing_card(self, x, y, width, height, card, *, label="", active=False, marked=False, tags=(), text_tags=()):
         border = "#27644c" if active else "#a76d19" if marked else LINE
         fill = "#dceee0" if active else "#fff0ce" if marked else PAPER if card is not None else TABLE
         self.canvas.create_rectangle(x, y, x + width, y + height, fill=fill, outline=border,
@@ -140,7 +158,7 @@ class TabletopUI:
         else:
             ink = RED if red(card) else "#203c40"
             self.canvas.create_text(x + 5, y + 4, text=card_text(card), fill=ink, anchor="nw",
-                                    font=("Helvetica", 13, "bold"), tags=("activity-board",))
+                                    font=("Helvetica", 13, "bold"), tags=("activity-board", *text_tags))
 
     def paint_freecell(self, board, top, suggested):
         self.tabletop_hits = []
