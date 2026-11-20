@@ -105,8 +105,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         for name, color, background in (
             ("Card", INK, PAPER), ("CardRed", "#a02d37", PAPER), ("CardSelected", "#ffffff", ACCENT)
         ):
-            style.configure(f"{name}.TButton", font=("Helvetica", 12, "bold"), padding=(2, 2),
-                            foreground=color, background=background)
+            style.configure(f"{name}.TButton", font=("Helvetica", 10, "bold"), padding=(3, 4),
+                            anchor="nw", foreground=color, background=background)
 
         shell = ttk.Frame(root, padding=16)
         shell.pack(fill="both", expand=True)
@@ -512,10 +512,9 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             width,height = self.canvas.winfo_width()-8,self.canvas.winfo_height()-8
             zoom = max(1.0,min(1.7,width/max(1,x2-x1),height/max(1,y2-y1)))
             zoom = int(zoom*100)/100
-        if not self.canvas.set_zoom(zoom):
-            return
-        if not self.is_click_board():
+        if self.canvas.set_zoom(zoom) and not self.is_click_board():
             self.refresh_note_previews()
+        self.fit_hearts_hand()
 
     def render_diagram(self):
         p, v = self.puzzle, self.puzzle.view

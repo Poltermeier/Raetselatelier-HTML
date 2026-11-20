@@ -155,7 +155,20 @@ function setOptions(widget, changed) {
                 }
                 input.append(icon);
             }
-            input.append(document.createTextNode(options.text || ""));
+            const cardFace = options.style?.startsWith("Card") && (options.text || "").match(/^(.+)([♣♦♠♥])$/u);
+            if (cardFace) {
+                const corner = document.createElement("span");
+                corner.className = "hearts-card-index";
+                corner.textContent = `${cardFace[1]}\n${cardFace[2]}`;
+                const pip = document.createElement("span");
+                pip.className = "hearts-card-pip";
+                pip.textContent = cardFace[2];
+                pip.setAttribute("aria-hidden", "true");
+                input.setAttribute("aria-label", options.text);
+                input.append(corner, pip);
+            } else {
+                input.append(document.createTextNode(options.text || ""));
+            }
         }
         if (options.text === "×") input.setAttribute("aria-label", "Schließen");
         if (options.style === "DifficultyOn.TButton" || ["Mittel", "Schwer"].includes(options.text)) {

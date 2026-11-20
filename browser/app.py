@@ -130,6 +130,7 @@ class BrowserApp(gui.App):
         zoom = max(.65, min(1.7, (width - 8) / max(1, x2 - x1), (height - 8) / max(1, y2 - y1)))
         if self.canvas.set_zoom(int(zoom * 100) / 100) and not self.is_click_board():
             self.refresh_note_previews()
+        self.fit_hearts_hand()
 
     def poll_generation(self):
         previous = self.puzzle

@@ -3,9 +3,19 @@ from .hearts import HeartsMatch, penalty
 from .hearts_ai import choose_card, choose_pass
 from .playing_cards import card_text, red
 
-SEATS = ("Du", "West", "Nord", "Ost")
-DIRECTIONS = {1: "links an West", -1: "rechts an Ost", 2: "gegenüber an Nord"}
+SEATS = ("Du", "Mara", "Nils", "Lea")
+DIRECTIONS = {1: "links", -1: "rechts", 2: "gegenüber"}
 INK, ACCENT, MUTED = "#233a32", "#27644c", "#63736a"
+CARD_WIDTH, CARD_HEIGHT = 66, 84
+HAND_TOP, HAND_ROW_GAP = 337, 92
+
+
+def hand_rows(count, zoom, board_width):
+    spacing = min(49, (404 - CARD_WIDTH) / max(count - 1, 1))
+    if count > 8 and board_width < 540 and spacing * zoom < 26:
+        first = (count + 1) // 2
+        return first, count - first
+    return (count,) if count else ()
 
 
 class HeartsUI:
@@ -26,8 +36,8 @@ class HeartsUI:
     def render_hearts(self):
         self.hearts_cards = [
             self.activity_button("", lambda index=index: self.select_hearts_card(index),
-                                 47 + index % 7 * 57, 339 + index // 7 * 57,
-                                 50, height=48, style="Card.TButton", tags=(f"hearts-card:{index}",))
+                                 0, 0, CARD_WIDTH, height=CARD_HEIGHT,
+                                 style="Card.TButton", tags=(f"hearts-card:{index}",))
             for index in range(13)
         ]
         self.hearts_pass = self.activity_button("Karten weitergeben", self.pass_hearts_cards,
@@ -100,6 +110,12 @@ class HeartsUI:
         self.paint_activity()
         self.schedule_hearts_turn()
 
+    def fit_hearts_hand(self):
+        if self.puzzle.type_id == "hearts":
+            rows = hand_rows(len(self.hearts_game.hands[0]), self.canvas.zoom, self.canvas.winfo_width())
+            if rows != self.hearts_hand_rows:
+                self.paint_activity()
+
     def paint_hearts(self):
         game = self.hearts_game
         finished_round = game.stage in ("between", "over")
@@ -115,25 +131,28 @@ class HeartsUI:
             if not finished_round:
                 self.word_text(x + 61, 62, f"+{game.points[player]}", size=10, color=MUTED)
 
-        shown = game.last_trick if self.hearts_pause or finished_round else game.trick
-        subtitle = "Kartenweitergabe" if game.stage == "pass" else "Letzter Stich" if self.hearts_pause or finished_round else "Aktueller Stich"
-        self.word_text(17, 137, subtitle, size=13, bold=True)
-        cards = dict(shown)
-        for player in range(4):
-            active = shown and game.last_winner == player and (self.hearts_pause or finished_round)
-            self.draw_playing_card(24 + player * 105, 167, 75, 77, cards.get(player),
-                                   label="–", active=active, tags=(f"hearts-played:{player}",))
-        if (self.hearts_pause or finished_round) and game.last_winner is not None:
+        self.word_text(17, 130, "Aktueller Stich", size=13, bold=True)
+        self.draw_hearts_trick(game.trick, 153, "current")
+        if self.hearts_received and not game.history and game.stage == "play":
+            self.word_text(17, 207, "Erhalten · " + "   ".join(map(card_text, self.hearts_received)),
+                           size=10, color=MUTED)
+
+        if game.last_trick:
             taken = sum(penalty(card) for _, card in game.last_trick)
             winner = "Dein Stich" if game.last_winner == 0 else f"Stich an {SEATS[game.last_winner]}"
-            self.word_text(17, 257, f"{winner} · {taken} Punkt{'e' if taken != 1 else ''}", size=11, color=MUTED)
-        elif self.hearts_received and not game.history and game.stage == "play":
-            self.word_text(17, 257, "Erhalten · " + "   ".join(map(card_text, self.hearts_received)),
-                           size=11, color=MUTED)
+            last_result = f"{winner} · {taken} Punkt{'e' if taken != 1 else ''}"
+        else:
+            last_result = "Noch keiner gespielt"
+        self.word_text(17, 230, "Letzter Stich", size=13, bold=True)
+        self.word_text(184, 232, last_result, size=10, color=MUTED)
+        self.draw_hearts_trick(game.last_trick, 252, "last", winner=game.last_winner)
 
         if not finished_round:
-            self.word_text(17, 288, "Deine Hand", size=13, bold=True)
-        self.show_hearts_hand(game)
+            self.word_text(17, 314, "Deine Hand", size=13, bold=True)
+        hand_bottom = self.show_hearts_hand(game)
+        footer = 327 if finished_round else hand_bottom + 12
+        self.canvas.coords("hearts-pass", 220, footer + 57)
+        self.canvas.coords("hearts-round", 220, footer + 57)
         passing = game.stage == "pass"
         next_round = game.stage == "between" and not self.hearts_pause
         self.canvas.itemconfigure("hearts-pass", state="normal" if passing else "hidden")
@@ -141,15 +160,31 @@ class HeartsUI:
         self.canvas.itemconfigure("hearts-round", state="normal" if next_round else "hidden")
         self.hearts_round.configure(state="normal" if next_round and not self.busy else "disabled")
         text = self.hearts_status(game)
-        self.word_text(17, 395 if finished_round else 422, text, size=11 if finished_round else 10,
+        self.word_text(17, footer, text, size=11 if finished_round else 10,
                        width=402, bold=finished_round)
         self.status.configure(text=text, foreground=ACCENT if game.stage == "over" and 0 in game.winners() else INK)
-        self.canvas.configure(scrollregion=(0, 0, 440, 510))
+        self.canvas.configure(scrollregion=(0, 0, 440, 620))
+
+    def draw_hearts_trick(self, trick, y, slot, *, winner=None):
+        cards = dict(trick)
+        for player in range(4):
+            self.draw_playing_card(24 + player * 105, y, 75, 48, cards.get(player),
+                                   label="–", active=player == winner,
+                                   tags=(f"hearts-{slot}:{player}",))
 
     def show_hearts_hand(self, game):
         hand = game.hands[0]
         legal = (game.observation(0).legal() if game.stage == "play" and game.turn == 0
                  and not self.hearts_pause else ())
+        rows = hand_rows(len(hand), self.canvas.zoom, self.canvas.winfo_width())
+        self.hearts_hand_rows = rows
+        positions = []
+        for row, count in enumerate(rows):
+            step = min(49, (404 - CARD_WIDTH) / max(count - 1, 1))
+            for index in range(count):
+                offset = index - (count - 1) / 2
+                bend = 10 * (offset / max((count - 1) / 2, 1)) ** 2
+                positions.append((220 + offset * step, HAND_TOP + row * HAND_ROW_GAP + CARD_HEIGHT / 2 + bend))
         for index, button in enumerate(self.hearts_cards):
             visible = index < len(hand)
             self.canvas.itemconfigure(f"hearts-card:{index}", state="normal" if visible else "hidden")
@@ -157,13 +192,17 @@ class HeartsUI:
                 continue
             card = hand[index]
             chosen = card in self.hearts_selection
+            x, y = positions[index]
+            self.canvas.coords(f"hearts-card:{index}", x, y - (9 if chosen else 0))
             enabled = game.stage == "pass" and (chosen or len(self.hearts_selection) < 3) or card in legal
             style = "CardSelected.TButton" if chosen else "CardRed.TButton" if red(card) else "Card.TButton"
             button.configure(text=card_text(card), style=style, state="normal" if enabled and not self.busy else "disabled")
+        return HAND_TOP + max(0, len(rows) - 1) * HAND_ROW_GAP + CARD_HEIGHT + 10
 
     def hearts_status(self, game):
         if game.stage == "pass":
-            return f"{len(self.hearts_selection)} von 3 Karten gewählt · weiter {DIRECTIONS[game.offset]}."
+            recipient = SEATS[game.offset % 4]
+            return f"{len(self.hearts_selection)} von 3 Karten gewählt · weiter an {recipient} ({DIRECTIONS[game.offset]})."
         if game.stage == "over":
             winners = game.winners()
             if winners == (0,):

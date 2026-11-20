@@ -115,8 +115,31 @@ input[type="text"] { background: var(--paper); border: 1px solid #aebdb2; border
   white-space: pre;
   font-size: clamp(8.5px, 14cqw, 15px) !important;
 }
-.tk-role-hearts-card > button { font: 700 clamp(13px, 3.4vw, 19px)/1 system-ui, sans-serif !important; }
+.tk-role-hearts-card > button {
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow: -2px 1px 4px #233a3226;
+  font: 700 clamp(12px, 3.2vw, 16px)/1 system-ui, sans-serif !important;
+}
+.tk-role-hearts-card > button:focus-visible { outline-offset: -3px; }
 .tk-role-hearts-card > .card-red { color: #a02d37; }
+.tk-role-hearts-card > button:disabled { opacity: 1; background: #edf1eb; color: #53675e; }
+.tk-role-hearts-card > .card-red:disabled { color: #83535b; }
+.hearts-card-index {
+  position: absolute;
+  inset: 5px auto auto 3px;
+  text-align: center;
+  white-space: pre;
+  pointer-events: none;
+}
+.hearts-card-pip {
+  position: absolute;
+  inset: auto 6px 6px auto;
+  font-size: 1.6em;
+  opacity: .72;
+  pointer-events: none;
+}
 /* A tap on a note preview needs to reach the native input. */
 .tk-entry > .tk-label { pointer-events: none; user-select: none; overflow: hidden; line-height: 1.12; }
 .tk-role-diagonal-entry > input,
