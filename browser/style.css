@@ -115,6 +115,8 @@ input[type="text"] { background: var(--paper); border: 1px solid #aebdb2; border
   white-space: pre;
   font-size: clamp(8.5px, 14cqw, 15px) !important;
 }
+.tk-role-hearts-card > button { font: 700 clamp(13px, 3.4vw, 19px)/1 system-ui, sans-serif !important; }
+.tk-role-hearts-card > .card-red { color: #a02d37; }
 /* A tap on a note preview needs to reach the native input. */
 .tk-entry > .tk-label { pointer-events: none; user-select: none; overflow: hidden; line-height: 1.12; }
 .tk-role-diagonal-entry > input,

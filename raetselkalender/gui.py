@@ -17,6 +17,7 @@ from .arithmetic_ui import ArithmeticUI
 from .hashi_ui import HashiUI
 from .click_boards import ClickBoardUI
 from .history_ui import HistoryUI
+from .hearts import HEARTS_LEVELS
 from .camping_ui import CampingUI
 from .board_canvas import BoardCanvas, BoardEntry
 from .feedback_ui import FeedbackUI
@@ -101,6 +102,11 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         style.map("DifficultyOn.TButton",background=[("disabled","#d1d8cf"),("active","#34775d")],
                   foreground=[("disabled",MUTED),("active","white")])
         style.configure("TCombobox", padding=5)
+        for name, color, background in (
+            ("Card", INK, PAPER), ("CardRed", "#a02d37", PAPER), ("CardSelected", "#ffffff", ACCENT)
+        ):
+            style.configure(f"{name}.TButton", font=("Helvetica", 12, "bold"), padding=(2, 2),
+                            foreground=color, background=background)
 
         shell = ttk.Frame(root, padding=16)
         shell.pack(fill="both", expand=True)
@@ -128,16 +134,20 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.choice.pack(fill="x", pady=(10, 14))
         self.choice.bind("<<ComboboxSelected>>", self.selection_changed)
         ttk.Label(sidebar, text="Schwierigkeitsgrad").pack(anchor="w")
-        self.level = tk.StringVar(value=difficulty)
-        level_frame = ttk.Frame(sidebar)
-        level_frame.pack(fill="x",pady=(5,12))
+        self.level = tk.StringVar(value=difficulty if difficulty in ("mittel", "schwer") else "schwer")
+        self.level_frame = ttk.Frame(sidebar)
+        self.level_frame.pack(fill="x",pady=(5,12))
         self.level_buttons = {}
         for value in ("mittel","schwer"):
-            button = ttk.Button(level_frame,text=value.capitalize(),command=lambda v=value:self.level.set(v))
+            button = ttk.Button(self.level_frame,text=value.capitalize(),command=lambda v=value:self.level.set(v))
             button.pack(side="left",fill="x",expand=True,padx=(0,4) if value=="mittel" else (4,0))
             self.level_buttons[value] = button
         self.level.trace_add("write",lambda *args:self.refresh_difficulty_buttons())
         self.refresh_difficulty_buttons()
+        hearts_default = difficulty.capitalize() if type_id == "hearts" and difficulty in HEARTS_LEVELS else "Mittel"
+        self.hearts_level = tk.StringVar(value=hearts_default)
+        self.hearts_level_choice = ttk.Combobox(sidebar, textvariable=self.hearts_level,
+            values=[value.capitalize() for value in HEARTS_LEVELS], state="readonly")
         self.cat_size=tk.IntVar(value=cat_size)
         self.cat_size_frame=ttk.Frame(sidebar)
         ttk.Label(self.cat_size_frame,text='Feldgröße Katzensuche').pack(anchor='w')
@@ -203,6 +213,14 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
 
     def selection_changed(self, event=None):
         item = BY_ID.get(self.type_ids[self.choice.current()])
+        hearts = item is not None and item.id == "hearts"
+        if hearts:
+            self.level_frame.pack_forget()
+            self.hearts_level_choice.pack(fill="x", pady=(5,12), before=self.seed_label)
+            self.hearts_level_choice.configure(state="disabled" if self.busy else "readonly")
+        else:
+            self.hearts_level_choice.pack_forget()
+            self.level_frame.pack(fill="x", pady=(5,12), before=self.seed_label)
         if item is not None and item.id=='katzensuche':
             self.cat_size_frame.pack(fill='x',pady=(0,12),before=self.seed_label)
             self.cat_size_choice.configure(state='disabled' if self.busy else 'readonly')
@@ -213,7 +231,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.pipe_size_choice.configure(state='disabled' if self.busy else 'readonly')
         else:self.pipe_size_frame.pack_forget()
         available = item is None or item.available
-        self.new_button.configure(state="normal" if available and not self.busy else "disabled")
+        self.new_button.configure(text="Partie starten" if hearts else "Neues Rätsel",
+                                  state="normal" if available and not self.busy else "disabled")
         if item is not None and not available:
             self.note.configure(text=item.unavailable_reason)
             self.note.pack(anchor="w", pady=(0,8))
@@ -251,6 +270,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.random_button.configure(state="disabled" if value else "normal")
         for button in (self.solution_button, self.reset_button, self.export_button):
             button.configure(state="normal" if self.puzzle is not None and not value else "disabled")
+        if self.puzzle is not None and self.puzzle.type_id == "hearts":
+            self.solution_button.configure(state="disabled")
         self.update_notes_button()
         self.update_undo_button()
         self.selection_changed()
@@ -280,7 +301,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.set_busy(True)
         self.status.configure(text="Erzeuge Rätsel und prüfe die Lösbarkeit …", foreground=INK)
         options={'size':self.cat_size.get()} if type_id=='katzensuche' else {'size':self.pipe_size.get()} if type_id=='pipes' else {}
-        self.future = self.pool.submit(generate, type_id, seed, self.level.get(), **options)
+        level = self.hearts_level.get().lower() if type_id == "hearts" else self.level.get()
+        self.future = self.pool.submit(generate, type_id, seed, level, **options)
         self.root.after(80, self.poll_generation)
 
     def poll_generation(self):
@@ -293,6 +315,11 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.set_busy(False)
             self.status.configure(text="Generierung fehlgeschlagen. Bitte erneut versuchen.", foreground="#9a3c30")
             messagebox.showerror("Generierung fehlgeschlagen", str(exc), parent=self.root)
+            return
+        if puzzle.type_id == "hearts" and self.type_ids[self.choice.current()] == "random":
+            self.choice.current(self.type_ids.index("hearts"))
+            self.set_busy(False)
+            self.status.configure(text="Hearts wurde ausgewählt. Wähle eine Stufe und starte die Partie.", foreground=INK)
             return
         self.puzzle = puzzle
         self.showing_solution = False
@@ -310,6 +337,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.idle_diagnostics.arm()
 
     def clear_board(self):
+        self.cancel_hearts_timer()
         self.cancel_pentomino_drag(paint=False)
         self.close_chess_menu()
         self.route_drag_active=False

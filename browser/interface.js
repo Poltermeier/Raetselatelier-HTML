@@ -140,7 +140,7 @@ function setOptions(widget, changed) {
         }
     }
     if (kind === "Button") {
-        input.classList.toggle("accent", ["Accent.TButton", "NotesOn.TButton", "DifficultyOn.TButton", "DeductionSelected.TButton"].includes(options.style));
+        input.classList.toggle("accent", ["Accent.TButton", "NotesOn.TButton", "DifficultyOn.TButton", "DeductionSelected.TButton", "CardSelected.TButton"].includes(options.style));
         if ("text" in changed || "image" in changed) {
             input.replaceChildren();
             if (options.image) {
@@ -166,6 +166,10 @@ function setOptions(widget, changed) {
             input.setAttribute("aria-pressed", options.style === "DeductionSelected.TButton");
             input.classList.toggle("deduction-linked", options.style === "DeductionLinked.TButton");
             input.classList.toggle("deduction-resolved", options.style === "DeductionResolved.TButton");
+        }
+        if (options.style?.startsWith("Card")) {
+            input.setAttribute("aria-pressed", options.style === "CardSelected.TButton");
+            input.classList.toggle("card-red", options.style === "CardRed.TButton");
         }
     }
     if (kind === "Label" && "text" in changed) element.textContent = options.text || "";

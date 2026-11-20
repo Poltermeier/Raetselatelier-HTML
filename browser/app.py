@@ -115,6 +115,11 @@ class BrowserApp(gui.App):
         # Transparent inputs keep the board's diagonal visible through the cell.
         tk.send("role", self.entries[key].id, "diagonal-entry")
 
+    def render_hearts(self):
+        super().render_hearts()
+        for button in self.hearts_cards:
+            tk.send("role", button.id, "hearts-card")
+
     def fit_board(self):
         width, height = self.canvas.winfo_width(), self.canvas.winfo_height()
         if self.puzzle is None or self.fixed_board_scale is not None or min(width, height) < 100:
@@ -154,6 +159,7 @@ def start():
     for widget, role in roles.items():
         tk.send("role", widget.id, role)
     for widget, label in ((app.choice, "Rätseltyp"), (app.seed, "Seed (optional)"),
+                          (app.hearts_level_choice, "Hearts-Schwierigkeit"),
                           (app.cat_size_choice, "Feldgröße Katzensuche"),
                           (app.pipe_size_choice, "Feldgröße Pipes")):
         tk.send("label", widget.id, label)

@@ -11,16 +11,20 @@ from .workshop_games import WORKSHOP_MODES
 from .word_games import WORD_MODES
 from .word_ui import WordGamesUI
 from .deduction_ui import MODES as DEDUCTION_MODES, DeductionUI
+from .tabletop_ui import TABLETOP_MODES, TabletopUI
+from .hearts_ui import HeartsUI
 
 INK,ACCENT,PAPER='#233a32','#27644c','#fffef9'
 
 
-class ActivityUI(WordGamesUI, DeductionUI):
+class ActivityUI(WordGamesUI, DeductionUI, TabletopUI, HeartsUI):
     def initial_activity_state(self):
         v=self.puzzle.view;mode=v['mode']
         if mode in WORKSHOP_MODES:return self.initial_workshop_state()
         if mode in WORD_MODES:return dict(words=[], draft='', path=[])
         if mode in DEDUCTION_MODES:return self.initial_deduction_state()
+        if mode in TABLETOP_MODES:return self.initial_tabletop_state()
+        if mode=='hearts':return self.reset_hearts_match()
         if mode=='sets':return dict(draft=[],found=[])
         if mode=='mastermind':return dict(draft=[-1]*4,guesses=[])
         if mode=='solitaire':return dict(board=v['initial'],moves=[])
@@ -62,6 +66,10 @@ class ActivityUI(WordGamesUI, DeductionUI):
             self.render_word_game();return
         if mode in DEDUCTION_MODES:
             self.render_deduction();return
+        if mode in TABLETOP_MODES:
+            self.render_tabletop();return
+        if mode=='hearts':
+            self.render_hearts();return
         if mode=='sets':
             self.activity_button('Set bestätigen',self.confirm_set,340,510)
         elif mode=='mastermind':
@@ -120,6 +128,10 @@ class ActivityUI(WordGamesUI, DeductionUI):
             self.paint_workshop();return
         if mode in DEDUCTION_MODES:
             self.paint_deduction();return
+        if mode in TABLETOP_MODES:
+            self.paint_tabletop();return
+        if mode=='hearts':
+            self.paint_hearts();return
         if mode in WORD_MODES:self.paint_word_game()
         elif mode=='sets':self.paint_sets()
         elif mode=='mastermind':self.paint_mastermind()
@@ -438,6 +450,10 @@ class ActivityUI(WordGamesUI, DeductionUI):
         frame()
 
     def on_activity_change(self):
+        if self.puzzle.view['mode'] in TABLETOP_MODES:
+            self.on_tabletop_change();return
+        if self.puzzle.view['mode']=='hearts':
+            self.on_hearts_change();return
         if self.puzzle.view['mode'] in DEDUCTION_MODES:
             self.on_deduction_change();return
         if self.puzzle.view['mode'] in WORD_MODES:
@@ -465,12 +481,15 @@ class ActivityUI(WordGamesUI, DeductionUI):
         self.status.configure(text=text,foreground=INK)
 
     def toggle_activity_solution(self):
+        if self.puzzle.view['mode']=='hearts':
+            return
         self.cancel_pour_animation();self.activity_selected=None
         self.showing_solution=not self.showing_solution
         mode=self.puzzle.view['mode']
         if self.showing_solution:
             self.saved_activity_state=deepcopy(self.activity_state)
-            if mode in WORKSHOP_MODES:self.activity_state=self.workshop_solution_state()
+            if mode in TABLETOP_MODES:self.prepare_tabletop_replay()
+            elif mode in WORKSHOP_MODES:self.activity_state=self.workshop_solution_state()
             elif mode in WORD_MODES:self.activity_state=self.initial_activity_state()
             elif mode=='sets':self.activity_state=dict(draft=[],found=[list(self.puzzle.sets[self.puzzle.solution[k]]) for k in self.puzzle.editable])
             elif mode=='mastermind':self.activity_state=dict(draft=list(self.puzzle.solution.values()),guesses=[])

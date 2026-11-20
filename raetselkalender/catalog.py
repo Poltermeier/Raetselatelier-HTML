@@ -19,6 +19,9 @@ from .contact import contact
 from .maze_puzzles import arrow_maze,chess_maze
 from .card_code_matches import sets_puzzle,mastermind,matchsticks
 from .moving_games import solitaire,water_sort
+from .freecell import freecell
+from .hearts import HEARTS_LEVELS, hearts
+from .mahjong import mahjong
 from .line_generators import abknicker,light_rays
 from .workshop_games import cryptogram,target24,circuits,row_shift
 from .pentomino import pentomino
@@ -123,6 +126,9 @@ CATALOG = [
     PuzzleType("sets", "Sets", sets_puzzle),
     PuzzleType("superhirn", "Superhirn", mastermind),
     PuzzleType("solitaer", "Solitär", solitaire),
+    PuzzleType("freecell", "FreeCell", freecell),
+    PuzzleType("hearts", "Hearts", hearts),
+    PuzzleType("mahjong", "Mahjong", mahjong),
     PuzzleType("streichholzraetsel", "Streichholzrätsel", matchsticks),
     PuzzleType("water-sort", "Water Sort", water_sort),
     PuzzleType("abknicker", "Abknicker", abknicker),
@@ -149,8 +155,9 @@ BY_ID['lauter-einser-und-zweier'] = BY_ID['lauter-einser-und-zweier-5x5']
 
 
 def generate(type_id="random", seed=None, difficulty="schwer", *, size=None):
-    if difficulty not in ("mittel", "schwer"):
-        raise ValueError("Schwierigkeit muss 'mittel' oder 'schwer' sein")
+    levels = HEARTS_LEVELS if type_id == "hearts" else ("mittel", "schwer")
+    if difficulty not in levels:
+        raise ValueError("Schwierigkeit muss eine der folgenden Stufen sein: " + ", ".join(levels))
     if seed is None:
         seed = secrets.randbits(48)
     if type(seed) is not int:

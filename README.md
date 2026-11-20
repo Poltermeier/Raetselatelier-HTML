@@ -1,6 +1,6 @@
 # Simon's Rätselatelier im Browser
 
-Webport von [Raetselkalender-Generator](https://github.com/Poltermeier/Raetselkalender-Generator/tree/acf15a5799e1503f36a30726b63a7b60b43d378a) mit **69 Rätseltypen** und den Schwierigkeitsstufen *Mittel* und *Schwer*. Die Bedienung entspricht der Desktop-App, mit Rätselauswahl, Regeln und Spielfeld, Notizen, Rückgängig, Lösungsansicht und JSON-Export ohne Lösung. Die Einstellungen für Ton und Farbblindheitsmodus bleiben im jeweiligen Browser gespeichert.
+Webport von [Raetselkalender-Generator](https://github.com/Poltermeier/Raetselkalender-Generator/tree/acf15a5799e1503f36a30726b63a7b60b43d378a) mit **72 Rätsel- und Spieltypen**. Für die Rätsel gibt es die Stufen *Mittel* und *Schwer*. Hearts hat eine eigene Stufenauswahl. Die Bedienung entspricht der Desktop-App, mit Rätselauswahl, Regeln und Spielfeld, Notizen, Rückgängig, Lösungsansicht und JSON-Export ohne Lösung. Die Einstellungen für Ton und Farbblindheitsmodus bleiben im jeweiligen Browser gespeichert.
 
 ## Lokal starten
 
@@ -31,6 +31,12 @@ Die Wortdaten sind offline verfügbar. [Quellen, Lizenz und Erstellung der Wortl
 
 Auf einem Raster mit fünf Spalten und vier Reihen ermittelst du zu 20 Personen. Am Anfang steht eine einzige Spur offen. Wähle eine Person und ordne ihr „Schuldig“ oder „Unschuldig“ zu. Das Spiel bestätigt eine Zuordnung erst, wenn die freigegebenen Spuren genau diesen Status erzwingen. Jede bestätigte Person öffnet eine eigene Aussage, auf die du über ihre Kachel oder über die Spurnavigation zugreifen kannst. Die Spuren beziehen sich unter anderem auf Reihen, Spalten, gemeinsame Nachbarn und lückenlose Gruppen. Direkte Nachbarn sitzen waagerecht oder senkrecht nebeneinander. Auf „Schwer“ musst du mehrfach Hinweise kombinieren. Dazu gehören auch gerade und ungerade Anzahlen. Alle Fälle lassen sich Schritt für Schritt ohne Raten lösen. Die Fälle sind eigene Rätsel des Ateliers, inspiriert vom Ermittlungsprinzip von [Clues by Sam](https://cluesbysam.com).
 
+## Karten- und Brettspiele
+
+- **Mahjong** ist die Solitärvariante mit 144 Steinen. Du räumst freie Paare ab. Blumen und Jahreszeiten bilden jeweils eigene Paargruppen. Beide Layouts haben einen geprüften Räumweg.
+- **FreeCell** verwendet ein Standarddeck mit vier freien Zellen und vier Zielstapeln. Die freien Zellen und leeren Spalten bestimmen die maximal verschiebbare Kartenfolge. Die Austeilungen enthalten einen geprüften Lösungsweg.
+- **Hearts** spielt sich gegen drei unabhängige Gegner. Wähle vor dem Start *Leicht*, *Mittel*, *Schwer* oder *Experte*. Jeder Gegner erhält seine eigene Hand, seine ausgetauschten Karten und die sichtbaren Spielinformationen. *Experte* testet mögliche Verteilungen der unbekannten Karten. Es gelten Kartenweitergabe, Bedienpflicht, die Herz- und Pik-Dame-Punkte und das Spielende ab 100 Punkten.
+
 ## Weiterentwicklung
 
 `raetselkalender/` enthält die Python-Generatoren, die Prüfverfahren und die Spiellogik. `browser/` verbindet diese mit HTML-Eingaben und der Canvas-Zeichenfläche. Pyodide führt den Python-Code in einem Web Worker aus. Schachrätsel werden weiterhin frisch erzeugt und geprüft. Der Browser verwendet Stockfish 19 Lite als WebAssembly-Version. Derselbe Seed kann im Desktop-Stockfish zu einer anderen Schachstellung führen.
@@ -40,5 +46,7 @@ Nach Änderungen an den Python-Dateien das Browserarchiv neu erzeugen und mit ei
 ```sh
 python tools/build_runtime.py
 ```
+
+Die eigenen FreeCell-Austeilungen lassen sich mit `python tools/build_freecell_deals.py` neu erzeugen.
 
 Die mitgelieferten Laufzeiten, ihre Lizenzen und Quellen stehen unter [third_party/NOTICE.md](third_party/NOTICE.md).
