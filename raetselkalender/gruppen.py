@@ -14,12 +14,18 @@ MODE = "gruppen"
 
 # A board should not use overlapping broad domains such as Tiere and Vögel.
 RELATED_THEMES = (
-    frozenset(("Tiere", "Vögel", "Insekten")),
-    frozenset(("Bäume und Blumen", "Im Garten", "Obst und Gemüse", "Gewürze und Küchenkräuter")),
-    frozenset(("Backwaren und Gebäck", "Getränke", "Küche und Tisch")),
-    frozenset(("Wetter und Himmel", "Weltraum und Astronomie")),
-    frozenset(("Landschaften und Gewässer", "Gesteine und Mineralien")),
-    frozenset(("Werkzeug und Werkstatt", "Handarbeiten und Basteln", "Technik im Alltag")),
+    frozenset(("Tiere", "Vögel", "Insekten", "Hunderassen", "Pferderassen", "Schmetterlinge", "Vogelarten am Wasser")),
+    frozenset(("Bäume und Blumen", "Im Garten", "Obst und Gemüse", "Gewürze und Küchenkräuter", "Baumfrüchte", "Baumarten")),
+    frozenset(("Backwaren und Gebäck", "Kuchen und Torten", "Entsteht in der Bäckerei", "Weihnachtsgebäck")),
+    frozenset(("Getränke", "Heiße Getränke")),
+    frozenset(("Küche und Tisch", "Geschirr und Besteck", "Küchengeräte")),
+    frozenset(("Wetter und Himmel", "Naturgewalten")),
+    frozenset(("Weltraum und Astronomie", "Im Weltall", "Planeten", "Raumfahrt")),
+    frozenset(("Landschaften und Gewässer", "Küstenformen", "Deutsche Flüsse", "Große Seen im Alpenraum",
+               "Ostseeinseln", "Inseln im Mittelmeer")),
+    frozenset(("Werkzeug und Werkstatt", "Werkzeuge zum Schneiden", "Handarbeiten und Basteln", "Technik im Alltag")),
+    frozenset(("Sport und Bewegung", "Wintersportarten", "Sommersportarten", "Disziplinen der Leichtathletik",
+               "Kampfsportarten", "Mannschaftssport")),
 )
 
 
@@ -40,22 +46,31 @@ class GruppenPuzzle(Puzzle):
 
 @lru_cache(maxsize=2)
 def theme_bank(difficulty):
-    if difficulty == "schwer":
-        path = files("raetselkalender").joinpath("data", "gruppen.json")
-        themes = json.loads(path.read_text(encoding="utf-8"))
-    else:
-        themes = lexicon().themes
-    return {theme: tuple(sorted(word.capitalize() for word in words if len(word) <= 13))
+    filename = "gruppen.json" if difficulty == "schwer" else "gruppen_mittel.json"
+    path = files("raetselkalender").joinpath("data", filename)
+    themes = json.loads(path.read_text(encoding="utf-8"))
+    if difficulty == "mittel":
+        themes = lexicon().themes | themes
+    return {theme: tuple(sorted({word.capitalize() for word in words if len(word) <= 13}))
             for theme, words in themes.items()}
 
 
 @lru_cache(maxsize=1)
 def overlapping_themes():
     bank = theme_bank("schwer")
-    return tuple((first, second, tuple(sorted(set(words).intersection(other))))
-                 for first, words in bank.items() for second, other in bank.items()
-                 if first != second and len(set(other).difference(words)) >= 3
-                 and set(words).intersection(other))
+    members = {theme: set(words) for theme, words in bank.items()}
+    options = {}
+    for first, words in members.items():
+        partners = [(second, tuple(sorted(words & other))) for second, other in members.items()
+                    if first != second and words & other and len(other - words) >= 3]
+        if partners:
+            options[first] = partners
+    return options
+
+
+@lru_cache(maxsize=1)
+def partition_bank():
+    return theme_bank("mittel") | theme_bank("schwer")
 
 
 def partition_count(words, bank):
@@ -68,18 +83,20 @@ def partition_count(words, bank):
             for bit in group:
                 choices[bit].append(entry)
 
-    def covers(remaining, used_themes):
+    partitions = set()
+
+    def covers(remaining, used_themes, groups):
         if not remaining:
-            return 1
-        result = 0
+            partitions.add(frozenset(groups))
+            return
         for group, theme in choices[remaining & -remaining]:
             if group & remaining == group and not used_themes & theme:
-                result += covers(remaining ^ group, used_themes | theme)
-                if result >= 2:
-                    return 2
-        return result
+                covers(remaining ^ group, used_themes | theme, (*groups, group))
+                if len(partitions) >= 2:
+                    return
 
-    return covers((1 << len(words)) - 1, 0)
+    covers((1 << len(words)) - 1, 0, ())
+    return len(partitions)
 
 
 def gruppen(seed, difficulty):
@@ -89,7 +106,9 @@ def gruppen(seed, difficulty):
     for _ in range(128):
         shared = None
         if difficulty == "schwer":
-            first, second, overlap = rng.choice(overlapping_themes())
+            options = overlapping_themes()
+            first = rng.choice(tuple(options))
+            second, overlap = rng.choice(options[first])
             shared = rng.choice(overlap)
             chosen = [first, second, *rng.sample([name for name in names if name not in (first, second)], 2)]
         else:
@@ -110,7 +129,7 @@ def gruppen(seed, difficulty):
         if len(groups) != 4:
             continue
         words = sorted(used)
-        if partition_count(words, bank) != 1:
+        if partition_count(words, partition_bank()) != 1:
             continue
         rng.shuffle(words)
         return GruppenPuzzle(MODE, "Gruppen",

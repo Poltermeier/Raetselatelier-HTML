@@ -2,8 +2,9 @@
 from dataclasses import dataclass
 import random
 
+from .case_clues import COLUMNS, Clue, consequence, paired_counts, parity_clue, position_clues
 from .puzzle import LogicalProofMissing, Puzzle
-from .solver import Constraint, Model, SearchLimit, Sum, Table, deduce, solve
+from .solver import Model, SearchLimit, Sum, deduce, solve
 
 MODE = "ermittlungsakte"
 ROWS, COLS = 4, 5
@@ -23,15 +24,6 @@ CASES = (
     ("Kurz vor dem Stadtfest wurde eine Zeitkapsel entwendet.", ("Bibliothek", "Rathaus", "Marktplatz", "Innenhof")),
     ("Die Filmrolle für das Straßenkino wurde gegen eine leere ausgetauscht.", ("Kiosk", "Park", "Vereinsheim", "Lager")),
 )
-
-
-@dataclass(frozen=True)
-class Clue:
-    text: str
-    rule: Constraint
-
-    def export(self):
-        return dict(text=self.text, people=list(self.rule.keys))
 
 
 @dataclass(kw_only=True)
@@ -91,27 +83,29 @@ class CasePuzzle(Puzzle):
         return data
 
 
-def comparison(first, second, solution):
-    people = first, second
-    if solution[first] == solution[second]:
-        return Clue(f"{first} und {second} haben denselben Status.", Table(people, ((0, 0), (1, 1))))
-    return Clue(f"Von {first} und {second} ist genau eine Person schuldig.", Sum(people, 1))
-
-
-def counted(people, solution, *, room=None):
-    total = sum(solution[name] for name in people)
-    if room:
-        lead = f"Auf der Liste für „{room}“"
-    else:
-        names = " und ".join(people) if len(people) == 2 else f"{', '.join(people[:-1])} und {people[-1]}"
-        lead = f"Von {names}"
-    if total == 0:
-        phrase = "ist niemand schuldig."
-    elif total == 1:
-        phrase = "ist genau eine Person schuldig."
-    else:
-        phrase = f"sind genau {('zwei' if total == 2 else total)} Personen schuldig."
-    return Clue(f"{lead} {phrase}", Sum(people, total))
+def combined_clues(scopes, known, solution, singles, used, visible, rng, *, allow_parity):
+    counts = list(paired_counts(scopes, known, solution))
+    parities = []
+    if allow_parity:
+        for scope in scopes:
+            unknown = set(scope.keys).difference(known)
+            if len(unknown) == 2:
+                parity = parity_clue(scope, sum(solution[name] for name in scope.keys))
+                for clue, forced in singles:
+                    if len(forced & unknown) == 1:
+                        parities.append((parity, clue, forced | unknown))
+    rng.shuffle(counts)
+    rng.shuffle(parities)
+    options = counts[:30] + parities[:40] if rng.random() < .65 else parities[:40] + counts[:30]
+    for first, second, forced in options:
+        if first.text in used or second.text in used:
+            continue
+        alternatives = [Model(visible.domains, [*visible.constraints, clue.rule]) for clue in (first, second)]
+        for name in sorted(forced):
+            opposite = known | {name: 1 - solution[name]}
+            if all(solve(model, opposite, limit=1).solutions for model in alternatives):
+                return (first, second), forced
+    return None
 
 
 def ermittlungsakte(seed, difficulty):
@@ -121,60 +115,70 @@ def ermittlungsakte(seed, difficulty):
     areas = tuple(keys[start:start + COLS] for start in range(0, len(keys), COLS))
     guilty = set(rng.sample(keys, rng.randint(8, 12)))
     solution = {name: int(name in guilty) for name in keys}
-    first, *remaining = rng.sample(keys, len(keys))
-    opening = Clue(f"Die Auswertung des Fundbuchs zeigt eindeutig: {first} ist {ROLES[solution[first]].lower()}.",
-                   Sum((first,), solution[first]))
+    domains = {name: {0, 1} for name in keys}
+    first = rng.choice(keys)
+    row, col = divmod(keys.index(first), COLS)
+    opening = Clue(f"Die Person in Reihe „{rooms[row]}“ und Spalte {COLUMNS[col]} "
+                   f"ist {ROLES[solution[first]].lower()}.", Sum((first,), solution[first]), "opening")
+    scopes, candidates, neighbors = position_clues(areas, rooms, solution)
+    known = {first: solution[first]}
+    pending = [first]
+    statements = {}
+    used = set()
+    order = []
+    kinds = {}
+    hard = difficulty == "schwer"
+    combined_count = 0
 
-    # The first statement gives two independent entry points into the investigation.
-    common_role = rng.randrange(2)
-    witnesses = tuple(rng.sample([name for name in remaining if solution[name] == common_role], 2))
-    remaining = [name for name in remaining if name not in witnesses]
-    statements = {first: counted(witnesses, solution)}
-    order = [first, *witnesses]
-
-    while remaining:
-        left, right = witnesses
-        if len(remaining) == 1:
-            last = remaining.pop()
-            statements[left] = comparison(left, last, solution)
-            order.append(last)
-            break
-
-        innocent = [name for name in remaining if solution[name] == 0]
-        culpable = [name for name in remaining if solution[name] == 1]
-        witnesses = tuple(remaining[:2])
-        if difficulty == "schwer" and len(remaining) >= 3 and innocent and culpable and rng.random() < .85:
-            pair = [rng.choice(innocent), rng.choice(culpable)]
-            rng.shuffle(pair)
-            witnesses = tuple(pair)
-            bridge = rng.choice([name for name in remaining if name not in witnesses])
-            # The pair and triple totals together determine the third person. Their statement resolves the pair.
-            statements[left] = counted(witnesses, solution)
-            statements[right] = counted((*witnesses, bridge), solution)
-            statements[bridge] = comparison(bridge, witnesses[0], solution)
-            remaining.remove(bridge)
-            order.append(bridge)
-        elif difficulty == "schwer":
-            statements[left] = comparison(*witnesses, solution)
-            statements[right] = comparison(right, witnesses[0], solution)
-        elif rng.random() < .5:
-            statements[left] = counted((left, right, witnesses[0]), solution)
-            statements[right] = comparison(right, witnesses[1], solution)
+    while len(known) < len(keys):
+        singles = [(clue, consequence(clue, known)) for clue in candidates if clue.text not in used]
+        singles = [(clue, forced) for clue, forced in singles if forced]
+        combined = None
+        if len(pending) >= 2 and (hard or not combined_count):
+            visible = Model(domains, [opening.rule, *(clue.rule for clue in statements.values())])
+            combined = combined_clues(scopes, known, solution, singles, used, visible, rng, allow_parity=hard)
+        if combined:
+            clues, forced = combined
+            combined_count += 1
+        elif singles:
+            clue, forced = max(singles, key=lambda option: (
+                2 * min(len(option[1]), 3) - kinds.get(option[0].kind, 0) + rng.random() * 2))
+            clues = (clue,)
         else:
-            statements[left] = comparison(left, witnesses[0], solution)
-            statements[right] = comparison(right, witnesses[1], solution)
-        remaining = [name for name in remaining if name not in witnesses]
-        order.extend(witnesses)
+            # A boundary edge always exists on this connected grid.
+            witness, person = rng.choice([(name, other) for name in known for other in neighbors[name]
+                                          if other not in known])
+            r, c = divmod(keys.index(witness), COLS)
+            rr, cc = divmod(keys.index(person), COLS)
+            direction = "über" if rr < r else "unter" if rr > r else "links von" if cc < c else "rechts von"
+            role = ROLES[solution[person]].lower()
+            clues = (Clue(f"Die Person direkt {direction} {witness} ist {role}.",
+                          Sum((person,), solution[person]), "position", (witness,)),)
+            forced = {person}
+        for clue in clues:
+            owner = pending.pop(0)
+            statements[owner] = clue
+            order.append(owner)
+            used.add(clue.text)
+            kinds[clue.kind] = kinds.get(clue.kind, 0) + 1
+        for name in keys:
+            if name in forced:
+                known[name] = solution[name]
+                pending.append(name)
 
-    for room, area in zip(rooms, areas):
-        for name in area:
-            if name not in statements:
-                statements[name] = counted(area, solution, room=room)
+    if combined_count < (2 if hard else 1):
+        raise LogicalProofMissing("Die Spuren des Falls greifen zu selten ineinander.")
+
+    unused = [clue for clue in candidates if clue.text not in used]
+    rng.shuffle(unused)
+    for name, clue in zip(pending, unused[:len(pending)], strict=True):
+        order.append(name)
+        statements[name] = clue
 
     model = Model({name: {0, 1} for name in keys}, [opening.rule, *(clue.rule for clue in statements.values())])
     rules = (f"{story} Wähle eine Person und ordne ihr den Status „Schuldig“ oder „Unschuldig“ zu. "
              "Der Status muss eindeutig aus den offenen Spuren folgen. Jede bestätigte Zuordnung öffnet "
-             "eine Aussage dieser Person.")
+             "eine Aussage dieser Person. Direkte Nachbarn sitzen waagerecht oder senkrecht nebeneinander.")
     puzzle = CasePuzzle(MODE, "Ermittlungsakte", rules, model, solution, {},
                         dict(kind="activity", mode=MODE, rooms=rooms, people=areas, clues=[opening.export()]),
                         seed, difficulty, opening=opening, statements=statements)
