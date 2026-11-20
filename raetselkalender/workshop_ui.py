@@ -22,31 +22,34 @@ class WorkshopUI(PentominoDragUI):
         else:state['board']=v['initial'].copy()
         return state
 
-    def workshop_entry(self,x,y,width,variable,callback,*,letter=False):
+    def workshop_entry(self,x,y,width,variable,callback,*,key,letter=False):
         entry=BoardEntry(self.canvas,textvariable=variable,font=('Helvetica',17),justify='center',
                        relief='solid',borderwidth=1,bg=PAPER,fg=INK)
         if letter:
             validate=self.root.register(lambda text:not text or len(text)==1 and len(text.upper())==1 and text.upper() in ALPHABET)
             entry.configure(validate='key',validatecommand=(validate,'%P'))
         self.extra_widgets.append(entry);self.activity_controls.append(entry)
-        self.canvas.create_window(x,y,window=entry,width=width,height=38,tags=('activity-controls',))
+        self.canvas.create_window(x,y,window=entry,width=width,height=38,
+                                  tags=('activity-controls',f'assist-field:{key}'))
+        self.workshop_entries_ui[key] = entry
         variable.trace_add('write',lambda *args:callback())
         entry.bind('<Return>',lambda event:self.check_workshop() or 'break')
         return entry
 
     def render_workshop(self):
+        self.workshop_entries_ui = {}
         self.workshop_variables={};self.workshop_turns=0;self.workshop_mirror=False;self.workshop_hitboxes=[]
         mode=self.puzzle.view['mode'];v=self.puzzle.view
         if mode=='crypto':
             for i,key in enumerate(self.puzzle.model.domains):
                 if key in self.puzzle.givens:continue
                 r,c=divmod(i,8);variable=tk.StringVar();self.workshop_variables[key]=variable
-                self.workshop_entry(67+c*86,309+r*94,55,variable,lambda k=key:self.edit_workshop_text(k),letter=True)
+                self.workshop_entry(67+c*86,309+r*94,55,variable,lambda k=key:self.edit_workshop_text(k),key=key,letter=True)
             bottom=280+math.ceil(len(self.puzzle.model.domains)/8)*94
             self.activity_button('Satz prüfen',self.check_workshop,350,bottom+35)
         elif mode=='target24':
             variable=tk.StringVar();self.workshop_variables['expression']=variable
-            self.workshop_entry(338,273,610,variable,lambda:self.edit_workshop_text('expression'))
+            self.workshop_entry(338,273,610,variable,lambda:self.edit_workshop_text('expression'),key='expression')
             self.activity_button('Ausdruck prüfen',self.check_workshop,338,335)
         elif mode=='pipes':
             n=v['size'];step=60 if n==4 else 50 if n==5 else 44 if n==7 else 38 if n==10 else 32 if n==12 else 28 if n==15 else 24
@@ -146,7 +149,8 @@ class WorkshopUI(PentominoDragUI):
         for key in v['inputs']:
             x,y=coords[key];value=self.activity_state['values'].get(key)
             self.canvas.create_text(x-40,y,text=key,fill=INK,font=('Helvetica',13,'bold'),tags=('activity-board',))
-            self.canvas.create_rectangle(x-22,y-22,x+27,y+22,fill='#e6eff7',outline='#3572a0',width=2,tags=('activity-board','circuit-input'))
+            self.canvas.create_rectangle(x-22,y-22,x+27,y+22,fill='#e6eff7',outline='#3572a0',width=2,
+                                         tags=('activity-board','circuit-input',f'circuit-input:{key}'))
             self.canvas.create_text(x+2,y,text='?' if value is None else str(value),fill=INK,font=('Helvetica',20,'bold'),tags=('activity-board',))
             self.workshop_hitboxes.append((x-22,y-22,x+27,y+22,('input',key)))
         for gate in v['gates']:

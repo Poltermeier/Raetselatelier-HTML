@@ -82,12 +82,14 @@ class WordGamesUI:
             self.paint_activity()
         if self.spelling_buttons:
             self.update_spelling_letters(self.word_game_finished())
+        self.refresh_assist_review()
 
     def clear_word_draft(self):
         if self.busy or self.showing_solution or self.word_game_finished():
             return
         self.activity_state.update(draft="", path=[])
         self.paint_activity()
+        self.refresh_assist_review()
 
     def submit_word(self, event=None):
         if self.busy or self.showing_solution or self.word_game_finished():

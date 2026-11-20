@@ -144,6 +144,9 @@ input[type="text"] { background: var(--paper); border: 1px solid #aebdb2; border
 .tk-entry > .tk-label { pointer-events: none; user-select: none; overflow: hidden; line-height: 1.12; }
 .tk-role-diagonal-entry > input,
 .tk-role-diagonal-entry > .tk-label { background-color: transparent !important; }
+.tk-entry > input[aria-invalid="true"] {
+  box-shadow: inset 0 0 0 2px #a62531;
+}
 .tk-role-success, .tk-role-error {
   z-index: 4; border-radius: 7px; box-shadow: 0 12px 30px #233a3233;
   max-width: calc(100% - 16px); max-height: calc(100% - 16px); overflow: auto;

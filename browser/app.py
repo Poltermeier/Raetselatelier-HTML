@@ -63,6 +63,9 @@ gui.ThreadPoolExecutor = lambda **options: BrowserExecutor()
 class BrowserApp(gui.App):
     sudoku_diagonal_color = "#367db859"  # 35% opacity.
 
+    def set_assist_invalid(self, entry, invalid):
+        tk.send("invalid", entry.id, invalid)
+
     def reset(self):
         if self.puzzle is None or self.busy or self.showing_solution:
             return
@@ -154,6 +157,7 @@ def start():
         sidebar.master: "body", sidebar: "sidebar", app.main: "main",
         app.title: "title", app.meta: "metadata", app.rules: "rules",
         app.board_holder: "board-holder", app.canvas: "board", app.status: "status",
+        app.hint_message: "hint-message", app.review_message: "review-message",
         app.progress: "progress", app.success_panel: "success",
         app.error_panel: "error", app.confetti_canvas: "confetti",
     }

@@ -28,6 +28,7 @@ from .route_ui import RouteUI
 from .strategy_ui import StrategyUI
 from .spring_ui import SpringUI
 from .activity_ui import ActivityUI
+from .assistance_ui import AssistanceUI
 from .diagonal_ui import DiagonalUI,DIAGONAL_COLOR,WINDOW_COLOR
 from .preferences import load_preferences,VictorySound,save_preferences
 from .settings_ui import SettingsUI
@@ -42,7 +43,7 @@ MUTED = "#63736a"
 LINE = "#d1d8cf"
 
 
-class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, ClickBoardUI, HistoryUI, CampingUI, FeedbackUI, CalendarUI, PouringUI, MatrixUI, RouteUI, StrategyUI, SpringUI, ActivityUI, DiagonalUI, SettingsUI, WorkshopUI):
+class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, ClickBoardUI, HistoryUI, CampingUI, FeedbackUI, CalendarUI, PouringUI, MatrixUI, RouteUI, StrategyUI, SpringUI, ActivityUI, AssistanceUI, DiagonalUI, SettingsUI, WorkshopUI):
     sudoku_diagonal_color = DIAGONAL_COLOR
 
     def __init__(self, root, type_id="random", seed=None, difficulty="schwer", *, board_scale=None, cat_size=6, pipe_size=5, settings_path=None):
@@ -189,6 +190,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.meta.pack(anchor="w", pady=(4, 8))
         self.rules = ttk.Label(self.main, text="", wraplength=730, justify="left", font=("Helvetica",12))
         self.rules.pack(anchor="w", pady=(0, 12))
+        self.setup_assistance()
         self.board_holder = ttk.Frame(self.main)
         self.board_holder.pack(fill="both", expand=True)
         self.canvas = BoardCanvas(self.board_holder, bg=PAPER, highlightthickness=1,
@@ -274,6 +276,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.solution_button.configure(state="disabled")
         self.update_notes_button()
         self.update_undo_button()
+        self.update_assist_buttons()
         self.selection_changed()
         if value:
             self.cancel_pour_animation()
@@ -337,6 +340,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.idle_diagnostics.arm()
 
     def clear_board(self):
+        self.close_assistance()
         self.cancel_hearts_timer()
         self.cancel_pentomino_drag(paint=False)
         self.close_chess_menu()
@@ -381,7 +385,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
                          highlightcolor=ACCENT, validate="key", validatecommand=(validate, "%P"))
         options.update(entry_options or {})
         entry = BoardEntry(self.canvas, textvariable=var, **options)
-        window = self.canvas.create_window(x, y, window=entry, width=size if width is None else width, height=size)
+        window = self.canvas.create_window(x, y, window=entry, width=size if width is None else width,
+                                           height=size, tags=(f"assist-field:{key}",))
         self.vars[key] = var
         self.entries[key] = entry
         var.trace_add("write", lambda *args,k=key: self.on_change(k))
@@ -490,6 +495,9 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.rules.configure(wraplength=width)
         if int(self.status.cget('wraplength')) != width:
             self.status.configure(wraplength=width)
+        for label in (self.hint_message, self.review_message):
+            if int(label.cget("wraplength")) != width:
+                label.configure(wraplength=width)
 
     def request_board_fit(self, event=None):
         if event is not None:
@@ -749,6 +757,15 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
     def on_change(self,edited_key=None):
         if self.updating or self.puzzle is None or self.showing_solution:
             return
+        self.clear_hint()
+        if self.assist_review:
+            self.clear_assist_marks()
+        self.apply_change(edited_key)
+        if self.assist_review and not self.busy:
+            self.dismiss_error()
+            self.paint_assist_review()
+
+    def apply_change(self, edited_key):
         if edited_key is not None:
             self.answer_edited(edited_key)
         self.record_history()
@@ -836,6 +853,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.show_success()
 
     def toggle_solution(self):
+        self.close_assistance()
         self.cancel_pentomino_drag(paint=False)
         self.finish_route_drag()
         self.cancel_pour_animation()
@@ -845,6 +863,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.dismiss_error()
         self.finish_rectangle_drag()
         self._toggle_solution()
+        self.update_assist_buttons()
         self.update_undo_button()
 
     def _toggle_solution(self):
@@ -927,7 +946,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         if self.puzzle.view["kind"] == "rectangles":
             self.borders.clear()
             self.refresh_borders()
-            self.on_rectangle_change()
+            self.on_change()
             return
         self.updating = True
         for var in self.vars.values():

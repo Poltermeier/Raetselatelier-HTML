@@ -32,7 +32,8 @@ class LockUI:
                          font=("Courier", 24, "bold"), highlightthickness=1,
                          highlightbackground="#d1d8cf", highlightcolor=ACCENT,
                          validate="key", validatecommand=(validate, "%P"))
-        self.canvas.create_window(118, y+54, window=entry, width=180, height=52)
+        self.canvas.create_window(118, y+54, window=entry, width=180, height=52,
+                                  tags=("assist-field:Code",))
         self.vars["Code"], self.entries["Code"] = var, entry
         var.trace_add("write", lambda *args: self.on_change("Code"))
         self.register_input_commit("Code",entry)

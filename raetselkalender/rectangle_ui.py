@@ -123,7 +123,7 @@ class RectangleUI:
             self.borders.difference_update(inside)
             self.borders.update(frame)
             self.refresh_borders()
-            self.on_rectangle_change()
+            self.on_change()
         elif self.rectangle_click_edge is not None:
             self.toggle_border(self.rectangle_click_edge)
 
@@ -132,7 +132,7 @@ class RectangleUI:
             return
         self.borders.symmetric_difference_update({edge})
         self.refresh_borders()
-        self.on_rectangle_change()
+        self.on_change()
 
     def refresh_borders(self):
         for edge, item in self.border_items.items():

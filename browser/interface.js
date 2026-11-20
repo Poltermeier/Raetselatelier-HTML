@@ -175,6 +175,9 @@ function setOptions(widget, changed) {
             input.setAttribute("aria-pressed", options.style === "DifficultyOn.TButton");
         }
         if ((options.text || "").startsWith("Notizen")) input.setAttribute("aria-pressed", options.style === "NotesOn.TButton");
+        if (["Falsche anzeigen", "Falsche ausblenden"].includes(options.text)) {
+            input.setAttribute("aria-pressed", options.text === "Falsche ausblenden");
+        }
         if (options.style?.startsWith("Deduction")) {
             input.setAttribute("aria-pressed", options.style === "DeductionSelected.TButton");
             input.classList.toggle("deduction-linked", options.style === "DeductionLinked.TButton");
@@ -651,7 +654,7 @@ function role(widget, name) {
         widget.element.setAttribute("aria-level", "1");
     }
     if (name === "sidebar") widget.element.setAttribute("aria-label", "Rätsel auswählen");
-    if (name === "status") widget.element.setAttribute("role", "status");
+    if (["status", "hint-message", "review-message"].includes(name)) widget.element.setAttribute("role", "status");
     if (name === "case-clue") widget.element.setAttribute("aria-live", "polite");
     if (name === "case-room" || name === "case-heading") {
         widget.element.setAttribute("role", "heading");
@@ -681,6 +684,10 @@ function applyOperations(operations) {
         case "label":
             widget.accessibleName = args[0];
             widget.input.setAttribute("aria-label", args[0]);
+            break;
+        case "invalid":
+            if (args[0]) widget.input.setAttribute("aria-invalid", "true");
+            else widget.input.removeAttribute("aria-invalid");
             break;
         case "value": {
             const value = String(args[0]);

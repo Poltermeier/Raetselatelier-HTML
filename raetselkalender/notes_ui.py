@@ -128,6 +128,7 @@ class NotesUI:
         self.refresh_diagonal_entries()
 
     def set_note_mode(self, active):
+        self.clear_assist_marks()
         self.note_mode = active
         for key, settings in self.note_settings.items():
             entry = self.entries[key]
@@ -160,6 +161,7 @@ class NotesUI:
                 entry.configure(validatecommand=settings["validatecommand"], validate=settings["validate"])
         self.update_notes_button()
         self.refresh_note_previews()
+        self.refresh_assist_review()
 
     def remember_note_focus(self,key):
         self.last_note_key=key

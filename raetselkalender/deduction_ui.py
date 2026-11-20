@@ -40,7 +40,7 @@ class DeductionUI:
         self.group_buttons = [
             self.activity_button("", lambda index=index: self.pick_group_word(index),
                                  73 + index % 4 * 104, 90 + index // 4 * 62, 96,
-                                 height=54, style="Deduction.TButton", tags=("group-tile",))
+                                 height=54, style="Deduction.TButton", tags=("group-tile",f"group-tile:{index}"))
             for index in range(16)
         ]
         self.group_clear = self.activity_button("Auswahl leeren", self.clear_group, 95, 337, 140, height=48,
@@ -82,6 +82,7 @@ class DeductionUI:
 
     def update_group_selection(self):
         self.paint_activity()
+        self.refresh_assist_review()
         self.status.configure(text=f'{len(self.activity_state["selected"])} von 4 Wörtern ausgewählt.', foreground=INK)
 
     def shuffle_group_words(self):
