@@ -80,7 +80,8 @@ class Stockfish {
             const score = line.match(/\bscore (cp|mate) (-?\d+)/);
             const moves = line.match(/\bpv (.+)$/)?.[1]?.trim().split(/\s+/);
             if (depth && rank && score && moves?.length && !/\b(?:lowerbound|upperbound)\b/.test(line)) {
-                this.rows.set(rank, { depth, score: { [score[1]]: Number(score[2]) }, moves });
+                if (!this.rows.has(depth)) this.rows.set(depth, new Map());
+                this.rows.get(depth).set(rank, { score: { [score[1]]: Number(score[2]) }, moves });
             }
         }
         if (this.pending && line.startsWith(this.pending.prefix)) this.pending.resolve();
@@ -91,17 +92,19 @@ class Stockfish {
         await this.waitFor("bestmove", [
             "setoption name Clear Hash", "position fen " + fen, "go nodes " + nodes
         ]);
-        const best = this.rows.get(1);
-        const runner = this.rows.get(2);
-        if (!best || !runner) return "";
+        const depth = Math.max(0, ...[...this.rows].filter(([, pair]) => pair.has(1) && pair.has(2)).map(([depth]) => depth));
+        if (!depth) return "";
+        const best = this.rows.get(depth).get(1);
+        const runner = this.rows.get(depth).get(2);
         return JSON.stringify({
             nodes_limit: nodes,
-            depth: Math.min(best.depth, runner.depth),
+            depth,
             best_move: best.moves[0],
             runner_up_move: runner.moves[0],
             best: best.score,
             runner_up: runner.score,
-            pv: best.moves.slice(0, 12)
+            pv: best.moves.slice(0, 12),
+            runner_pv: runner.moves.slice(0, 8)
         });
     }
 

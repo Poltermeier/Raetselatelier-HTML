@@ -6,14 +6,18 @@ from .playing_cards import card_text, red
 SEATS = ("Du", "Mara", "Nils", "Lea")
 DIRECTIONS = {1: "links", -1: "rechts", 2: "gegenüber"}
 INK, ACCENT, MUTED = "#233a32", "#27644c", "#63736a"
-CARD_WIDTH, CARD_HEIGHT = 66, 84
-HAND_TOP, HAND_ROW_GAP = 337, 92
+LEAD_COLOR = "#185b86"
+CARD_WIDTH, CARD_HEIGHT = 54, 78
+HAND_TOP, HAND_ROW_GAP = 337, 90
 BOT_DELAY_MS, TRICK_PAUSE_MS = 550, 950
 
 
-def hand_rows(count, zoom, board_width):
-    spacing = min(49, (404 - CARD_WIDTH) / max(count - 1, 1))
-    if count > 8 and board_width < 540 and spacing * zoom < 26:
+def hand_spacing(count):
+    return min(59, (404 - CARD_WIDTH) / max(count - 1, 1))
+
+
+def hand_rows(count, zoom):
+    if count > 9 or (count > 7 and hand_spacing(count) * zoom < 30):
         first = (count + 1) // 2
         return first, count - first
     return (count,) if count else ()
@@ -116,7 +120,7 @@ class HeartsUI:
 
     def fit_hearts_hand(self):
         if self.puzzle.type_id == "hearts":
-            rows = hand_rows(len(self.hearts_game.hands[0]), self.canvas.zoom, self.canvas.winfo_width())
+            rows = hand_rows(len(self.hearts_game.hands[0]), self.canvas.zoom)
             if rows != self.hearts_hand_rows:
                 self.paint_activity()
 
@@ -137,6 +141,9 @@ class HeartsUI:
 
         self.word_text(17, 130, "Aktueller Stich", size=13, bold=True)
         current_trick = game.last_trick if self.hearts_pause else game.trick
+        if current_trick:
+            leader, card = current_trick[0]
+            self.word_text(184, 132, f"Ausspiel · {SEATS[leader]} {card_text(card)}", size=10, color=LEAD_COLOR, bold=True)
         latest = current_trick[-1][0] if current_trick else None
         self.draw_hearts_trick(current_trick, 153, "current", latest=latest)
         if self.hearts_received and not game.history and game.stage == "play":
@@ -174,6 +181,7 @@ class HeartsUI:
 
     def draw_hearts_trick(self, trick, y, slot, *, winner=None, latest=None):
         cards = dict(trick)
+        leader = trick[0][0] if trick else None
         for player, name in enumerate(SEATS):
             x = 24 + player * 105
             self.draw_playing_card(x, y, 75, 48, cards.get(player),
@@ -183,16 +191,20 @@ class HeartsUI:
                                     fill=INK if player in cards else MUTED,
                                     font=("Helvetica", 11, "bold"),
                                     tags=("activity-board", f"hearts-{slot}-name:{player}"))
+            if player == leader:
+                self.canvas.create_text(x+69, y+5, text="1.", anchor="ne", fill=LEAD_COLOR,
+                                        font=("Helvetica", 11, "bold"),
+                                        tags=("activity-board", f"hearts-{slot}-lead:{player}"))
 
     def show_hearts_hand(self, game):
         hand = game.hands[0]
         legal = (game.observation(0).legal() if game.stage == "play" and game.turn == 0
                  and not self.hearts_pause else ())
-        rows = hand_rows(len(hand), self.canvas.zoom, self.canvas.winfo_width())
+        rows = hand_rows(len(hand), self.canvas.zoom)
         self.hearts_hand_rows = rows
         positions = []
         for row, count in enumerate(rows):
-            step = min(49, (404 - CARD_WIDTH) / max(count - 1, 1))
+            step = hand_spacing(count)
             for index in range(count):
                 offset = index - (count - 1) / 2
                 bend = 10 * (offset / max((count - 1) / 2, 1)) ** 2
@@ -217,7 +229,11 @@ class HeartsUI:
             return f"{len(self.hearts_selection)} von 3 Karten gewählt · weiter an {recipient} ({DIRECTIONS[game.offset]})."
         if current_trick:
             player, card = current_trick[-1]
-            played = f"Du spielst {card_text(card)}." if player == 0 else f"{SEATS[player]} spielt {card_text(card)}."
+            if len(current_trick) == 1:
+                played = (f"Du spielst {card_text(card)} aus." if player == 0
+                          else f"{SEATS[player]} spielt {card_text(card)} aus.")
+            else:
+                played = f"Du spielst {card_text(card)}." if player == 0 else f"{SEATS[player]} spielt {card_text(card)}."
             if self.hearts_pause:
                 result = "Du gewinnst den Stich." if game.last_winner == 0 else f"Der Stich geht an {SEATS[game.last_winner]}."
                 return f"{played} {result}"

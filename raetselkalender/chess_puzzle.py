@@ -9,8 +9,8 @@ import chess
 from .puzzle import Puzzle
 from .solver import Model,Table
 from .chess_validation import verify_unique_mate
-from .chess_explanations import MOTIFS,generated_explanation
-from .live_chess import generate_record,BUDGETS,acceptable
+from .chess_explanations import MOTIFS,generated_explanation,legal_line
+from .live_chess import generate_record,BUDGETS,acceptable,hard_enough
 
 CHESS_TASKS=('mate','best')
 
@@ -84,6 +84,12 @@ class ChessPuzzle(Puzzle):
         checks=r['engine_checks']
         if tuple(c['nodes_limit'] for c in checks)!=BUDGETS[self.difficulty]:raise ValueError('Unvollständige Engine-Prüfung')
         if not all(acceptable(c,self.difficulty) and c['best_move']==self.best_move and c['depth']>0 for c in checks):raise ValueError('Kein stabiler eindeutiger Bestzug')
+        if self.difficulty == 'schwer' and not hard_enough(board, r.get('difficulty_probe'), checks[-1]):
+            raise ValueError('Der Zug erfüllt die Kriterien für Schwer nicht')
+        for check in checks:
+            runner = check['runner_pv']
+            if not runner or runner[0] != check['runner_up_move'] or len(legal_line(board, runner)) != len(runner):
+                raise ValueError('Illegale Engine-Alternative')
         if r['kind']=='mate':
             if not all(c['best'].get('mate')==r['mate'] for c in checks):raise ValueError('Inkonsistente Mattlänge')
             if verify_unique_mate(r['fen'],r['mate'],r['best_move'])!=r['exact_mate_proof_nodes']:raise ValueError('Vollständiger Mattnachweis fehlt')
@@ -98,7 +104,8 @@ class ChessPuzzle(Puzzle):
             solution_method='generated_stockfish_analysis',verification_engine=r['engine'],
             verification_node_limits=list(BUDGETS[self.difficulty]),verification_depths=[c['depth'] for c in checks],
             position_origin='legal_playout',chess_candidates=r['generation_candidates'],search_nodes=None,search_branches=None,
-            difficulty_note='Frisch erzeugte legale Stellung; zwei Stockfish-Prüfungen beim Erzeugen. Im ruhenden Spiel läuft keine Engine.')
+            difficulty_note=('Zwei Stockfish-Prüfungen bestätigen den Bestzug. Eine kurze Suche und ein Abtauschtest filtern offensichtliche Züge.'
+                             if self.difficulty == 'schwer' else 'Zwei Stockfish-Prüfungen bestätigen den Bestzug.'))
 
     def export(self,include_solution=False):
         data=super().export(include_solution)

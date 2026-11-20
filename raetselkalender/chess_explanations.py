@@ -1,4 +1,5 @@
 """Factual explanations generated from moves and engine PVs; legacy audit texts."""
+import chess
 
 MOTIFS={
     '01MsO':'Das Schach erzwingt eine Reaktion. In der Beispielvariante öffnet der anschließende En-passant-Schlag die Linien für die Türme und ermöglicht weiteren Materialgewinn.',
@@ -43,46 +44,171 @@ def material_balance(board,color):
     return sum(PIECE_VALUES[p.piece_type]*(1 if p.color==color else -1) for p in board.piece_map().values())
 
 
-def score_text(cp):return f'{cp/100:+.2f}'.replace('.',',')
+SAN_GERMAN = str.maketrans("KQRBN", "KDTLS")
+
+
+def score_text(cp):
+    return f"{cp/100:+.2f}".replace(".", ",")
+
+
+def san(board, move):
+    return board.san(move).translate(SAN_GERMAN)
+
+
+def captured_piece(board, move):
+    if board.is_en_passant(move):
+        return chess.PAWN
+    return board.piece_type_at(move.to_square)
+
+
+def capture_text(piece):
+    if piece == chess.QUEEN:
+        return "die Dame"
+    if piece == chess.PAWN:
+        return "einen Bauern"
+    return "den " + PIECE_NAMES[piece]
+
+
+def move_description(board, move):
+    piece = board.piece_type_at(move.from_square)
+    subject = "Die Dame" if piece == chess.QUEEN else "Der " + PIECE_NAMES[piece]
+    target = chess.square_name(move.to_square)
+    captured = captured_piece(board, move)
+    if board.is_castling(move):
+        side = "kurz" if board.is_kingside_castling(move) else "lang"
+        return f"Der König rochiert {side}."
+    if move.promotion:
+        piece_name = PIECE_NAMES[move.promotion]
+        promoted = "eine Dame" if move.promotion == chess.QUEEN else "einen " + piece_name
+        return f"Der Bauer wandelt sich auf {target} in {promoted} um."
+    if board.is_en_passant(move):
+        return "Der Bauer schlägt en passant und nimmt den gegnerischen Bauern neben seinem Ausgangsfeld vom Brett."
+    if captured:
+        return f"{subject} schlägt {capture_text(captured)} auf {target}."
+    return f"{subject} zieht nach {target}."
+
+
+def legal_line(board, variation):
+    position = board.copy(stack=False)
+    moves = []
+    for uci in variation:
+        move = chess.Move.from_uci(uci)
+        if move not in position.legal_moves:
+            break
+        moves.append(move)
+        position.push(move)
+    return moves
+
+
+def mate_replies(after, moves):
+    """Show actual replies and the mate against each, with no engine approximation."""
+    answers = list(after.legal_moves)
+    if len(moves) > 1 and moves[1] in answers:
+        answers.remove(moves[1])
+        answers.insert(0, moves[1])
+    examples = []
+    for reply in answers[:2]:
+        reply_san = san(after, reply)
+        threatened_piece = after.piece_type_at(reply.to_square)
+        takes_attacker = (moves and reply.to_square == moves[0].to_square and after.is_capture(reply))
+        after.push(reply)
+        try:
+            for finish in after.legal_moves:
+                finish_san = san(after, finish)
+                if finish_san.endswith("#"):
+                    if takes_attacker:
+                        examples.append(f"Selbst wenn der Gegner mit {reply_san} {capture_text(threatened_piece)} schlägt, setzt {finish_san} matt.")
+                    else:
+                        examples.append(f"Auf {reply_san} folgt {finish_san}.")
+                    break
+        finally:
+            after.pop()
+    return " ".join(examples)
+
+
+def material_idea(board, moves):
+    side = board.turn
+    position = board.copy(stack=False)
+    pivot = None
+    facts = []
+    for index, move in enumerate(moves):
+        captured = captured_piece(position, move)
+        if index == 1 and move.to_square == moves[0].to_square and position.is_capture(move):
+            action = "zurückschlagen" if board.is_capture(moves[0]) else f"{capture_text(captured)} schlagen"
+            facts.append(f"Der Gegner kann mit {san(position, move)} {action}.")
+        if index >= 2 and position.turn == side and captured:
+            value = PIECE_VALUES[captured]
+            if pivot is None or value > pivot[0]:
+                dots = "." if position.turn else "..."
+                notation = f"{position.fullmove_number}{dots}{san(position, move)}"
+                pivot = (value, notation, captured, chess.square_name(move.to_square))
+        position.push(move)
+    if pivot:
+        _, name, piece, target = pivot
+        attacker = "Weiß" if side else "Schwarz"
+        facts.append(f"Mit {name} schlägt {attacker} in der Fortsetzung {capture_text(piece)} auf {target}.")
+    gain = material_balance(position, side) - material_balance(board, side)
+    if gain >= 100:
+        amount = f"{gain/100:.1f}".rstrip("0").rstrip(".").replace(".", ",")
+        unit = "Bauernwert" if amount == "1" else "Bauernwerte"
+        facts.append(f"Die Materialbilanz verbessert sich in dieser Variante um rund {amount} {unit}.")
+    return " ".join(facts)
+
+
+def alternative_idea(board, check):
+    runner = legal_line(board, check.get("runner_pv", (check["runner_up_move"],)))
+    if not runner:
+        return ""
+    alternative = san(board, runner[0])
+    details = f"Nach {alternative}"
+    if len(runner) > 1:
+        after = board.copy(stack=False)
+        after.push(runner[0])
+        reply = san(after, runner[1])
+        captured = captured_piece(after, runner[1])
+        if captured:
+            target = chess.square_name(runner[1].to_square)
+            details += f" kann der Gegner mit {reply} {capture_text(captured)} auf {target} schlagen."
+        else:
+            details += f" antwortet der Gegner in der Engine-Variante mit {reply}."
+    else:
+        details += " fällt die Bewertung deutlich ab."
+    best_score = score_text(check["best"]["cp"])
+    alternative_score = score_text(check["runner_up"]["cp"])
+    return f"{details} Stockfish bewertet den Lösungszug mit {best_score} und {alternative} mit {alternative_score}, jeweils aus Sicht der Seite am Zug."
 
 
 def generated_explanation(puzzle):
-    import chess
-    board=chess.Board(puzzle.view['fen']);move=chess.Move.from_uci(puzzle.best_move)
-    if move not in board.legal_moves:return 'Die Ausgangsstellung wurde verändert.'
-    side=board.turn;piece=board.piece_at(move.from_square);name=PIECE_NAMES[piece.piece_type];subject='Die Dame' if piece.piece_type==chess.QUEEN else 'Der '+name
-    san=board.san(move);target=chess.square_name(move.to_square);captured=board.piece_at(move.to_square)
-    if board.is_castling(move):action='Die '+('kurze' if board.is_kingside_castling(move) else 'lange')+' Rochade bringt König und Turm in ihre neue Stellung.'
-    elif move.promotion:
-        promoted=PIECE_NAMES[move.promotion];action=f'Der Bauer wandelt sich auf {target} in '+('eine Dame' if move.promotion==chess.QUEEN else 'einen '+promoted)+' um.'
-    elif board.is_en_passant(move):action='Der Bauer schlägt einen gegnerischen Bauern en passant.'
-    elif captured:
-        object_name='die Dame' if captured.piece_type==chess.QUEEN else 'den Bauern' if captured.piece_type==chess.PAWN else 'den '+PIECE_NAMES[captured.piece_type]
-        action=f'{subject} schlägt {object_name} auf {target}.'
-    else:action=f'{subject} zieht nach {target}.'
-    after=board.copy();after.push(move);facts=[f'{san}: {action}']
-    if after.is_checkmate():facts.append('Der Zug setzt sofort matt.')
-    elif after.is_check():facts.append('Das Schach erzwingt eine Antwort.')
-    attacked=[(square,p) for square in after.attacks(move.to_square) if (p:=after.piece_at(square)) is not None and p.color!=side and p.piece_type!=chess.PAWN]
-    attacked.sort(key=lambda item:(10000 if item[1].piece_type==chess.KING else PIECE_VALUES[item[1].piece_type]),reverse=True)
-    fork=len(attacked)>=2
-    if fork:
-        names=[PIECE_NAMES[p.piece_type]+' auf '+chess.square_name(square) for square,p in attacked[:2]]
-        facts.append('Von dort werden gleichzeitig '+names[0]+' und '+names[1]+' angegriffen.')
-    # Artificial UI test positions or subsequently edited records cannot borrow
-    # an unrelated engine explanation from the original position.
-    if puzzle.chess_record['fen']!=board.fen():return ' '.join(facts)
-    if puzzle.view['task']=='mate':
-        count=puzzle.view['mate_in'];facts.append(f'Nur dieser erste Zug erzwingt Matt in höchstens {count} '+('eigenem Zug' if count==1 else 'eigenen Zügen')+' gegen jede legale Verteidigung.')
-    variation=board.copy();moves=[]
-    for uci in puzzle.principal_variation[:8]:
-        candidate=chess.Move.from_uci(uci)
-        if candidate not in variation.legal_moves:break
-        moves.append(candidate);variation.push(candidate)
-    if puzzle.view['task']=='best':
-        gain=material_balance(variation,side)-material_balance(board,side)
-        if gain>=100 and not fork:facts.append(f'In der Beispielvariante verbessert sich die Materialbilanz um etwa {str(round(gain/100,2)).replace(".",",")} Bauerneinheiten.')
-        last=puzzle.chess_record['engine_checks'][-1];runner=chess.Move.from_uci(last['runner_up_move'])
-        facts.append(f'Stockfish: {score_text(last["best"]["cp"])} statt {score_text(last["runner_up"]["cp"])} bei {board.san(runner)} aus Sicht von '+('Weiß.' if side else 'Schwarz.'))
-    if moves:facts.append('Beispiel: '+board.variation_san(moves))
-    return ' '.join(facts)
+    board = chess.Board(puzzle.view["fen"])
+    move = chess.Move.from_uci(puzzle.best_move)
+    if move not in board.legal_moves:
+        return "Die Ausgangsstellung wurde verändert."
+    after = board.copy(stack=False)
+    after.push(move)
+    opening = f"{san(board, move)}. {move_description(board, move)}"
+    if after.is_checkmate():
+        opening += " Der Zug setzt sofort matt. Der gegnerische König hat kein Fluchtfeld und keine legale Abwehr."
+    elif after.is_check():
+        opening += " Der Gegner muss auf das Schach reagieren."
+    if puzzle.chess_record["fen"] != board.fen():
+        return opening
+
+    moves = legal_line(board, puzzle.principal_variation[:8])
+    paragraphs = [opening]
+    if puzzle.view["task"] == "mate":
+        count = puzzle.view["mate_in"]
+        if count == 2:
+            replies = mate_replies(after, moves)
+            if replies:
+                paragraphs.append(replies)
+            paragraphs.append("Nur dieser erste Zug erzwingt Matt im zweiten eigenen Zug gegen jede legale Verteidigung.")
+    else:
+        idea = material_idea(board, moves)
+        if idea:
+            paragraphs.append(idea)
+        if moves:
+            paragraphs.append("Geprüfte Hauptvariante · " + board.variation_san(moves).translate(SAN_GERMAN))
+        alternative = alternative_idea(board, puzzle.chess_record["engine_checks"][-1])
+        if alternative:
+            paragraphs.append(alternative)
+    return "\n\n".join(paragraphs)

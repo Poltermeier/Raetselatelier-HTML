@@ -194,12 +194,8 @@ class StrategyUI:
         side='Weiß' if chess.Board(self.puzzle.view['fen']).turn else 'Schwarz'
         text=f'{side} am Zug' if not played else f'Zug: {san}'
         self.canvas.create_text(left,top+8*step+50,text=text,anchor='w',fill=INK,font=('Helvetica',14,'bold'),tags=('chess-board','chess-turn'))
-        if self.showing_solution:
-            notation='   '.join(step['san'] for step in self.puzzle.logical_steps)
-            self.canvas.create_text(left,top+8*step+80,text='Eine Lösungsvariante: '+notation,anchor='nw',width=460,
-                fill=ACCENT,font=('Helvetica',12),tags=('chess-board','chess-variation'))
         if self.showing_solution or self.puzzle.check_move(self.chess_move)=='correct':
-            self.canvas.create_text(left,top+8*step+135,text=self.puzzle.solution_explanation(),anchor='nw',width=470,
+            self.canvas.create_text(left,top+8*step+73,text=self.puzzle.solution_explanation(),anchor='nw',width=470,
                 fill=INK,font=('Helvetica',12),tags=('chess-board','chess-explanation'))
             box=self.canvas.bbox('chess-explanation')
             self.canvas.configure(scrollregion=(0,0,560,max(880,box[3]+28)))
@@ -233,5 +229,8 @@ class StrategyUI:
             self.paint_chess()
         self.solution_button.configure(text='Zurück zu meinen Eingaben' if self.showing_solution else 'Lösung ansehen')
         self.reset_button.configure(state='disabled' if self.showing_solution else 'normal')
-        explanation=self.puzzle.solution_explanation() if self.showing_solution and self.puzzle.view['kind']=='chess' else ''
-        self.status.configure(text=explanation or ('Lösungsansicht · dein Spielstand bleibt erhalten.' if self.showing_solution else 'Dein Spielstand ist wiederhergestellt.'),foreground=INK)
+        if self.showing_solution and self.puzzle.view['kind'] == 'chess':
+            text = 'Lösung · ' + self.puzzle.solution_explanation()
+        else:
+            text = 'Lösungsansicht · dein Spielstand bleibt erhalten.' if self.showing_solution else 'Dein Spielstand ist wiederhergestellt.'
+        self.status.configure(text=text,foreground=INK)
