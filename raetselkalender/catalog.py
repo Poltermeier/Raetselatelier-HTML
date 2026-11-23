@@ -164,7 +164,7 @@ def generate(type_id="random", seed=None, difficulty="schwer", *, size=None):
         raise ValueError("Seed muss eine ganze Zahl sein")
     if type_id == "random":
         # Only playable types; pending rules must never produce a different puzzle.
-        type_id = random.Random(seed).choice([p.id for p in CATALOG if p.available])
+        type_id = random.Random(seed).choice([p.id for p in CATALOG if p.available and p.id != 'hearts'])
     if type_id not in BY_ID:
         raise ValueError(f"Unbekannter Rätseltyp: {type_id}")
     item = BY_ID[type_id]

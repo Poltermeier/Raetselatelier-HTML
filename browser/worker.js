@@ -60,10 +60,10 @@ class Stockfish {
             }, 20000);
             this.pending = {
                 prefix,
-                resolve: () => {
+                resolve: (line) => {
                     clearTimeout(timeout);
                     this.pending = null;
-                    resolve();
+                    resolve(line);
                 },
                 reject: (error) => {
                     clearTimeout(timeout);
@@ -86,7 +86,7 @@ class Stockfish {
                 this.rows.get(depth).set(rank, { score: { [score[1]]: Number(score[2]) }, moves });
             }
         }
-        if (this.pending && line.startsWith(this.pending.prefix)) this.pending.resolve();
+        if (this.pending && line.startsWith(this.pending.prefix)) this.pending.resolve(line);
     }
 
     async analyze(fen, nodes) {
@@ -110,7 +110,29 @@ class Stockfish {
         });
     }
 
+    async play(position, elo, milliseconds) {
+        const line = await this.waitFor("bestmove", [
+            "setoption name MultiPV value 1", "setoption name UCI_LimitStrength value true",
+            "setoption name UCI_Elo value " + elo, "position " + position, "go movetime " + milliseconds
+        ]);
+        return line.split(/\s+/)[1];
+    }
+
+    async evaluate(position, nodes, played) {
+        this.rows.clear();
+        await this.waitFor("bestmove", [
+            "setoption name MultiPV value 1", "setoption name UCI_LimitStrength value false",
+            "setoption name Clear Hash", "position " + position,
+            "go nodes " + nodes + (played ? " searchmoves " + played : "")
+        ]);
+        const depth = Math.max(0, ...[...this.rows].filter(([, pair]) => pair.has(1)).map(([depth]) => depth));
+        if (!depth) throw new Error("Stockfish hat keine Bewertung geliefert.");
+        const row = this.rows.get(depth).get(1);
+        return JSON.stringify({ score: row.score, moves: row.moves.slice(0, 6) });
+    }
+
     close() {
+        this.pending?.reject(new Error("Stockfish wurde beendet."));
         this.worker.terminate();
     }
 }

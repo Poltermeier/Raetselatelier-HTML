@@ -1,6 +1,6 @@
 # Simon's Rätselatelier im Browser
 
-Webport von [Raetselkalender-Generator](https://github.com/Poltermeier/Raetselkalender-Generator/tree/acf15a5799e1503f36a30726b63a7b60b43d378a) mit **72 Rätsel- und Spieltypen**. Für die Rätsel gibt es die Stufen *Mittel* und *Schwer*. Hearts hat eine eigene Stufenauswahl. Die Bedienung entspricht der Desktop-App, mit Rätselauswahl, Regeln und Spielfeld, Notizen, Rückgängig, Lösungsansicht und JSON-Export ohne Lösung. Die Einstellungen für Ton und Farbblindheitsmodus bleiben im jeweiligen Browser gespeichert.
+Webport von [Raetselkalender-Generator](https://github.com/Poltermeier/Raetselkalender-Generator/tree/acf15a5799e1503f36a30726b63a7b60b43d378a) mit **73 Rätsel- und Spieltypen**. Für die Rätsel gibt es die Stufen *Mittel* und *Schwer*. Hearts und Schach stehen im Menü *Längere Denkspiele*. Die Bedienung entspricht der Desktop-App, mit Rätselauswahl, Regeln und Spielfeld, Notizen, Rückgängig, Lösungsansicht und JSON-Export ohne Lösung. Die Einstellungen für Ton und Farbblindheitsmodus bleiben im jeweiligen Browser gespeichert.
 
 ## Lokal starten
 
@@ -36,6 +36,7 @@ Auf einem Raster mit fünf Spalten und vier Reihen ermittelst du zu 20 Personen.
 - **Mahjong** ist die Solitärvariante mit 144 Steinen. Du räumst freie Paare ab. Blumen und Jahreszeiten bilden jeweils eigene Paargruppen. Beide Layouts haben einen geprüften Räumweg.
 - **FreeCell** verwendet ein Standarddeck mit vier freien Zellen und vier Zielstapeln. Die freien Zellen und leeren Spalten bestimmen die maximal verschiebbare Kartenfolge. Die Austeilungen enthalten einen geprüften Lösungsweg.
 - **Hearts** spielt sich gegen drei unabhängige Gegner. Wähle vor dem Start *Leicht*, *Mittel*, *Schwer* oder *Experte*. Jeder Gegner erhält seine eigene Hand, seine ausgetauschten Karten und die sichtbaren Spielinformationen. *Experte* testet mögliche Verteilungen der unbekannten Karten. Es gelten Kartenweitergabe, Bedienpflicht, die Herz- und Pik-Dame-Punkte und das Spielende ab 100 Punkten.
+- **Schach** lässt dich als Weiß oder Schwarz gegen Stockfish mit acht Elo-Einstellungen von 1320 bis 3000 spielen. Nach Partieende öffnet *Partie analysieren* die Zugnavigation. Für den angezeigten Zug berechnet Stockfish seine Empfehlung, eine mögliche Fortsetzung und die Bewertungen. Gold markiert den gespielten Zug, Blau eine abweichende Empfehlung.
 
 ## Weiterentwicklung
 

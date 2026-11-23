@@ -146,7 +146,8 @@ class TabletopUI:
         self.canvas.create_text(center, y + 23, text=symbol, fill=color if available else dimmed,
                                 font=("Helvetica", size, "bold"), tags=("activity-board",))
 
-    def draw_playing_card(self, x, y, width, height, card, *, label="", active=False, marked=False, tags=(), text_tags=()):
+    def draw_playing_card(self, x, y, width, height, card, *, label="", active=False, marked=False,
+                          tags=(), text_tags=(), font_size=13):
         border = "#27644c" if active else "#a76d19" if marked else LINE
         fill = "#dceee0" if active else "#fff0ce" if marked else PAPER if card is not None else TABLE
         self.canvas.create_rectangle(x, y, x + width, y + height, fill=fill, outline=border,
@@ -158,7 +159,7 @@ class TabletopUI:
         else:
             ink = RED if red(card) else "#203c40"
             self.canvas.create_text(x + 5, y + 4, text=card_text(card), fill=ink, anchor="nw",
-                                    font=("Helvetica", 13, "bold"), tags=("activity-board", *text_tags))
+                                    font=("Helvetica", font_size, "bold"), tags=("activity-board", *text_tags))
 
     def paint_freecell(self, board, top, suggested):
         self.tabletop_hits = []

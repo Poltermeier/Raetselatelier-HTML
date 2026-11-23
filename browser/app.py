@@ -31,7 +31,7 @@ async def generate_in_browser(type_id, seed, difficulty, **options):
     if seed is None:
         seed = secrets.randbits(48)
     if type_id == "random":
-        type_id = random.Random(seed).choice([p.id for p in catalog.CATALOG if p.available])
+        type_id = random.Random(seed).choice([p.id for p in catalog.CATALOG if p.available and p.id != "hearts"])
     if type_id != "schachraetsel":
         return catalog.generate(type_id, seed, difficulty, **options)
     from chess_adapter import browser_chess_puzzle
@@ -67,6 +67,14 @@ class BrowserApp(gui.App):
 
     def set_assist_invalid(self, entry, invalid):
         tk.send("invalid", entry.id, invalid)
+
+    def submit_chess_request(self, kind, board, argument):
+        from chess_adapter import browser_chess_request
+
+        return asyncio.ensure_future(browser_chess_request(kind, board, argument))
+
+    def confirm_chess_resignation(self, callback):
+        tk.confirm(self.root, "Aufgeben", "Möchtest du diese Partie aufgeben?", callback)
 
     def reset(self):
         if self.puzzle is None or self.busy or self.showing_solution:
@@ -137,11 +145,9 @@ class BrowserApp(gui.App):
             self.refresh_note_previews()
         self.fit_hearts_hand()
 
-    def poll_generation(self):
-        previous = self.puzzle
-        super().poll_generation()
-        if self.puzzle is not previous:
-            tk.send("reveal", self.main.id)
+    def load_puzzle(self, puzzle):
+        super().load_puzzle(puzzle)
+        tk.send("reveal", self.main.id)
 
     def open_settings(self):
         super().open_settings()
@@ -166,6 +172,8 @@ def start():
     for widget, role in roles.items():
         tk.send("role", widget.id, role)
     for widget, label in ((app.choice, "Rätseltyp"), (app.seed, "Seed (optional)"),
+                          (app.long_choice, "Längere Denkspiele"), (app.chess_elo_choice, "Stockfish-Elo"),
+                          (app.chess_color_choice, "Deine Farbe"),
                           (app.hearts_level_choice, "Hearts-Schwierigkeit"),
                           (app.cat_size_choice, "Feldgröße Katzensuche"),
                           (app.pipe_size_choice, "Feldgröße Pipes")):

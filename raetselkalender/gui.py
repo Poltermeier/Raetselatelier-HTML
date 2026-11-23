@@ -18,6 +18,7 @@ from .hashi_ui import HashiUI
 from .click_boards import ClickBoardUI
 from .history_ui import HistoryUI
 from .hearts import HEARTS_LEVELS
+from .chess_game_ui import ChessGameUI, CHESS_ELOS
 from .camping_ui import CampingUI
 from .board_canvas import BoardCanvas, BoardEntry
 from .feedback_ui import FeedbackUI
@@ -43,7 +44,7 @@ MUTED = "#63736a"
 LINE = "#d1d8cf"
 
 
-class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, ClickBoardUI, HistoryUI, CampingUI, FeedbackUI, CalendarUI, PouringUI, MatrixUI, RouteUI, StrategyUI, SpringUI, ActivityUI, AssistanceUI, DiagonalUI, SettingsUI, WorkshopUI):
+class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, ClickBoardUI, HistoryUI, CampingUI, FeedbackUI, CalendarUI, PouringUI, MatrixUI, RouteUI, StrategyUI, ChessGameUI, SpringUI, ActivityUI, AssistanceUI, DiagonalUI, SettingsUI, WorkshopUI):
     sudoku_diagonal_color = DIAGONAL_COLOR
 
     def __init__(self, root, type_id="random", seed=None, difficulty="schwer", *, board_scale=None, cat_size=6, pipe_size=5, settings_path=None):
@@ -127,14 +128,21 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         sidebar.pack(side="left", fill="y", padx=(0, 18))
         sidebar.pack_propagate(False)
         ttk.Label(sidebar, text="DEIN NÄCHSTES RÄTSEL", font=("Helvetica", 10, "bold")).pack(anchor="w")
-        ordered_types = sorted(CATALOG,key=lambda p:"".join(c for c in unicodedata.normalize("NFKD",p.title.casefold()) if not unicodedata.combining(c)))
+        ordered_types = sorted((p for p in CATALOG if p.id != "hearts"),key=lambda p:"".join(c for c in unicodedata.normalize("NFKD",p.title.casefold()) if not unicodedata.combining(c)))
         self.labels = ["Zufälliger Rätseltyp"] + [p.title + (" · "+p.availability_label if not p.available else "") for p in ordered_types]
         self.type_ids = ["random"] + [p.id for p in ordered_types]
         self.choice = ttk.Combobox(sidebar, values=self.labels, state="readonly", width=24)
-        self.choice.current(self.type_ids.index(type_id))
+        self.choice.current(self.type_ids.index("random" if type_id == "hearts" else type_id))
         self.choice.pack(fill="x", pady=(10, 14))
         self.choice.bind("<<ComboboxSelected>>", self.selection_changed)
-        ttk.Label(sidebar, text="Schwierigkeitsgrad").pack(anchor="w")
+        ttk.Label(sidebar, text="Längere Denkspiele").pack(anchor="w")
+        self.long_ids = (None, "hearts", "schach")
+        self.long_choice = ttk.Combobox(sidebar, values=("Spiel auswählen", "Hearts", "Schach"), state="readonly")
+        self.long_choice.current(1 if type_id == "hearts" else 0)
+        self.long_choice.pack(fill="x", pady=(5,12))
+        self.long_choice.bind("<<ComboboxSelected>>", self.selection_changed)
+        self.level_label = ttk.Label(sidebar, text="Schwierigkeitsgrad")
+        self.level_label.pack(anchor="w")
         self.level = tk.StringVar(value=difficulty if difficulty in ("mittel", "schwer") else "schwer")
         self.level_frame = ttk.Frame(sidebar)
         self.level_frame.pack(fill="x",pady=(5,12))
@@ -149,6 +157,15 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.hearts_level = tk.StringVar(value=hearts_default)
         self.hearts_level_choice = ttk.Combobox(sidebar, textvariable=self.hearts_level,
             values=[value.capitalize() for value in HEARTS_LEVELS], state="readonly")
+        self.chess_settings = ttk.Frame(sidebar)
+        ttk.Label(self.chess_settings, text="Stockfish-Elo").pack(anchor="w")
+        self.chess_elo = tk.StringVar(value="1500")
+        self.chess_elo_choice = ttk.Combobox(self.chess_settings, textvariable=self.chess_elo, values=CHESS_ELOS, state="readonly")
+        self.chess_elo_choice.pack(fill="x", pady=(4,9))
+        ttk.Label(self.chess_settings, text="Deine Farbe").pack(anchor="w")
+        self.chess_color = tk.StringVar(value="Weiß")
+        self.chess_color_choice = ttk.Combobox(self.chess_settings, textvariable=self.chess_color, values=("Weiß", "Schwarz"), state="readonly")
+        self.chess_color_choice.pack(fill="x", pady=(4,0))
         self.cat_size=tk.IntVar(value=cat_size)
         self.cat_size_frame=ttk.Frame(sidebar)
         ttk.Label(self.cat_size_frame,text='Feldgröße Katzensuche').pack(anchor='w')
@@ -213,16 +230,34 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         if type_id != "random" and BY_ID[type_id].available:
             root.after(100, self.new_puzzle)
 
+    def selected_long_game(self):
+        return self.long_ids[max(0, self.long_choice.current())]
+
+    def chess_available(self):
+        return BY_ID["schachraetsel"].available
+
     def selection_changed(self, event=None):
-        item = BY_ID.get(self.type_ids[self.choice.current()])
-        hearts = item is not None and item.id == "hearts"
-        if hearts:
-            self.level_frame.pack_forget()
-            self.hearts_level_choice.pack(fill="x", pady=(5,12), before=self.seed_label)
-            self.hearts_level_choice.configure(state="disabled" if self.busy else "readonly")
+        if event and event.widget is self.choice:
+            self.long_choice.current(0)
+        if event and event.widget is self.long_choice and self.selected_long_game():
+            self.choice.current(0)
+        long_game = self.selected_long_game()
+        item = BY_ID.get(long_game or self.type_ids[max(0, self.choice.current())])
+        for widget in (self.level_label, self.level_frame, self.hearts_level_choice, self.chess_settings):
+            widget.pack_forget()
+        if long_game == "schach":
+            self.seed_label.pack_forget()
+            self.seed.pack_forget()
+            self.chess_settings.pack(fill="x", pady=(0,12), before=self.new_button)
+            for widget in (self.chess_elo_choice, self.chess_color_choice):
+                widget.configure(state="disabled" if self.busy else "readonly")
         else:
-            self.hearts_level_choice.pack_forget()
-            self.level_frame.pack(fill="x", pady=(5,12), before=self.seed_label)
+            self.seed_label.pack(anchor="w", before=self.new_button)
+            self.seed.pack(fill="x", pady=(5,12), before=self.new_button)
+            self.level_label.pack(anchor="w", before=self.seed_label)
+            difficulty_control = self.hearts_level_choice if long_game == "hearts" else self.level_frame
+            difficulty_control.pack(fill="x", pady=(5,12), before=self.seed_label)
+            self.hearts_level_choice.configure(state="disabled" if self.busy else "readonly")
         if item is not None and item.id=='katzensuche':
             self.cat_size_frame.pack(fill='x',pady=(0,12),before=self.seed_label)
             self.cat_size_choice.configure(state='disabled' if self.busy else 'readonly')
@@ -232,11 +267,11 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.pipe_size_frame.pack(fill='x',pady=(0,12),before=self.seed_label)
             self.pipe_size_choice.configure(state='disabled' if self.busy else 'readonly')
         else:self.pipe_size_frame.pack_forget()
-        available = item is None or item.available
-        self.new_button.configure(text="Partie starten" if hearts else "Neues Rätsel",
+        available = self.chess_available() if long_game == "schach" else item is None or item.available
+        self.new_button.configure(text="Partie starten" if long_game else "Neues Rätsel",
                                   state="normal" if available and not self.busy else "disabled")
-        if item is not None and not available:
-            self.note.configure(text=item.unavailable_reason)
+        if not available:
+            self.note.configure(text=(item or BY_ID["schachraetsel"]).unavailable_reason)
             self.note.pack(anchor="w", pady=(0,8))
         else:
             self.note.pack_forget()
@@ -251,6 +286,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         if self.busy:
             return
         self.choice.current(0)
+        self.long_choice.current(0)
         self.seed.delete(0, "end")
         self.selection_changed()
         self.new_puzzle()
@@ -267,6 +303,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
                 if widget.winfo_exists():widget.configure(state=state)
             self.disabled_board_controls=[]
         self.choice.configure(state="disabled" if value else "readonly")
+        self.long_choice.configure(state="disabled" if value else "readonly")
         self.refresh_difficulty_buttons()
         self.seed.configure(state="disabled" if value else "normal")
         self.random_button.configure(state="disabled" if value else "normal")
@@ -274,6 +311,9 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             button.configure(state="normal" if self.puzzle is not None and not value else "disabled")
         if self.puzzle is not None and self.puzzle.type_id == "hearts":
             self.solution_button.configure(state="disabled")
+        if self.puzzle is not None and self.puzzle.view["kind"] == "chess-match":
+            for button in (self.solution_button, self.reset_button, self.export_button):
+                button.configure(state="disabled")
         self.update_notes_button()
         self.update_undo_button()
         self.update_assist_buttons()
@@ -293,12 +333,16 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
     def new_puzzle(self):
         if self.busy:
             return
+        long_game = self.selected_long_game()
+        if long_game == "schach":
+            self.start_chess_match()
+            return
         try:
             seed = int(self.seed.get()) if self.seed.get().strip() else None
         except ValueError:
             messagebox.showerror("Ungültiger Seed", "Der Seed muss eine ganze Zahl sein.", parent=self.root)
             return
-        type_id = self.type_ids[self.choice.current()]
+        type_id = long_game or self.type_ids[max(0, self.choice.current())]
         if type_id != "random" and not BY_ID[type_id].available:
             return
         self.set_busy(True)
@@ -319,11 +363,9 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.status.configure(text="Generierung fehlgeschlagen. Bitte erneut versuchen.", foreground="#9a3c30")
             messagebox.showerror("Generierung fehlgeschlagen", str(exc), parent=self.root)
             return
-        if puzzle.type_id == "hearts" and self.type_ids[self.choice.current()] == "random":
-            self.choice.current(self.type_ids.index("hearts"))
-            self.set_busy(False)
-            self.status.configure(text="Hearts wurde ausgewählt. Wähle eine Stufe und starte die Partie.", foreground=INK)
-            return
+        self.load_puzzle(puzzle)
+
+    def load_puzzle(self, puzzle):
         self.puzzle = puzzle
         self.showing_solution = False
         self.solution_button.configure(text="Lösung ansehen")
@@ -332,7 +374,11 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         certificate = (('Matt & Stockfish geprüft' if puzzle.view['task']=='mate' else 'Stockfish geprüft') if puzzle.view['kind']=='chess' else
                        'Optimalität geprüft' if puzzle.view['kind'] in ('pouring','jump') else
                        'Spielregeln geprüft' if puzzle.view['kind']=='activity' and not puzzle.analysis.get('logical_solvable') else 'Ohne Raten geprüft')
-        self.meta.configure(text=f"{puzzle.difficulty.capitalize()}   ·   Seed {puzzle.seed}   ·   {certificate}")
+        if puzzle.view['kind'] == 'chess-match':
+            color = 'Weiß' if puzzle.view['white'] else 'Schwarz'
+            self.meta.configure(text=f"Du spielst {color} · Stockfish {puzzle.view['elo']} Elo")
+        else:
+            self.meta.configure(text=f"{puzzle.difficulty.capitalize()}   ·   Seed {puzzle.seed}   ·   {certificate}")
         self.rules.configure(text=puzzle.rules.replace("−", "-").replace("–", "-"))
         self.render()
         self.on_change()
@@ -342,6 +388,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
     def clear_board(self):
         self.close_assistance()
         self.cancel_hearts_timer()
+        self.cancel_chess_match_request()
         self.cancel_pentomino_drag(paint=False)
         self.close_chess_menu()
         self.route_drag_active=False
@@ -442,6 +489,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.render_jump()
         elif view['kind']=='chess':
             self.render_chess()
+        elif view['kind']=='chess-match':
+            self.render_chess_match()
         elif view['kind'] == 'pouring':
             self.render_pouring()
         elif view["kind"] == "rectangles":
@@ -786,6 +835,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         if self.puzzle.view['kind']=='chess':
             self.on_chess_change()
             return
+        if self.puzzle.view['kind'] == 'chess-match':
+            return
         if self.puzzle.view['kind']=='binary-symbols':
             self.on_symbol_change()
             return
@@ -974,6 +1025,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             messagebox.showerror("Speichern fehlgeschlagen", str(exc), parent=self.root)
 
     def close(self):
+        self.cancel_chess_match_request()
         self.cancel_pentomino_drag(paint=False)
         if self.settings_window is not None:save_preferences(self.preferences,self.preferences_file)
         self.close_chess_menu()

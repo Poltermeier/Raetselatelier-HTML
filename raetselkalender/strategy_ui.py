@@ -136,20 +136,25 @@ class StrategyUI:
         square=self.chess_square_at(event)
         if square is None:return
         board=chess.Board(self.puzzle.view['fen'])
+        if self.choose_chess_square(board, square, self.play_chess_move, event):
+            self.paint_chess()
+
+    def choose_chess_square(self, board, square, play, event):
+        import chess
         if self.chess_selected is not None:
             choices=[move for move in board.legal_moves if move.from_square==self.chess_selected and move.to_square==square]
             if len(choices)==1:
-                self.play_chess_move(choices[0].uci());return
+                play(choices[0].uci());return False
             if choices:
                 menu=tk.Menu(self.root,tearoff=False)
                 self.chess_promotion_menu=menu
                 names={chess.QUEEN:'Dame',chess.ROOK:'Turm',chess.BISHOP:'Läufer',chess.KNIGHT:'Springer'}
                 for move in choices:
-                    menu.add_command(label=names[move.promotion],command=lambda m=move,p=self.puzzle:self.play_chess_move(m.uci()) if self.puzzle is p else None)
-                menu.tk_popup(event.x_root,event.y_root);return
+                    menu.add_command(label=names[move.promotion],command=lambda m=move,p=self.puzzle:play(m.uci()) if self.puzzle is p else None)
+                menu.tk_popup(event.x_root,event.y_root);return False
         piece=board.piece_at(square)
         self.chess_selected=square if piece and piece.color==board.turn and square!=self.chess_selected else None
-        self.paint_chess()
+        return True
 
     def play_chess_move(self,uci):
         if self.busy or self.showing_solution or self.puzzle.view['kind']!='chess' or self.chess_move:return
@@ -163,11 +168,24 @@ class StrategyUI:
         self.canvas.configure(scrollregion=(0,0,560,660))
         board=chess.Board(self.puzzle.view['fen'])
         selected=self.chess_selected
-        targets={move.to_square for move in board.legal_moves if move.from_square==selected} if selected is not None and not self.chess_move else set()
         played=chess.Move.from_uci(self.chess_move) if self.chess_move else None
         san=''
         if played:
             san=board.san(played);board.push(played)
+        self.draw_chess_position(board, selected, played)
+        left,top,step=self.chess_geometry
+        side='Weiß' if chess.Board(self.puzzle.view['fen']).turn else 'Schwarz'
+        text=f'{side} am Zug' if not played else f'Zug: {san}'
+        self.canvas.create_text(left,top+8*step+50,text=text,anchor='w',fill=INK,font=('Helvetica',14,'bold'),tags=('chess-board','chess-turn'))
+        if self.showing_solution or self.puzzle.check_move(self.chess_move)=='correct':
+            self.canvas.create_text(left,top+8*step+73,text=self.puzzle.solution_explanation(),anchor='nw',width=470,
+                fill=INK,font=('Helvetica',12),tags=('chess-board','chess-explanation'))
+            box=self.canvas.bbox('chess-explanation')
+            self.canvas.configure(scrollregion=(0,0,560,max(880,box[3]+28)))
+
+    def draw_chess_position(self, board, selected=None, played=None, suggested=None):
+        import chess
+        targets = {move.to_square for move in board.legal_moves if move.from_square == selected}
         left,top,step=self.chess_geometry
         for square in chess.SQUARES:
             x,y=self.chess_xy(square)
@@ -191,14 +209,10 @@ class StrategyUI:
         if played:
             a,b=self.chess_xy(played.from_square),self.chess_xy(played.to_square)
             self.canvas.create_line(*a,*b,fill='#b27932',width=3,arrow='last',tags=('chess-board','chess-move-arrow'))
-        side='Weiß' if chess.Board(self.puzzle.view['fen']).turn else 'Schwarz'
-        text=f'{side} am Zug' if not played else f'Zug: {san}'
-        self.canvas.create_text(left,top+8*step+50,text=text,anchor='w',fill=INK,font=('Helvetica',14,'bold'),tags=('chess-board','chess-turn'))
-        if self.showing_solution or self.puzzle.check_move(self.chess_move)=='correct':
-            self.canvas.create_text(left,top+8*step+73,text=self.puzzle.solution_explanation(),anchor='nw',width=470,
-                fill=INK,font=('Helvetica',12),tags=('chess-board','chess-explanation'))
-            box=self.canvas.bbox('chess-explanation')
-            self.canvas.configure(scrollregion=(0,0,560,max(880,box[3]+28)))
+        if suggested and suggested != played:
+            a, b = self.chess_xy(suggested.from_square), self.chess_xy(suggested.to_square)
+            self.canvas.create_line(*a, *b, fill="#17669b", width=4, arrow="last",
+                                    tags=("chess-board", "chess-suggested-arrow"))
 
     def on_chess_change(self):
         import chess

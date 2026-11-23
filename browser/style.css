@@ -139,11 +139,12 @@ input[type="text"] { background: var(--paper); border: 1px solid #aebdb2; border
 }
 .hearts-card-pip {
   position: absolute;
-  inset: auto 6px 6px auto;
-  font-size: 1.6em;
+  inset: auto 3px 3px auto;
+  font-size: 2.08em;
   opacity: .72;
   pointer-events: none;
 }
+.hearts-card-suit { display: block; font-size: 1.26em; }
 /* A tap on a note preview needs to reach the native input. */
 .tk-entry > .tk-label { pointer-events: none; user-select: none; overflow: hidden; line-height: 1.12; }
 .tk-role-diagonal-entry > input,

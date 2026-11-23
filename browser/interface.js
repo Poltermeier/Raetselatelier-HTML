@@ -159,7 +159,10 @@ function setOptions(widget, changed) {
             if (cardFace) {
                 const corner = document.createElement("span");
                 corner.className = "hearts-card-index";
-                corner.textContent = `${cardFace[1]}\n${cardFace[2]}`;
+                const suit = document.createElement("span");
+                suit.className = "hearts-card-suit";
+                suit.textContent = cardFace[2];
+                corner.append(cardFace[1], suit);
                 const pip = document.createElement("span");
                 pip.className = "hearts-card-pip";
                 pip.textContent = cardFace[2];

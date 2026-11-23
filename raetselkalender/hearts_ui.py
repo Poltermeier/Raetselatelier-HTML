@@ -136,7 +136,8 @@ class HeartsUI:
         y = source_y + (target_y - source_y) * progress - height / 2 - 56 * elapsed * (1 - elapsed)
         self.canvas.create_rectangle(x+3, y+5, x+width+3, y+height+5, fill="#a1afa3", outline="",
                                      tags=("activity-board", "hearts-flight"))
-        self.draw_playing_card(x, y, width, height, card, marked=True, tags=("hearts-flight",), text_tags=("hearts-flight",))
+        self.draw_playing_card(x, y, width, height, card, marked=True, tags=("hearts-flight",),
+                               text_tags=("hearts-flight",), font_size=15)
 
     def schedule_hearts_turn(self):
         game = self.hearts_game
@@ -235,7 +236,7 @@ class HeartsUI:
             x = 24 + player * 105
             self.draw_playing_card(x, y, TRICK_WIDTH, TRICK_HEIGHT, cards.get(player),
                                    active=player == winner, marked=player == latest,
-                                   tags=(f"hearts-{slot}:{player}",))
+                                   tags=(f"hearts-{slot}:{player}",), font_size=15)
             self.canvas.create_text(x+5, y+26, text=name, anchor="nw",
                                     fill=INK if player in cards else MUTED,
                                     font=("Helvetica", 11, "bold"),
