@@ -13,13 +13,15 @@ from .word_ui import WordGamesUI
 from .deduction_ui import MODES as DEDUCTION_MODES, DeductionUI
 from .tabletop_ui import TABLETOP_MODES, TabletopUI
 from .hearts_ui import HeartsUI
+from .new_puzzles_ui import NEW_ACTIVITY_MODES, NewPuzzlesUI
 
 INK,ACCENT,PAPER='#233a32','#27644c','#fffef9'
 
 
-class ActivityUI(WordGamesUI, DeductionUI, TabletopUI, HeartsUI):
+class ActivityUI(WordGamesUI, DeductionUI, TabletopUI, HeartsUI, NewPuzzlesUI):
     def initial_activity_state(self):
         v=self.puzzle.view;mode=v['mode']
+        if mode in NEW_ACTIVITY_MODES:return self.initial_new_activity()
         if mode in WORKSHOP_MODES:return self.initial_workshop_state()
         if mode in WORD_MODES:return dict(words=[], draft='', path=[])
         if mode in DEDUCTION_MODES:return self.initial_deduction_state()
@@ -60,6 +62,8 @@ class ActivityUI(WordGamesUI, DeductionUI, TabletopUI, HeartsUI):
         self.activity_state=self.initial_activity_state();self.activity_selected=None
         self.activity_controls=[];self.activity_draft_vars=[]
         mode=self.puzzle.view['mode']
+        if mode in NEW_ACTIVITY_MODES:
+            self.render_new_activity();return
         if mode in WORKSHOP_MODES:
             self.render_workshop();return
         if mode in WORD_MODES:
@@ -124,6 +128,8 @@ class ActivityUI(WordGamesUI, DeductionUI, TabletopUI, HeartsUI):
     def paint_activity(self):
         self.canvas.delete('activity-board')
         mode=self.puzzle.view['mode']
+        if mode in NEW_ACTIVITY_MODES:
+            self.paint_new_activity();return
         if mode in WORKSHOP_MODES:
             self.paint_workshop();return
         if mode in DEDUCTION_MODES:
@@ -450,6 +456,8 @@ class ActivityUI(WordGamesUI, DeductionUI, TabletopUI, HeartsUI):
         frame()
 
     def on_activity_change(self):
+        if self.puzzle.view['mode'] in NEW_ACTIVITY_MODES:
+            self.on_new_activity_change();return
         if self.puzzle.view['mode'] in TABLETOP_MODES:
             self.on_tabletop_change();return
         if self.puzzle.view['mode']=='hearts':
@@ -488,7 +496,8 @@ class ActivityUI(WordGamesUI, DeductionUI, TabletopUI, HeartsUI):
         mode=self.puzzle.view['mode']
         if self.showing_solution:
             self.saved_activity_state=deepcopy(self.activity_state)
-            if mode in TABLETOP_MODES:self.prepare_tabletop_replay()
+            if mode in NEW_ACTIVITY_MODES:self.prepare_new_activity_solution()
+            elif mode in TABLETOP_MODES:self.prepare_tabletop_replay()
             elif mode in WORKSHOP_MODES:self.activity_state=self.workshop_solution_state()
             elif mode in WORD_MODES:self.activity_state=self.initial_activity_state()
             elif mode=='sets':self.activity_state=dict(draft=[],found=[list(self.puzzle.sets[self.puzzle.solution[k]]) for k in self.puzzle.editable])
@@ -508,6 +517,7 @@ class ActivityUI(WordGamesUI, DeductionUI, TabletopUI, HeartsUI):
         self.reset_button.configure(state='disabled' if self.showing_solution else 'normal')
         self.update_notes_button()
         if self.showing_solution and mode=='solitaire':self.show_solitaire_step(0)
+        elif self.showing_solution and mode=='twiddle':self.navigate_twiddle(0)
         elif self.showing_solution and mode=='row-shift':self.show_row_shift_step(0)
         elif self.showing_solution and mode=='water-sort':self.show_water_sort_step(0)
         else:

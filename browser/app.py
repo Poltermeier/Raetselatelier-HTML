@@ -133,6 +133,20 @@ class BrowserApp(gui.App):
         for button in self.hearts_cards:
             tk.send("role", button.id, "hearts-card")
 
+    def render_popout(self):
+        super().render_popout()
+        for move, button in self.popout_buttons.items():
+            action = "Einwerfen" if move < 7 else "Herausnehmen"
+            tk.send("label", button.id, f"{action} in Spalte {move % 7 + 1}")
+
+    def render_new_activity(self):
+        super().render_new_activity()
+        if self.puzzle.view['mode'] == 'friedman':
+            tk.send("label", self.friedman_entry.id, "Dein Ausdruck")
+        else:
+            for (r, c), button in self.twiddle_buttons.items():
+                tk.send("label", button.id, f"Block drehen ab Zeile {r+1}, Spalte {c+1}")
+
     def fit_board(self):
         width, height = self.canvas.winfo_width(), self.canvas.winfo_height()
         if self.puzzle is None or self.fixed_board_scale is not None or min(width, height) < 100:
@@ -174,6 +188,7 @@ def start():
     for widget, label in ((app.choice, "Rätseltyp"), (app.seed, "Seed (optional)"),
                           (app.long_choice, "Längere Denkspiele"), (app.chess_elo_choice, "Stockfish-Elo"),
                           (app.chess_color_choice, "Deine Farbe"),
+                          (app.popout_level_choice, "4 gewinnt – Schwierigkeit"),
                           (app.hearts_level_choice, "Hearts-Schwierigkeit"),
                           (app.cat_size_choice, "Feldgröße Katzensuche"),
                           (app.pipe_size_choice, "Feldgröße Pipes")):

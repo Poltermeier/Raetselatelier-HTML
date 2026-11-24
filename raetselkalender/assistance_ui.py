@@ -31,7 +31,7 @@ class AssistanceUI:
         self.review_message = ttk.Label(panel, text="", justify="left", wraplength=700)
 
     def update_assist_buttons(self):
-        enabled = (self.puzzle is not None and self.puzzle.view['kind'] != 'chess-match'
+        enabled = (self.puzzle is not None and self.puzzle.view['kind'] not in ('chess-match', 'popout')
                    and not self.busy and not self.showing_solution)
         state = "normal" if enabled else "disabled"
         self.hint_button.configure(state=state)
@@ -191,11 +191,18 @@ class AssistanceUI:
                 offset = (blocked - 1) * 50
                 self.outline_assist((69, 375+offset, 428, 425+offset))
                 count, extra = 1, f" Der Umfüllvorgang in Zeile {blocked} ist mit diesen Füllständen nicht möglich."
-        elif mode == "target24":
+        elif mode in ("target24", "friedman"):
             expression = self.activity_state["expression"].strip()
             if expression and p.check_expression(expression)[0] != "correct":
                 self.mark_assist_entry("expression", self.workshop_entries_ui["expression"])
                 count = 1
+        elif mode == "twiddle":
+            for index, (value, target) in enumerate(zip(self.activity_state["board"], p.view["target"])):
+                if value != target:
+                    self.outline_assist(self.canvas.bbox(f"twiddle-tile:{index}"))
+                    count += 1
+            if count:
+                extra = " Die markierten Zahlen stehen noch nicht an ihrem Zielplatz."
         elif mode == "matches":
             state = self.activity_state
             if len(state["moves"]) == p.view["moves_required"] and p.check_mask(state["mask"]) != "correct":
@@ -287,6 +294,14 @@ class AssistanceUI:
             text = "Beginne mit einem Testcode, dessen Rückmeldung Ziffern ausschließt. Vergleiche dann, wo dieselben Ziffern in anderen Testcodes stehen."
         elif kind == "treasure":
             text = "Nimm eine Kiste als Kandidatin an. Prüfe dann jede Aussage anhand dieser Annahme."
+        elif kind == "distance":
+            text = "Beginne mit einem kurzen Abstand. Nach jeder Verbindung müssen alle übrigen Schritte noch länger werden können."
+        elif p.type_id == "summe-produkt":
+            text = "Nenne das gemeinsame Spaltenprodukt P. Teile P durch die bekannte Zahl jeder Spalte. Setze die Ergebnisse in die Zeilensummen ein."
+        elif mode == "friedman":
+            text = "Teile die Ziffern gedanklich in Blöcke. Prüfe, welche Blöcke sich als Basis und Exponent eignen."
+        elif mode == "twiddle":
+            text = self.twiddle_hint()
         elif mode == "gruppen":
             solved = self.activity_state["found"]
             theme = next((name for i, (name, _) in enumerate(p.groups) if i not in solved), None)

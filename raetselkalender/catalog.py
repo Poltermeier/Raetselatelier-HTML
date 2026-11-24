@@ -31,6 +31,8 @@ from .ermittlungsakte import ermittlungsakte
 from .pipes import pipes,PIPE_SIZES
 from .puzzle import LogicalProofMissing
 from .chess_engine import stockfish_path,stockfish_missing_message
+from .new_puzzles import distance, sum_product, twiddle
+from .friedman import friedman
 
 
 def chess_puzzle(seed, difficulty):
@@ -72,6 +74,10 @@ class PuzzleType:
 
 
 CATALOG = [
+    PuzzleType("distance", "Distance", distance),
+    PuzzleType("friedman-zahlen", "Friedman Zahlen", friedman),
+    PuzzleType("summe-produkt", "Summe Produkt", sum_product),
+    PuzzleType("twiddle", "Twiddle", twiddle),
     PuzzleType("rechenfreude", "Rechenfreude", g.arithmetic),
     PuzzleType("perlenschnursudoku", "Perlenschnursudoku", g.pearls),
     PuzzleType("kistenguck", "Kistenguck", calendar.kistenguck),
