@@ -658,6 +658,8 @@ class MessageBox:
     def showerror(title, message, **kw):
         send("dialog", title, message, None)
 
+    showinfo = showerror
+
     @staticmethod
     def askyesno(*args, **kw):
         return True  # The web App requests confirmation before calling reset.

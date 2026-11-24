@@ -7,22 +7,26 @@ from .puzzle import LogicalProofMissing, Puzzle
 from .solver import Model, SearchLimit, Sum, deduce, solve
 
 MODE = "ermittlungsakte"
-ROWS, COLS = 4, 5
+ROWS, COLS = 5, 4
 ROLES = ("Unschuldig", "Schuldig")
-NAMES = (
-    "Ada", "Aylin", "Ben", "Clara", "Daria", "David", "Ella", "Emil", "Fatma",
-    "Felix", "Greta", "Hana", "Ida", "Jana", "Jari", "Jona", "Kaya", "Lara",
-    "Lea", "Levi", "Lina", "Luis", "Mara", "Mert", "Mia", "Mika", "Nils",
-    "Noah", "Nora", "Omar", "Ravi", "Rosa", "Sami", "Tara", "Theo", "Timo",
-    "Uma", "Vera", "Yuna", "Zoe",
+WOMEN = ("Ada", "Aylin", "Clara", "Daria", "Ella", "Fatma", "Greta", "Hana", "Ida", "Jana", "Kaya", "Lara",
+         "Lea", "Lina", "Mara", "Mia", "Nora", "Rosa", "Tara", "Uma", "Vera", "Yuna", "Zoe")
+MEN = ("Amir", "Ben", "David", "Emil", "Felix", "Jari", "Jona", "Levi", "Luis", "Malik", "Mert", "Mika",
+       "Nils", "Noah", "Omar", "Ravi", "Sami", "Theo", "Timo", "Yusuf")
+PROFESSIONS = (
+    ("Zoll", "Zöllnerin", "Zöllner"), ("Fotografie", "Fotografin", "Fotograf"),
+    ("Kurierdienst", "Kurierin", "Kurier"), ("Technik", "Technikerin", "Techniker"),
+    ("Redaktion", "Redakteurin", "Redakteur"), ("Küche", "Köchin", "Koch"),
+    ("Lotsendienst", "Lotsin", "Lotse"), ("Fahrdienst", "Fahrerin", "Fahrer"),
+    ("Sanitätsdienst", "Sanitäterin", "Sanitäter"), ("Gärtnerei", "Gärtnerin", "Gärtner"),
 )
 CASES = (
-    ("Die Plakate für ein Konzert sind verschwunden.", ("Bühne", "Studio", "Werkstatt", "Foyer")),
-    ("Die Entwürfe für einen Dachgarten wurden heimlich vertauscht.", ("Archiv", "Innenhof", "Dach", "Gewächshaus")),
-    ("Aus einer Ausstellung fehlt das Modell des alten Rathauses.", ("Museum", "Atelier", "Depot", "Kasse")),
-    ("Jemand hat die Wegweiser für den Wandertag umgestellt.", ("Hütte", "Brücke", "Lichtung", "Aussichtspunkt")),
-    ("Kurz vor dem Stadtfest wurde eine Zeitkapsel entwendet.", ("Bibliothek", "Rathaus", "Marktplatz", "Innenhof")),
-    ("Die Filmrolle für das Straßenkino wurde gegen eine leere ausgetauscht.", ("Kiosk", "Park", "Vereinsheim", "Lager")),
+    ("Fracht ohne Papiere", "Am Kai taucht ein Container mit gefälschten Frachtpapieren auf."),
+    ("Die Nacht im Depot", "Im Depot der Hafenbahn wurden die Wagennummern in den Lieferbüchern manipuliert."),
+    ("Der Schlüssel zum Leuchtturm", "Aus dem Leuchtturmarchiv verschwinden die Originale alter Seekarten."),
+    ("Die doppelte Rechnung", "Die Werft hat für dieselbe Reparatur zwei fingierte Rechnungen bezahlt."),
+    ("Die stumme Boje", "Kurz vor einer Kontrolle wurden die Wartungsprotokolle der Hafenbojen ausgetauscht."),
+    ("Das Siegel aus Blei", "An mehreren Lagerkisten finden sich nachgemachte Zollplomben."),
 )
 
 
@@ -60,6 +64,24 @@ class CasePuzzle(Puzzle):
             return "correct"
         return "wrong" if opposite else "unproven"
 
+    def next_hint(self, confirmed):
+        """Find a provable person and a sufficient subset of the already visible clues."""
+        person = next((name for name in self.model.domains if name not in confirmed
+                       and self.classify(name, self.solution[name], confirmed) == "correct"), None)
+        if person is None:
+            return None
+        remaining = list(enumerate(self.revealed_clues(confirmed)))
+        for indexed in tuple(remaining):
+            subset = [item for item in remaining if item != indexed]
+            model = Model(self.model.domains, [clue.rule for _, (_, clue) in subset])
+            try:
+                alternate = solve(model, {person: 1-self.solution[person]}, limit=1, seconds=.3)
+            except SearchLimit:
+                continue
+            if not alternate.solutions:
+                remaining = subset
+        return person, tuple(index for index, _ in remaining)
+
     def certify_progression(self, order):
         if len(order) != len(self.model.domains) or set(order) != self.model.domains.keys():
             raise LogicalProofMissing("Die Folge der Aussagen erfasst nicht alle Personen.")
@@ -89,7 +111,7 @@ def combined_clues(scopes, known, solution, singles, used, visible, rng, *, allo
     if allow_parity:
         for scope in scopes:
             unknown = set(scope.keys).difference(known)
-            if len(unknown) == 2:
+            if len(unknown) == 2 and len(scope.keys) <= 8:
                 parity = parity_clue(scope, sum(solution[name] for name in scope.keys))
                 for clue, forced in singles:
                     if len(forced & unknown) == 1:
@@ -110,17 +132,24 @@ def combined_clues(scopes, known, solution, singles, used, visible, rng, *, allo
 
 def ermittlungsakte(seed, difficulty):
     rng = random.Random(seed)
-    story, rooms = rng.choice(CASES)
-    keys = tuple(rng.sample(NAMES, ROWS * COLS))
+    case_name, story = rng.choice(CASES)
+    keys = tuple(sorted(rng.sample(WOMEN + MEN, ROWS * COLS)))
     areas = tuple(keys[start:start + COLS] for start in range(0, len(keys), COLS))
+    grouping = rng.sample(PROFESSIONS, 5)
+    jobs, job_groups = {}, {}
+    people = rng.sample(keys, len(keys))
+    for index, (group, female, male) in enumerate(grouping):
+        members = tuple(sorted(people[index*4:index*4+4]))
+        job_groups[group] = members
+        jobs.update((name, female if name in WOMEN else male) for name in members)
     guilty = set(rng.sample(keys, rng.randint(8, 12)))
     solution = {name: int(name in guilty) for name in keys}
     domains = {name: {0, 1} for name in keys}
     first = rng.choice(keys)
     row, col = divmod(keys.index(first), COLS)
-    opening = Clue(f"Die Person in Reihe „{rooms[row]}“ und Spalte {COLUMNS[col]} "
-                   f"ist {ROLES[solution[first]].lower()}.", Sum((first,), solution[first]), "opening")
-    scopes, candidates, neighbors = position_clues(areas, rooms, solution)
+    opening = Clue(f"Die Person auf Feld {COLUMNS[col]}{row+1} ist {ROLES[solution[first]].lower()}.",
+                   Sum((first,), solution[first]), "opening")
+    scopes, candidates, orthogonal = position_clues(areas, job_groups, solution)
     known = {first: solution[first]}
     pending = [first]
     statements = {}
@@ -142,11 +171,12 @@ def ermittlungsakte(seed, difficulty):
             combined_count += 1
         elif singles:
             clue, forced = max(singles, key=lambda option: (
-                2 * min(len(option[1]), 3) - kinds.get(option[0].kind, 0) + rng.random() * 2))
+                2 * min(len(option[1]), 3) - kinds.get(option[0].kind, 0) + rng.random() * 2
+                + 2 * (option[0].kind == "profession" and "profession" not in kinds)))
             clues = (clue,)
         else:
             # A boundary edge always exists on this connected grid.
-            witness, person = rng.choice([(name, other) for name in known for other in neighbors[name]
+            witness, person = rng.choice([(name, other) for name in known for other in orthogonal[name]
                                           if other not in known])
             r, c = divmod(keys.index(witness), COLS)
             rr, cc = divmod(keys.index(person), COLS)
@@ -171,16 +201,18 @@ def ermittlungsakte(seed, difficulty):
 
     unused = [clue for clue in candidates if clue.text not in used]
     rng.shuffle(unused)
+    if "profession" not in kinds:
+        unused.sort(key=lambda clue: clue.kind != "profession")
     for name, clue in zip(pending, unused[:len(pending)], strict=True):
         order.append(name)
         statements[name] = clue
 
     model = Model({name: {0, 1} for name in keys}, [opening.rule, *(clue.rule for clue in statements.values())])
-    rules = (f"{story} Wähle eine Person und ordne ihr den Status „Schuldig“ oder „Unschuldig“ zu. "
-             "Der Status muss eindeutig aus den offenen Spuren folgen. Jede bestätigte Zuordnung öffnet "
-             "eine Aussage dieser Person. Direkte Nachbarn sitzen waagerecht oder senkrecht nebeneinander.")
+    rules = (f"Sonderkommission Nordhafen · {case_name}. {story} "
+             "Alle Aussagen sind wahr. Ordne eine Person erst zu, wenn ihre Rolle aus den offenen Spuren feststeht. "
+             "Jede bestätigte Zuordnung öffnet eine neue Aussage. Nachbarn zählen auch diagonal.")
     puzzle = CasePuzzle(MODE, "Ermittlungsakte", rules, model, solution, {},
-                        dict(kind="activity", mode=MODE, rooms=rooms, people=areas, clues=[opening.export()]),
+                        dict(kind="activity", mode=MODE, case_name=case_name, people=areas, jobs=jobs, clues=[opening.export()]),
                         seed, difficulty, opening=opening, statements=statements)
     puzzle.certify_progression(order)
     return puzzle

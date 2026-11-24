@@ -1,6 +1,7 @@
 """Native controls for Gruppen and Ermittlungsakte."""
 import random
 import tkinter as tk
+from tkinter import messagebox
 
 from .case_clues import COLUMNS
 from .ermittlungsakte import MODE as CASE, ROLES
@@ -9,6 +10,15 @@ from .gruppen import MODE as GROUPS
 MODES = (GROUPS, CASE)
 BOARD_WIDTH = 458
 INK, MUTED, ERROR = "#233a32", "#63736a", "#94412d"
+CASE_TERMS = (
+    "Orientierung\nSpalten A bis D laufen senkrecht, Reihen 1 bis 5 waagerecht. Links und rechts beziehen sich auf dieselbe Reihe, "
+    "darüber und darunter auf dieselbe Spalte. „Direkt“ meint das nächste Feld.\n\n"
+    "Nachbarschaft\nNachbarn sitzen auch diagonal. Gemeinsame Nachbarn grenzen an beide Personen an. Die beiden Personen selbst zählen dabei nicht. "
+    "„Zwischen“ meint die Felder ohne die beiden Endpunkte. Eine verbundene Gruppe bildet eine lückenlose waagerechte oder senkrechte Kette. "
+    "Auch eine Person kann eine Gruppe bilden. Die vier Ecken zählen zum Rand.\n\n"
+    "Aussagen\nZahlen sind genau gemeint, sofern nichts anderes dasteht. Null zählt als gerade. Alle Personen sagen die Wahrheit. "
+    "Aus einem Beruf allein folgt keine Rolle."
+)
 
 
 class DeductionUI:
@@ -149,6 +159,8 @@ class DeductionUI:
         self.case_clue_index = 0
         self.case_solution_index = 0
         self.case_feedback = ""
+        self.case_tip = None
+        self.case_tip_person = None
         self.case_heading = tk.Label(self.canvas, text="", anchor="w", font=("Helvetica", 12, "bold"),
                                      background="#fffef9", foreground=INK)
         self.case_clue = tk.Label(self.canvas, text="", anchor="w", justify="left", wraplength=398,
@@ -162,8 +174,9 @@ class DeductionUI:
                                   anchor="nw", tags=("case-actions",))
         self.case_previous = self.activity_button("Vorige Spur", lambda: self.turn_case_clue(-1), 90, 168, 130,
                                                   height=44, style="TButton")
-        self.case_next = self.activity_button("Nächste Spur", lambda: self.turn_case_clue(1), 238, 168, 150,
+        self.case_next = self.activity_button("Nächste Spur", lambda: self.turn_case_clue(1), 226, 168, 130,
                                               height=44, style="TButton")
+        self.activity_button("Begriffe", self.show_case_terms, 354, 168, 114, height=44, style="TButton")
         self.case_roles = [
             self.activity_button(role, lambda value=value: self.mark_case_person(value),
                                  128 + value * 202, 257, 194, tags=("case-actions",),
@@ -171,26 +184,51 @@ class DeductionUI:
             for value, role in enumerate(ROLES)
         ]
         self.case_people = {}
-        self.case_rooms = []
+        self.case_coordinates = []
         view = self.puzzle.view
-        stride = 420 / len(COLUMNS)
+        stride = 390 / len(COLUMNS)
+        left, first_y, row_height = 38, 343, 63
         for column, letter in enumerate(COLUMNS):
             label = tk.Label(self.canvas, text=letter, justify="center", font=("Helvetica", 11, "bold"),
                              background="#eef3ec", foreground=INK)
             self.extra_widgets.append(label)
-            self.canvas.create_window(17 + (column + .5) * stride, 299, window=label, width=stride - 4, height=23)
-        for row, (room, people) in enumerate(zip(view["rooms"], view["people"])):
-            label = tk.Label(self.canvas, text=room, anchor="w", font=("Helvetica", 11, "bold"),
-                             background="#fffef9", foreground=INK)
+            self.case_coordinates.append(label)
+            self.canvas.create_window(left + (column + .5) * stride, 298, window=label, width=stride - 5, height=22)
+        for row, people in enumerate(view["people"]):
+            y = first_y + row * row_height
+            label = tk.Label(self.canvas, text=str(row+1), anchor="center", font=("Helvetica", 11, "bold"),
+                             background="#eef3ec", foreground=INK)
             self.extra_widgets.append(label)
-            self.case_rooms.append(label)
-            self.canvas.create_window(25, 315 + row * 78, window=label, width=408, height=18, anchor="nw")
+            self.case_coordinates.append(label)
+            self.canvas.create_window(23, y, window=label, width=23, height=28)
             for column, name in enumerate(people):
                 self.case_people[name] = self.activity_button(
                     name, lambda person=name: self.select_case_person(person),
-                    17 + (column + .5) * stride, 363 + row * 78, stride - 4, height=56,
+                    left + (column + .5) * stride, y, stride - 5, height=58,
                     style="Deduction.TButton", tags=("case-person",),
                 )
+
+    def show_case_terms(self):
+        messagebox.showinfo("Ermittlungsakte · Begriffe", CASE_TERMS, parent=self.root)
+
+    def next_case_tip(self):
+        if self.case_tip is None:
+            self.case_tip = self.puzzle.next_hint(self.activity_state["entries"])
+            if self.case_tip is None:
+                return ("Alle Personen sind zugeordnet." if len(self.activity_state["entries"]) == len(self.case_people)
+                        else "Für diese Stellung konnte gerade kein Tipp geprüft werden.")
+            _, indices = self.case_tip
+            self.case_clue_index = indices[0]
+            self.paint_activity()
+            if indices == (0,):
+                return "Prüfe die Startspur. Drücke Tipp erneut, um die Person zu sehen."
+            numbers = ", ".join(str(i+1) for i in indices)
+            label = "die Spur" if len(indices) == 1 else "die Spuren"
+            return f"Prüfe {label} {numbers}. Drücke Tipp erneut, um die Person zu sehen."
+        person, _ = self.case_tip
+        self.case_tip_person = person
+        self.paint_activity()
+        return f"Die markierte Person {person} lässt sich mit diesen Spuren eindeutig zuordnen."
 
     def case_clues(self):
         confirmed = ((step["person"] for step in self.puzzle.logical_steps)
@@ -250,18 +288,21 @@ class DeductionUI:
         setattr(self, index_attr, index)
         source, clue = clues[index]
         heading = f"Spur von {source}" if source else "Startspur"
-        self.case_heading.configure(text=f"{heading} · {index + 1}/{len(clues)}")
+        cue = " · Tipp" if not self.showing_solution and self.case_tip and index in self.case_tip[1] else ""
+        self.case_heading.configure(text=f"{heading} · {index + 1}/{len(clues)}{cue}")
         if self.case_clue.cget("text") != clue.text:
             self.case_clue.configure(text=clue.text)
         self.case_previous.configure(state="disabled" if self.busy or index == 0 else "normal")
         self.case_next.configure(state="disabled" if self.busy or index == len(clues) - 1 else "normal")
         entries = self.puzzle.solution if self.showing_solution else self.activity_state["entries"]
         references = set(clue.anchors)
+        if not self.showing_solution and self.case_tip_person:
+            references.add(self.case_tip_person)
         for name, button in self.case_people.items():
             known = name in entries
             role = ROLES[entries[name]] if known else "Offen"
             self.update_deduction_tile(
-                button, f"{name}\n{role}", selected=self.activity_selected == name,
+                button, f"{name}\n{self.puzzle.view['jobs'][name]}\n{role}", selected=self.activity_selected == name,
                 related=name in references, resolved=known, disabled=self.busy or self.showing_solution,
             )
         self.canvas.itemconfigure("case-actions", state="hidden" if self.showing_solution else "normal")
@@ -270,11 +311,10 @@ class DeductionUI:
             button.configure(state="normal" if editing else "disabled")
         if not self.showing_solution:
             done, total = len(entries), len(self.case_people)
-            self.word_text(327, 163, f"{done}/{total} geklärt", size=11, color=MUTED)
             if self.activity_selected:
                 prompt = f"Gewählt: {self.activity_selected}"
             else:
-                prompt = "Akte abgeschlossen." if done == total else "Wähle eine Person auf dem Raster."
+                prompt = "Akte abgeschlossen." if done == total else f"{done}/{total} geklärt · wähle eine Person."
             self.case_prompt.configure(text=self.case_feedback or prompt, foreground=ERROR if self.case_feedback else INK)
         self.canvas.configure(scrollregion=(0, 0, 440, 644))
 
@@ -292,6 +332,8 @@ class DeductionUI:
             text = f'{len(state["found"])} von 4 Gruppen gefunden.'
         else:
             self.case_feedback = ""
+            self.case_tip = None
+            self.case_tip_person = None
             assigned = len(state["entries"])
             total = len(self.case_people)
             finished = assigned == total

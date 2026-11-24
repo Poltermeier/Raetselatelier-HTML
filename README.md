@@ -29,7 +29,9 @@ Die Wortdaten sind offline verfügbar. [Quellen, Lizenz und Erstellung der Wortl
 
 ## Ermittlungsakte
 
-Auf einem Raster mit fünf Spalten und vier Reihen ermittelst du zu 20 Personen. Am Anfang steht eine einzige Spur offen. Wähle eine Person und ordne ihr „Schuldig“ oder „Unschuldig“ zu. Das Spiel bestätigt eine Zuordnung erst, wenn die freigegebenen Spuren genau diesen Status erzwingen. Jede bestätigte Person öffnet eine eigene Aussage, auf die du über ihre Kachel oder über die Spurnavigation zugreifen kannst. Die Spuren beziehen sich unter anderem auf Reihen, Spalten, gemeinsame Nachbarn und lückenlose Gruppen. Direkte Nachbarn sitzen waagerecht oder senkrecht nebeneinander. Auf „Schwer“ musst du mehrfach Hinweise kombinieren. Dazu gehören auch gerade und ungerade Anzahlen. Alle Fälle lassen sich Schritt für Schritt ohne Raten lösen. Die Fälle sind eigene Rätsel des Ateliers, inspiriert vom Ermittlungsprinzip von [Clues by Sam](https://cluesbysam.com).
+Für die **Sonderkommission Nordhafen** ermittelst du zu 20 Personen mit Namen und Beruf. Das Raster ist alphabetisch sortiert, mit Spalten A–D und Reihen 1–5. Am Anfang ist eine Spur offen. Jede eindeutig belegte Zuordnung öffnet eine wahre Aussage. Spuren beziehen sich unter anderem auf Berufe, Positionen, gemeinsame Nachbarn, Ränder und lückenlose Gruppen. Nachbarn können auch diagonal sitzen. Verbundene Gruppen setzen sich aus waagerechten und senkrechten Schritten zusammen.
+
+**Begriffe** erklärt die räumlichen Regeln im Spiel. **Tipp** markiert zuerst die Spuren, die einen Schluss erlauben. Beim zweiten Drücken wird die zuordenbare Person hervorgehoben. Die Fälle, Figuren und Spuren entstehen im Atelier. [Spielregeln von Clues by Sam](https://cluesbysam.com/)
 
 ## Karten- und Brettspiele
 

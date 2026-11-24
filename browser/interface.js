@@ -156,7 +156,17 @@ function setOptions(widget, changed) {
                 input.append(icon);
             }
             const cardFace = options.style?.startsWith("Card") && (options.text || "").match(/^(.+)([♣♦♠♥])$/u);
-            if (cardFace) {
+            if (widget.element.classList.contains("tk-role-case-person")) {
+                const parts = (options.text || "").split("\n");
+                const classes = ["case-name", "case-job", "case-status"];
+                parts.forEach((value, index) => {
+                    const line = document.createElement("span");
+                    line.className = classes[index];
+                    line.textContent = value;
+                    input.append(line);
+                });
+                input.dataset.caseStatus = parts[2] || "";
+            } else if (cardFace) {
                 const corner = document.createElement("span");
                 corner.className = "hearts-card-index";
                 const suit = document.createElement("span");
@@ -659,9 +669,10 @@ function role(widget, name) {
     if (name === "sidebar") widget.element.setAttribute("aria-label", "Rätsel auswählen");
     if (["status", "hint-message", "review-message"].includes(name)) widget.element.setAttribute("role", "status");
     if (name === "case-clue") widget.element.setAttribute("aria-live", "polite");
-    if (name === "case-room" || name === "case-heading") {
+    if (name === "case-person") setOptions(widget, { text: widget.options.text });
+    if (name === "case-heading") {
         widget.element.setAttribute("role", "heading");
-        widget.element.setAttribute("aria-level", name === "case-heading" ? "2" : "3");
+        widget.element.setAttribute("aria-level", "2");
     }
     if (name === "main") widget.element.setAttribute("role", "main");
     if (name === "success" || name === "error") {

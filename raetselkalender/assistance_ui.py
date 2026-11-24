@@ -340,11 +340,7 @@ class AssistanceUI:
             else:
                 text = "Aktuell gibt es kein freies Paar. Mit Rückgängig kannst du eine andere Auswahl versuchen."
         elif mode == "ermittlungsakte":
-            known = self.activity_state["entries"]
-            person = next((name for name in p.model.domains if name not in known
-                           and p.classify(name, p.solution[name], known) == "correct"), None)
-            text = (f"Prüfe die offenen Spuren zu {person}. Daraus lässt sich die Rolle ableiten."
-                    if person else "Vergleiche die offenen Spuren und ihre Überschneidungen.")
+            text = self.next_case_tip()
         elif p.analysis.get("logical_solvable") and (kind != "activity" or mode in MODEL_ACTIVITIES):
             if not set(p.editable).difference(answers):
                 text = "Die Eingaben stimmen."

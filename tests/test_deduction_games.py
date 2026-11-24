@@ -2,8 +2,9 @@ from collections import Counter
 import unittest
 
 from raetselkalender.catalog import generate
-from raetselkalender.case_clues import position_clues
+from raetselkalender.case_clues import adjacent_run, position_clues
 from raetselkalender.gruppen import partition_bank, partition_count, theme_bank
+from raetselkalender.solver import Model, solve
 
 
 class GruppenTests(unittest.TestCase):
@@ -55,8 +56,12 @@ class ErmittlungsakteTests(unittest.TestCase):
             for seed in range(20):
                 puzzle = generate("ermittlungsakte", seed, difficulty)
                 rows = puzzle.view["people"]
-                self.assertEqual([len(row) for row in rows], [5, 5, 5, 5])
-                self.assertEqual({name for row in rows for name in row}, puzzle.model.domains.keys())
+                self.assertEqual([len(row) for row in rows], [4, 4, 4, 4, 4])
+                names = [name for row in rows for name in row]
+                self.assertEqual(names, sorted(puzzle.model.domains))
+                self.assertEqual(puzzle.view["jobs"].keys(), puzzle.model.domains.keys())
+                self.assertTrue(any(clue.kind == "profession" for clue in puzzle.statements.values()))
+                self.assertIn("Nordhafen", puzzle.rules)
                 self.assertEqual(puzzle.givens, {})
                 self.assertEqual(puzzle.export()["view"]["clues"], [puzzle.opening.export()])
                 self.assertNotIn("solution", puzzle.export())
@@ -106,12 +111,32 @@ class ErmittlungsakteTests(unittest.TestCase):
                         break
             self.assertGreaterEqual(combinations, minimum)
 
-    def test_spatial_clues_use_orthogonal_neighbors_and_shared_neighbors(self):
-        rows = ("ABCDE", "FGHIJ", "KLMNO", "PQRST")
-        rooms = ("Werkstatt", "Bühne", "Foyer", "Studio")
+    def test_spatial_clues_distinguish_diagonal_neighbors_from_connections(self):
+        rows = ("ABCD", "EFGH", "IJKL", "MNOP", "QRST")
         solution = {name: index % 2 for index, name in enumerate("".join(rows))}
-        scopes, clues, _ = position_clues(tuple(map(tuple, rows)), rooms, solution)
-        self.assertEqual(next(scope.keys for scope in scopes if scope.anchors == ("A",)), ("B", "F"))
-        self.assertEqual(next(scope.keys for scope in scopes if scope.anchors == ("A", "G")), ("B", "F"))
-        self.assertEqual(next(scope.keys for scope in scopes if scope.anchors == ("A", "E")), ("B", "C", "D"))
-        self.assertEqual(next(clue.rule.keys for clue in clues if clue.text.startswith("In Spalte C")), ("C", "H", "M", "R"))
+        scopes, clues, orthogonal = position_clues(tuple(map(tuple, rows)), {"Küche": ("A", "H", "L", "Q")}, solution)
+        self.assertEqual(next(scope.keys for scope in scopes if scope.kind == "neighbors" and scope.anchors == ("A",)), ("B", "E", "F"))
+        self.assertEqual(orthogonal["A"], ("B", "E"))
+        self.assertEqual(next(scope.keys for scope in scopes if scope.kind == "shared" and scope.anchors == ("A", "F")), ("B", "E"))
+        self.assertEqual(next(scope.keys for scope in scopes if scope.kind == "between" and scope.anchors == ("A", "D")), ("B", "C"))
+        self.assertEqual(next(clue.rule.keys for clue in clues if clue.text.startswith("In Spalte C")), ("C", "G", "K", "O", "S"))
+        self.assertEqual(len(next(scope.keys for scope in scopes if scope.kind == "edge")), 14)
+        self.assertEqual(next(scope.keys for scope in scopes if scope.kind == "corner"), ("A", "D", "Q", "T"))
+        self.assertEqual(next(scope.keys for scope in scopes if scope.kind == "profession"), ("A", "H", "L", "Q"))
+        self.assertTrue(adjacent_run((0, 1, 0)))
+        self.assertFalse(adjacent_run((1, 0, 1)))
+
+    def test_two_stage_hint_only_uses_open_clues_that_prove_the_person(self):
+        puzzle = generate("ermittlungsakte", 42, "schwer")
+        confirmed = {}
+        name, indices = puzzle.next_hint(confirmed)
+        self.assertEqual(indices, (0,))
+        self.assertEqual((name,), puzzle.opening.rule.keys)
+        for step in puzzle.logical_steps[:9]:
+            confirmed[step["person"]] = step["value"]
+        name, indices = puzzle.next_hint(confirmed)
+        visible = puzzle.revealed_clues(confirmed)
+        self.assertNotIn(name, confirmed)
+        self.assertTrue(all(0 <= idx < len(visible) for idx in indices))
+        model = Model(puzzle.model.domains, [visible[idx][1].rule for idx in indices])
+        self.assertEqual(solve(model, {name: 1-puzzle.solution[name]}, limit=1).solutions, [])

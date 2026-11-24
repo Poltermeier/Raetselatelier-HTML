@@ -122,8 +122,8 @@ class BrowserApp(gui.App):
         else:
             for button in self.case_people.values():
                 tk.send("role", button.id, "case-person")
-            for room in self.case_rooms:
-                tk.send("role", room.id, "case-room")
+            for label in self.case_coordinates:
+                tk.send("role", label.id, "case-coordinate")
             tk.send("role", self.case_heading.id, "case-heading")
             tk.send("role", self.case_clue.id, "case-clue")
             tk.send("role", self.case_prompt.id, "case-prompt")

@@ -4,7 +4,7 @@ from itertools import combinations, product
 
 from .solver import Constraint, Sum, Table
 
-COLUMNS = "ABCDE"
+COLUMNS = "ABCD"
 NUMBERS = ("null", "eine", "zwei", "drei", "vier", "fünf")
 
 
@@ -28,8 +28,9 @@ class Scope:
 
 
 def count_clue(scope, total):
+    number = NUMBERS[total] if total < len(NUMBERS) else str(total)
     phrase = ("ist niemand schuldig." if total == 0 else "ist genau eine Person schuldig."
-              if total == 1 else f"sind genau {NUMBERS[total]} Personen schuldig.")
+              if total == 1 else f"sind genau {number} Personen schuldig.")
     where = scope.where[0].upper() + scope.where[1:]
     return Clue(f"{where} {phrase}", Sum(scope.keys, total), scope.kind, scope.anchors)
 
@@ -65,23 +66,37 @@ def comparison_clue(first, second, solution):
 
 def adjacent_run(values):
     occupied = [index for index, value in enumerate(values) if value]
-    return len(occupied) >= 2 and occupied[-1] - occupied[0] + 1 == len(occupied)
+    return bool(occupied) and occupied[-1] - occupied[0] + 1 == len(occupied)
 
 
-def position_clues(areas, rooms, solution):
-    rows = [Scope(row, f"in Reihe „{room}“", "row") for row, room in zip(areas, rooms)]
+def position_clues(areas, professions, solution):
+    rows = [Scope(row, f"in Reihe {i}", "row") for i, row in enumerate(areas, 1)]
     columns = [Scope(column, f"in Spalte {COLUMNS[i]}", "column") for i, column in enumerate(zip(*areas))]
     positions = {name: (r, c) for r, row in enumerate(areas) for c, name in enumerate(row)}
     names = tuple(positions)
-    neighbors = {name: tuple(other for other, (r2, c2) in positions.items() if abs(r - r2) + abs(c - c2) == 1)
+    neighbors = {name: tuple(other for other, (r2, c2) in positions.items()
+                             if 0 < max(abs(r-r2), abs(c-c2)) <= 1)
                  for name, (r, c) in positions.items()}
+    orthogonal = {name: tuple(other for other, (r2, c2) in positions.items() if abs(r-r2)+abs(c-c2) == 1)
+                  for name, (r, c) in positions.items()}
     scopes = rows + columns
+    edge = tuple(name for name, (r, c) in positions.items() if r in (0, len(rows)-1) or c in (0, len(columns)-1))
+    corners = tuple(name for name, (r, c) in positions.items() if r in (0, len(rows)-1) and c in (0, len(columns)-1))
+    scopes.extend((Scope(edge, "auf den Randfeldern", "edge"), Scope(corners, "auf den Eckfeldern", "corner")))
+    for job, people in professions.items():
+        scopes.append(Scope(people, f"in der Berufsgruppe {job}", "profession", people))
     for name, adjacent in neighbors.items():
-        scopes.append(Scope(adjacent, f"unter den direkten Nachbarn von {name}", "neighbors", (name,)))
+        scopes.append(Scope(adjacent, f"unter den Nachbarn von {name}", "neighbors", (name,)))
+        r, c = positions[name]
+        parts = ((areas[r][:c], f"links von {name}"), (areas[r][c+1:], f"rechts von {name}"),
+                 (columns[c].keys[:r], f"oberhalb von {name}"), (columns[c].keys[r+1:], f"unterhalb von {name}"))
+        for cells, where in parts:
+            if len(cells) >= 2:
+                scopes.append(Scope(cells, where, "direction", (name,)))
     for first, second in combinations(names, 2):
         common = tuple(name for name in neighbors[first] if name in neighbors[second])
-        if len(common) == 2:
-            scopes.append(Scope(common, f"unter den gemeinsamen direkten Nachbarn von {first} und {second}",
+        if 2 <= len(common) <= 4:
+            scopes.append(Scope(common, f"unter den gemeinsamen Nachbarn von {first} und {second}",
                                 "shared", (first, second)))
         r, c = positions[first]
         rr, cc = positions[second]
@@ -101,7 +116,7 @@ def position_clues(areas, rooms, solution):
         values = tuple(solution[name] for name in scope.keys)
         if adjacent_run(values):
             patterns = tuple(bits for bits in product((0, 1), repeat=len(values)) if adjacent_run(bits))
-            text = f"Die Schuldigen {scope.where} bilden eine lückenlose Gruppe aus mindestens zwei Personen."
+            text = f"Die Schuldigen {scope.where} bilden eine lückenlos verbundene Gruppe."
         elif all(not (a and b) for a, b in zip(values, values[1:])):
             patterns = tuple(bits for bits in product((0, 1), repeat=len(values))
                              if all(not (a and b) for a, b in zip(bits, bits[1:])))
@@ -109,7 +124,7 @@ def position_clues(areas, rooms, solution):
         else:
             continue
         clues.append(Clue(text, Table(scope.keys, patterns), "sequence"))
-    return scopes, clues, neighbors
+    return scopes, clues, orthogonal
 
 
 def consequence(clue, known):
