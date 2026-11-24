@@ -303,9 +303,7 @@ class AssistanceUI:
         elif kind == "distance":
             text = "Beginne mit einem kurzen Abstand. Nach jeder Verbindung müssen alle übrigen Schritte noch länger werden können."
         elif p.type_id == "summe-produkt":
-            if p.difficulty == "mittel":
-                text = "Multipliziere die beiden Zahlen der vollständigen Spalte. Teile dieses Produkt durch die bekannte Zahl einer anderen Spalte."
-            elif p.view["rows"] == 3:
+            if p.view["rows"] == 3:
                 text = "Berechne aus der vollständigen Spalte das Produkt und aus der vollständigen Zeile die Summe. Suche passende Faktorpaare für die übrigen Spalten."
             else:
                 text = "Nenne das gemeinsame Spaltenprodukt P. Teile P durch die bekannte Zahl jeder Spalte. Setze die Ergebnisse in die Zeilensummen ein."

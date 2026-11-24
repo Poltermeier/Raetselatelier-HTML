@@ -8,6 +8,7 @@ import chess
 
 from .puzzle import Puzzle
 from .solver import Model,Table
+from .chess_engine import CHESS_PUZZLE_TITLE
 from .chess_validation import verify_unique_mate
 from .chess_explanations import MOTIFS,generated_explanation,legal_line
 from .live_chess import generate_record,BUDGETS,acceptable,hard_enough
@@ -126,7 +127,7 @@ def puzzle_from_record(seed,difficulty,record):
     moves=sorted(m.uci() for m in board.legal_moves);side='Weiß' if board.turn else 'Schwarz'
     objective=(f'Finde den einzigen ersten Zug, der Matt in höchstens {record["mate"]} '+('Zug' if record['mate']==1 else 'Zügen')+' erzwingt.'
                if record['kind']=='mate' else 'Finde den von Stockfish eindeutig bevorzugten besten Zug.')
-    p=ChessPuzzle('schachraetsel','Schachrätsel',
+    p=ChessPuzzle('schachraetsel',CHESS_PUZZLE_TITLE,
         f'{side} ist am Zug. {objective} Wähle zuerst deine Figur und dann ihr Zielfeld. '
         'Es gelten die normalen Schachregeln. Bei einer Bauernumwandlung wählst du die neue Figur. '
         'Geprüft wird dein erster Zug; Rückgängig stellt die Ausgangsstellung wieder her.',

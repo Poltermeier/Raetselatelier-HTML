@@ -115,9 +115,12 @@ def sum_product(seed, difficulty):
         row_order = rng.sample(range(2), 2)
         col_order = rng.sample(range(3), 3)
         board = tuple(tuple(board[r][c] for c in col_order) for r in row_order)
-        full_column = rng.randrange(3)
-        clues = {(0, full_column), (1, full_column)}
-        clues.update((rng.randrange(2), c) for c in range(3) if c != full_column)
+        single_row, single_column = rng.choice([
+            (r, c) for r in range(2) for c in range(3)
+            if sum_product_completion(board[r][c], tuple(board[1-r][j] for j in range(3) if j != c)) is not None
+        ])
+        clues = {(single_row, single_column)}
+        clues.update((1-single_row, c) for c in range(3) if c != single_column)
     elif rng.randrange(2):
         boards = balanced_matrices(3, 36)
         for _ in range(100):

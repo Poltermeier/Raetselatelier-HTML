@@ -1,5 +1,5 @@
 from fractions import Fraction
-from math import prod
+from math import lcm, prod
 import unittest
 
 from raetselkalender.catalog import generate
@@ -33,7 +33,20 @@ class NewPuzzleTests(unittest.TestCase):
                 self.assertTrue(all(v > 0 for v in puzzle.solution.values()))
                 if level == "mittel":
                     self.assertLessEqual(max(puzzle.solution.values()), 26)
-                    self.assertTrue(any(all(f"{r},{c}" in puzzle.givens for r in range(rows)) for c in range(cols)))
+                    given_counts = [sum(f"{r},{c}" in puzzle.givens for r in range(rows)) for c in range(cols)]
+                    self.assertEqual(given_counts, [1, 1, 1])
+                    products = []
+                    given_values = list(puzzle.givens.values())
+                    product_step = lcm(*given_values)
+                    for common in range(product_step, 999*min(given_values)+1, product_step):
+                        completions = puzzle.givens.copy()
+                        for key in puzzle.editable:
+                            r, c = key.split(",")
+                            completions[key] = common//puzzle.givens[f"{1-int(r)},{c}"]
+                        difference = sum(value if key.startswith("0,") else -value for key, value in completions.items())
+                        if difference == 0 and len(set(completions.values())) == 6:
+                            products.append(common)
+                    self.assertEqual(products, [prod(row[0] for row in board)])
                 else:
                     hard_sizes.add((rows, cols))
         self.assertEqual(hard_sizes, {(2, 4), (3, 3)})

@@ -30,7 +30,7 @@ from .gruppen import gruppen
 from .ermittlungsakte import ermittlungsakte
 from .pipes import pipes,PIPE_SIZES
 from .puzzle import LogicalProofMissing
-from .chess_engine import stockfish_path,stockfish_missing_message
+from .chess_engine import CHESS_PUZZLE_TITLE,stockfish_path,stockfish_missing_message
 from .new_puzzles import distance, sum_product, twiddle
 from .friedman import friedman
 from .fillomino import fillomino
@@ -124,7 +124,7 @@ CATALOG = [
     PuzzleType('katzensuche', 'Katzensuche', cats),
     PuzzleType('logic-equations', 'Logic Equations', logic.logic_equations),
     PuzzleType('jump-puzzle', 'Jump Puzzle', jump_puzzle),
-    PuzzleType('schachraetsel', 'Schachrätsel', chess_puzzle, dependency='chess'),
+    PuzzleType('schachraetsel', CHESS_PUZZLE_TITLE, chess_puzzle, dependency='chess'),
     PuzzleType('shikaku', 'Shikaku', shikaku),
     PuzzleType("suguru", "Suguru", g.suguru),
     PuzzleType("tatami", "Tatami", calendar.tatami),

@@ -45,7 +45,7 @@ Für die **Sonderkommission Nordhafen** ermittelst du zu 20 Personen mit Namen u
 
 - **Distanz** ordnet sechs oder neun Zahlen so an, dass die Luftlinie zwischen aufeinanderfolgenden Zahlen strikt wächst. Jede erzeugte Anordnung hat genau eine Lösung.
 - **Friedman Zahlen** bietet 648 Zielzahlen. Auf *Mittel* sind die Ziele drei- oder vierstellig. Setze ihre Ziffern in Reihenfolge zu einer Rechnung zusammen. Die Zahlenbasis stammt aus der OEIS-Tabelle von Javier Cobos del Alamo. Der Generator leitet eigene Beispielausdrücke her und prüft sie exakt. [Zahlenfolge A080035 bei OEIS](https://oeis.org/A080035) · [Ausdrücke erzeugen](tools/build_friedman.py)
-- **Summe Produkt** verwendet gleiche Zeilensummen, gleiche Spaltenprodukte und lauter verschiedene positive Zahlen. Auf *Mittel* gibt es kleine Zahlen und eine vollständige Spalte in einer 2 × 3-Matrix. Auf *Schwer* kommen 2 × 4- und 3 × 3-Matrizen vor.
+- **Summe Produkt** verwendet gleiche Zeilensummen, gleiche Spaltenprodukte und lauter verschiedene positive Zahlen. Auf *Mittel* gibt es kleine Zahlen und eine Vorgabe je Spalte in einer 2 × 3-Matrix. Auf *Schwer* kommen 2 × 4- und 3 × 3-Matrizen vor.
 - **Twiddle** sortiert ein Raster durch Vierteldrehungen. Auf Mittel drehen sich 2 × 2-Blöcke, auf Schwer 3 × 3-Blöcke. Der Lösungsweg lässt sich schrittweise ansehen.
 - **Harakiri** trägt die Zahlen 1 bis 8 auf vier Ringen ein. Auf jedem Ring und jedem Durchmesser kommt jede Zahl genau einmal vor.
 - **H₂O** verbindet jedes vorgegebene H mit einem benachbarten O. Wähle ein leeres Feld als O und tippe zwei benachbarte H an.
@@ -54,7 +54,7 @@ Für die **Sonderkommission Nordhafen** ermittelst du zu 20 Personen mit Namen u
 
 ## Weiterentwicklung
 
-`raetselkalender/` enthält die Python-Generatoren, die Prüfverfahren und die Spiellogik. `browser/` verbindet diese mit HTML-Eingaben und der Canvas-Zeichenfläche. Pyodide führt den Python-Code in einem Web Worker aus. Schachrätsel werden weiterhin frisch erzeugt und geprüft. Der Browser verwendet Stockfish 19 Lite als WebAssembly-Version. Derselbe Seed kann im Desktop-Stockfish zu einer anderen Schachstellung führen.
+`raetselkalender/` enthält die Python-Generatoren, die Prüfverfahren und die Spiellogik. `browser/` verbindet diese mit HTML-Eingaben und der Canvas-Zeichenfläche. Pyodide führt den Python-Code in einem Web Worker aus. Für **Schach - Best move** erzeugt und prüft der Browser die Stellungen mit der WebAssembly-Version von Stockfish 19 Lite. Derselbe Seed kann im Desktop-Stockfish zu einer anderen Schachstellung führen.
 
 Nach Änderungen an den Python-Dateien das Browserarchiv neu erzeugen und mit einchecken.
 

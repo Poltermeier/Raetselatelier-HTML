@@ -4,6 +4,8 @@ from pathlib import Path
 import shutil
 import sys
 
+CHESS_PUZZLE_TITLE = "Schach - Best move"
+
 
 def stockfish_path():
     configured=os.environ.get('ATELIER_STOCKFISH')
@@ -22,6 +24,6 @@ def stockfish_path():
 
 
 def stockfish_missing_message():
-    return ('Schachrätsel benötigt Stockfish für frisch erzeugte und geprüfte Stellungen. '
+    return (f'{CHESS_PUZZLE_TITLE} benötigt Stockfish für frisch erzeugte und geprüfte Stellungen. '
             'Im Projektordner einmal ausführen: python tools/install_stockfish.py '
             'Danach das Programm neu starten. Oder den Engine-Pfad mit ATELIER_STOCKFISH angeben. Die Windows-EXE enthält die Engine bereits.')
