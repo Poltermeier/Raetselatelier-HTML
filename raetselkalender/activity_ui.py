@@ -14,13 +14,15 @@ from .deduction_ui import MODES as DEDUCTION_MODES, DeductionUI
 from .tabletop_ui import TABLETOP_MODES, TabletopUI
 from .hearts_ui import HeartsUI
 from .new_puzzles_ui import NEW_ACTIVITY_MODES, NewPuzzlesUI
+from .placement_ui import PLACEMENT_MODES, PlacementUI
 
 INK,ACCENT,PAPER='#233a32','#27644c','#fffef9'
 
 
-class ActivityUI(WordGamesUI, DeductionUI, TabletopUI, HeartsUI, NewPuzzlesUI):
+class ActivityUI(WordGamesUI, DeductionUI, TabletopUI, HeartsUI, NewPuzzlesUI, PlacementUI):
     def initial_activity_state(self):
         v=self.puzzle.view;mode=v['mode']
+        if mode in PLACEMENT_MODES:return {"placed": {}}
         if mode in NEW_ACTIVITY_MODES:return self.initial_new_activity()
         if mode in WORKSHOP_MODES:return self.initial_workshop_state()
         if mode in WORD_MODES:return dict(words=[], draft='', path=[])
@@ -62,6 +64,8 @@ class ActivityUI(WordGamesUI, DeductionUI, TabletopUI, HeartsUI, NewPuzzlesUI):
         self.activity_state=self.initial_activity_state();self.activity_selected=None
         self.activity_controls=[];self.activity_draft_vars=[]
         mode=self.puzzle.view['mode']
+        if mode in PLACEMENT_MODES:
+            self.render_placement();return
         if mode in NEW_ACTIVITY_MODES:
             self.render_new_activity();return
         if mode in WORKSHOP_MODES:
@@ -128,6 +132,8 @@ class ActivityUI(WordGamesUI, DeductionUI, TabletopUI, HeartsUI, NewPuzzlesUI):
     def paint_activity(self):
         self.canvas.delete('activity-board')
         mode=self.puzzle.view['mode']
+        if mode in PLACEMENT_MODES:
+            self.paint_placement();return
         if mode in NEW_ACTIVITY_MODES:
             self.paint_new_activity();return
         if mode in WORKSHOP_MODES:
@@ -456,6 +462,8 @@ class ActivityUI(WordGamesUI, DeductionUI, TabletopUI, HeartsUI, NewPuzzlesUI):
         frame()
 
     def on_activity_change(self):
+        if self.puzzle.view['mode'] in PLACEMENT_MODES:
+            self.on_placement_change();return
         if self.puzzle.view['mode'] in NEW_ACTIVITY_MODES:
             self.on_new_activity_change();return
         if self.puzzle.view['mode'] in TABLETOP_MODES:
@@ -496,7 +504,8 @@ class ActivityUI(WordGamesUI, DeductionUI, TabletopUI, HeartsUI, NewPuzzlesUI):
         mode=self.puzzle.view['mode']
         if self.showing_solution:
             self.saved_activity_state=deepcopy(self.activity_state)
-            if mode in NEW_ACTIVITY_MODES:self.prepare_new_activity_solution()
+            if mode in PLACEMENT_MODES:self.activity_state={"placed": self.puzzle.solution.copy()}
+            elif mode in NEW_ACTIVITY_MODES:self.prepare_new_activity_solution()
             elif mode in TABLETOP_MODES:self.prepare_tabletop_replay()
             elif mode in WORKSHOP_MODES:self.activity_state=self.workshop_solution_state()
             elif mode in WORD_MODES:self.activity_state=self.initial_activity_state()

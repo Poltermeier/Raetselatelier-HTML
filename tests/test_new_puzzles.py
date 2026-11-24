@@ -1,8 +1,9 @@
 from fractions import Fraction
+from math import prod
 import unittest
 
 from raetselkalender.catalog import generate
-from raetselkalender.friedman import evaluate_friedman, friedman_numbers
+from raetselkalender.friedman import evaluate_friedman, friedman_numbers, readable_expression
 from raetselkalender.new_puzzles import distance_paths, rotate_block
 from raetselkalender.popout import LEVELS, PopOutGame, apply_move, engine_move, has_four, legal_moves
 
@@ -11,6 +12,7 @@ class NewPuzzleTests(unittest.TestCase):
     def test_distance_path_is_unique_and_strictly_increasing(self):
         for level in ("mittel", "schwer"):
             puzzle = generate("distance", 42, level)
+            self.assertEqual(puzzle.title, "Distanz")
             points = puzzle.view["points"]
             path, = distance_paths(points)
             keys = [f"{points[i][1]},{points[i][0]}" for i in path]
@@ -19,22 +21,32 @@ class NewPuzzleTests(unittest.TestCase):
             self.assertTrue(all(a < b for a,b in zip(edges, edges[1:])))
 
     def test_sum_product_satisfies_rows_columns_and_distinctness(self):
+        hard_sizes = set()
         for level in ("mittel", "schwer"):
             for seed in range(10):
                 puzzle = generate("summe-produkt", seed, level)
-                cols = puzzle.view["cols"]
-                top, bottom = [[puzzle.solution[f"{r},{c}"] for c in range(cols)] for r in range(2)]
-                self.assertEqual(sum(top), sum(bottom))
-                self.assertEqual(len({a*b for a,b in zip(top, bottom)}), 1)
-                self.assertEqual(len(set(top+bottom)), 2*cols)
-                self.assertEqual(len(puzzle.givens), cols)
-                self.assertTrue(all(v > 0 for v in top+bottom))
+                rows, cols = puzzle.view["rows"], puzzle.view["cols"]
+                board = [[puzzle.solution[f"{r},{c}"] for c in range(cols)] for r in range(rows)]
+                self.assertEqual(len({sum(row) for row in board}), 1)
+                self.assertEqual(len({prod(col) for col in zip(*board)}), 1)
+                self.assertEqual(len(set(puzzle.solution.values())), rows*cols)
+                self.assertTrue(all(v > 0 for v in puzzle.solution.values()))
+                if level == "mittel":
+                    self.assertLessEqual(max(puzzle.solution.values()), 26)
+                    self.assertTrue(any(all(f"{r},{c}" in puzzle.givens for r in range(rows)) for c in range(cols)))
+                else:
+                    hard_sizes.add((rows, cols))
+        self.assertEqual(hard_sizes, {(2, 4), (3, 3)})
 
     def test_friedman_bank_and_exact_ordered_evaluation(self):
         data = friedman_numbers()
         self.assertEqual(len(data), 648)
         for value, expression in data:
             self.assertEqual(evaluate_friedman(expression, value), value)
+            self.assertEqual(evaluate_friedman(readable_expression(expression), value), value)
+        self.assertEqual(readable_expression("((-1)+(2^7))"), "-1 + 2 ^ 7")
+        for seed in range(16):
+            self.assertLess(generate("friedman-zahlen", seed, "mittel").view["number"], 10000)
         self.assertEqual(evaluate_friedman("(3/4)^3", 343), Fraction(27,64))
         self.assertEqual(evaluate_friedman("-1 + 2^7", 127), 127)
         for expression, number in (("3^7",73), ("127",127), ("1//27",127), ("1*02+7",1027)):

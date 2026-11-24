@@ -203,6 +203,12 @@ class AssistanceUI:
                     count += 1
             if count:
                 extra = " Die markierten Zahlen stehen noch nicht an ihrem Zielplatz."
+        elif mode in ("h2o", "schachaufstellung"):
+            for key, value in self.activity_state["placed"].items():
+                if p.solution.get(key) != value:
+                    cell = key if mode == "h2o" else value
+                    self.outline_assist(self.canvas.bbox(f"placement-cell:{cell}"))
+                    count += 1
         elif mode == "matches":
             state = self.activity_state
             if len(state["moves"]) == p.view["moves_required"] and p.check_mask(state["mask"]) != "correct":
@@ -297,7 +303,18 @@ class AssistanceUI:
         elif kind == "distance":
             text = "Beginne mit einem kurzen Abstand. Nach jeder Verbindung müssen alle übrigen Schritte noch länger werden können."
         elif p.type_id == "summe-produkt":
-            text = "Nenne das gemeinsame Spaltenprodukt P. Teile P durch die bekannte Zahl jeder Spalte. Setze die Ergebnisse in die Zeilensummen ein."
+            if p.difficulty == "mittel":
+                text = "Multipliziere die beiden Zahlen der vollständigen Spalte. Teile dieses Produkt durch die bekannte Zahl einer anderen Spalte."
+            elif p.view["rows"] == 3:
+                text = "Berechne aus der vollständigen Spalte das Produkt und aus der vollständigen Zeile die Summe. Suche passende Faktorpaare für die übrigen Spalten."
+            else:
+                text = "Nenne das gemeinsame Spaltenprodukt P. Teile P durch die bekannte Zahl jeder Spalte. Setze die Ergebnisse in die Zeilensummen ein."
+        elif p.type_id == "fillomino":
+            text = "Beginne mit kleinen Gruppen. Eine 1 steht allein. Prüfe bei größeren Gruppen, welche benachbarten Felder Platz für alle benötigten Felder bieten."
+        elif kind == "harakiri":
+            text = "Vergleiche die fehlenden Zahlen eines Rings mit den fehlenden Zahlen auf dem Durchmesser durch das jeweilige Feld."
+        elif mode in ("h2o", "schachaufstellung"):
+            text = self.placement_hint()
         elif mode == "friedman":
             text = "Teile die Ziffern gedanklich in Blöcke. Prüfe, welche Blöcke sich als Basis und Exponent eignen."
         elif mode == "twiddle":

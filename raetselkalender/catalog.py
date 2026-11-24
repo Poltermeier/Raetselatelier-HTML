@@ -33,6 +33,8 @@ from .puzzle import LogicalProofMissing
 from .chess_engine import stockfish_path,stockfish_missing_message
 from .new_puzzles import distance, sum_product, twiddle
 from .friedman import friedman
+from .fillomino import fillomino
+from .placement_puzzles import chess_placement, harakiri, water
 
 
 def chess_puzzle(seed, difficulty):
@@ -74,7 +76,11 @@ class PuzzleType:
 
 
 CATALOG = [
-    PuzzleType("distance", "Distance", distance),
+    PuzzleType("distance", "Distanz", distance),
+    PuzzleType("fillomino", "Fillomino", fillomino),
+    PuzzleType("h2o", "H₂O", water),
+    PuzzleType("harakiri", "Harakiri", harakiri),
+    PuzzleType("schachaufstellung", "Schachaufstellung", chess_placement),
     PuzzleType("friedman-zahlen", "Friedman Zahlen", friedman),
     PuzzleType("summe-produkt", "Summe Produkt", sum_product),
     PuzzleType("twiddle", "Twiddle", twiddle),
@@ -152,6 +158,9 @@ CATALOG = [
     PuzzleType('ermittlungsakte', 'Ermittlungsakte', ermittlungsakte),
 ]
 BY_ID = {p.id: p for p in CATALOG}
+BY_ID["distanz"] = BY_ID["distance"]
+BY_ID["h20"] = BY_ID["h2o"]
+BY_ID["karakiri"] = BY_ID["harakiri"]
 BY_ID["wordle"] = BY_ID["wortspur"]
 BY_ID["spelling-bee"] = BY_ID["buchstabenwerkstatt"]
 # Keep older command lines and exported type IDs usable.

@@ -11,6 +11,7 @@ import tkinter as tk
 from raetselkalender import catalog, gui, settings_ui
 from raetselkalender.preferences import normalize_preferences
 from raetselkalender.word_games import display_word
+from raetselkalender.placement_puzzles import PIECE_NAMES
 
 # The browser has a bundled UCI engine accessed by the chess adapter.
 catalog.stockfish_path = lambda: "browser-stockfish"
@@ -100,6 +101,9 @@ class BrowserApp(gui.App):
         coordinates = key.split(",")
         label = (f"Zeile {int(coordinates[0]) + 1}, Spalte {int(coordinates[1]) + 1}"
                  if len(coordinates) == 2 and all(part.isdecimal() for part in coordinates) else f"Rätselfeld {key}")
+        if self.puzzle.view['kind'] == 'harakiri':
+            ring, position = map(int, coordinates)
+            label = f"Ring {ring+1}, Position {position+1}"
         tk.send("label", self.entries[key].id, label)
 
     def render_word_game(self):
@@ -133,12 +137,6 @@ class BrowserApp(gui.App):
         for button in self.hearts_cards:
             tk.send("role", button.id, "hearts-card")
 
-    def render_popout(self):
-        super().render_popout()
-        for move, button in self.popout_buttons.items():
-            action = "Einwerfen" if move < 7 else "Herausnehmen"
-            tk.send("label", button.id, f"{action} in Spalte {move % 7 + 1}")
-
     def render_new_activity(self):
         super().render_new_activity()
         if self.puzzle.view['mode'] == 'friedman':
@@ -146,6 +144,12 @@ class BrowserApp(gui.App):
         else:
             for (r, c), button in self.twiddle_buttons.items():
                 tk.send("label", button.id, f"Block drehen ab Zeile {r+1}, Spalte {c+1}")
+
+    def render_placement(self):
+        super().render_placement()
+        if self.puzzle.view['mode'] == 'schachaufstellung':
+            for piece, button in self.placement_buttons.items():
+                tk.send("label", button.id, PIECE_NAMES[piece])
 
     def fit_board(self):
         width, height = self.canvas.winfo_width(), self.canvas.winfo_height()

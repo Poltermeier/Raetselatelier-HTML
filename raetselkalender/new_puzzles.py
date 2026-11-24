@@ -1,5 +1,9 @@
 """Verified distance paths, sum/product grids and reversible rotations."""
+from collections import defaultdict
 from fractions import Fraction
+from functools import lru_cache
+from itertools import combinations, permutations, product
+from math import prod
 import random
 
 from .puzzle import LogicalProofMissing, Puzzle
@@ -44,13 +48,13 @@ def distance(seed, difficulty):
         if len(paths) == 1:
             break
     else:
-        raise LogicalProofMissing("Keine eindeutige Distance-Anordnung gefunden.")
+        raise LogicalProofMissing("Keine eindeutige Distanz-Anordnung gefunden.")
     keys = [f"{y},{x}" for x, y in points]
     solution = {keys[index]: value for value, index in enumerate(paths[0], 1)}
     model = Model({key: set(range(1, count+1)) for key in keys}, [])
     rules = (f"Trage die Zahlen 1 bis {count} je einmal ein. Die Luftlinie zwischen zwei aufeinanderfolgenden Zahlen "
              "muss jedes Mal länger werden. Auch diagonale Abstände zählen. Gleiche Längen sind ausgeschlossen.")
-    return Puzzle("distance", "Distance", rules, model, solution, {},
+    return Puzzle("distance", "Distanz", rules, model, solution, {},
                   dict(kind="distance", points=points, rows=rows, cols=cols), seed, difficulty,
                   analysis=dict(unique=True, solution_method="exhaustive_distance_paths"))
 
@@ -69,32 +73,88 @@ def sum_product_completion(a, bottom):
     return tuple(tuple(map(int, row)) for row in (top, lower))
 
 
+@lru_cache(maxsize=2)
+def balanced_matrices(height, maximum):
+    groups = defaultdict(list)
+    for values in combinations(range(1, maximum+1), height):
+        groups[prod(values)].append(values)
+    boards = []
+    for columns in groups.values():
+        for first, second, third in combinations(columns, 3):
+            values = first + second + third
+            if len(set(values)) != len(values) or sum(values) % height:
+                continue
+            total = sum(values)//height
+            for middle in permutations(second):
+                last = tuple(total-a-b for a, b in zip(first, middle))
+                if tuple(sorted(last)) == third:
+                    boards.append(tuple(zip(first, middle, last)))
+    return tuple(boards)
+
+
+def complete_three_rows(first, left):
+    total = sum(first)
+    common = first[0]*left[0]*left[1]
+    found = []
+    for a in range(1, total-left[0]):
+        b = total-left[0]-a
+        if common % (first[1]*a) or common % (first[2]*b):
+            continue
+        lower = (left[1], common//(first[1]*a), common//(first[2]*b))
+        middle = (left[0], a, b)
+        if sum(lower) == total and len(set(first+middle+lower)) == 9:
+            found.append((first, middle, lower))
+    return found
+
+
 def sum_product(seed, difficulty):
     rng = random.Random(seed)
-    hard = difficulty == "schwer"
-    cols, ceiling = (4, 34) if hard else (3, 14)
-    for _ in range(6000):
-        a, *bottom = rng.sample(range(2, ceiling), cols)
-        rows = sum_product_completion(a, bottom)
-        if rows and max(map(max, rows)) <= (999 if hard else 100):
-            break
+    if difficulty == "mittel":
+        boards = balanced_matrices(2, 26)
+        board = rng.choice(boards)
+        row_order = rng.sample(range(2), 2)
+        col_order = rng.sample(range(3), 3)
+        board = tuple(tuple(board[r][c] for c in col_order) for r in row_order)
+        full_column = rng.randrange(3)
+        clues = {(0, full_column), (1, full_column)}
+        clues.update((rng.randrange(2), c) for c in range(3) if c != full_column)
+    elif rng.randrange(2):
+        boards = balanced_matrices(3, 36)
+        for _ in range(100):
+            board = rng.choice(boards)
+            row_order = rng.sample(range(3), 3)
+            col_order = rng.sample(range(3), 3)
+            board = tuple(tuple(board[r][c] for c in col_order) for r in row_order)
+            if complete_three_rows(board[0], (board[1][0], board[2][0])) == [board]:
+                break
+        else:
+            raise LogicalProofMissing("Keine eindeutige 3 × 3-Matrix gefunden.")
+        clues = {(r, c) for r in range(3) for c in range(3) if r == 0 or c == 0}
+        # Scatter the reference row and column after proving uniqueness.
+        row_order = rng.sample(range(3), 3)
+        col_order = rng.sample(range(3), 3)
+        board = tuple(tuple(board[r][c] for c in col_order) for r in row_order)
+        clues = {(r, c) for r in range(3) for c in range(3) if (row_order[r], col_order[c]) in clues}
     else:
-        raise LogicalProofMissing("Keine passende Summe-Produkt-Matrix gefunden.")
-    clue_row = rng.randrange(2)
-    order = list(range(cols))
-    rng.shuffle(order)
-    solution, givens = {}, {}
-    for r in range(2):
-        for c, original in enumerate(order):
-            key = f"{r},{c}"
-            solution[key] = rows[r ^ clue_row][original]
-            if (r == clue_row) == (original == 0):
-                givens[key] = solution[key]
+        for _ in range(6000):
+            a, *bottom = rng.sample(range(2, 34), 4)
+            board = sum_product_completion(a, bottom)
+            if board and max(map(max, board)) <= 999:
+                break
+        else:
+            raise LogicalProofMissing("Keine passende Summe-Produkt-Matrix gefunden.")
+        clue_row = rng.randrange(2)
+        order = rng.sample(range(4), 4)
+        board = tuple(tuple(board[r ^ clue_row][c] for c in order) for r in range(2))
+        clues = {(r, c) for r in range(2) for c in range(4) if (r == clue_row) == (order[c] == 0)}
+    rows, cols = len(board), len(board[0])
+    solution = {f"{r},{c}": value for r, row in enumerate(board) for c, value in enumerate(row)}
+    givens = {f"{r},{c}": board[r][c] for r, c in clues}
     model = Model({key: {givens[key]} if key in givens else set(range(1, 1000)) for key in solution}, [])
-    rules = ("Fülle die Matrix mit verschiedenen positiven ganzen Zahlen. Beide Zeilen haben dieselbe Summe. "
-             "Alle Spalten haben dasselbe Produkt. Die gemeinsamen Werte ergeben sich aus den Vorgaben.")
+    rules = ("Fülle die Matrix mit verschiedenen positiven ganzen Zahlen. Alle Zeilen haben dieselbe Summe. "
+             "Alle Spalten haben dasselbe Produkt.")
     return Puzzle("summe-produkt", "Summe Produkt", rules, model, solution, givens,
-                  dict(kind="grid", size=cols, rows=2, cols=cols, cell_size=76), seed, difficulty,
+                  dict(kind="grid", size=cols, rows=rows, cols=cols, cell_size=76), seed, difficulty,
                   analysis=dict(unique=True, solution_method="exact_common_product_equation"))
 
 

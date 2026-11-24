@@ -81,13 +81,23 @@ def friedman_numbers():
         files("raetselkalender").joinpath("data/friedman.json").read_text(encoding="utf-8")))
 
 
+def readable_expression(expression):
+    tree = ast.parse(expression.replace("^", "**"), mode="eval")
+    for node in ast.walk(tree):
+        if isinstance(node, ast.BinOp) and isinstance(node.right, ast.UnaryOp) and isinstance(node.right.op, ast.USub):
+            if isinstance(node.op, (ast.Add, ast.Sub)):
+                node.op = ast.Sub() if isinstance(node.op, ast.Add) else ast.Add()
+                node.right = node.right.operand
+    return ast.unparse(tree).replace("**", "^")
+
+
 def friedman(seed, difficulty):
     hard = difficulty == "schwer"
     number, expression = random.Random(seed).choice(
-        [(n, s) for n, s in friedman_numbers() if (n >= 100000) == hard])
+        [(n, s) for n, s in friedman_numbers() if (n >= 10000) == hard])
     rules = ("Schreibe die Zielzahl als Rechnung mit ihren eigenen Ziffern in derselben Reihenfolge. "
              "Erlaubt sind +, −, ×, /, Klammern, Potenzen wie 2^3 und das Zusammenfassen benachbarter Ziffern. "
              "Exponenten sind ganzzahlig. Verwende mindestens eine Rechenoperation.")
     return FriedmanPuzzle("friedman-zahlen", "Friedman Zahlen", rules, Model({}, []), {}, {},
                           dict(kind="activity", mode="friedman", number=number), seed, difficulty,
-                          analysis=dict(solution_verified=True), result=expression)
+                          analysis=dict(solution_verified=True), result=readable_expression(expression))

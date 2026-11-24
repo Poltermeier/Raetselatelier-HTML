@@ -1,6 +1,6 @@
 # Simon's Rätselatelier im Browser
 
-Webport von [Raetselkalender-Generator](https://github.com/Poltermeier/Raetselkalender-Generator/tree/acf15a5799e1503f36a30726b63a7b60b43d378a) mit **78 Rätsel- und Spieltypen**. Für die Rätsel gibt es die Stufen *Mittel* und *Schwer*. Hearts, Schach und 4 gewinnt stehen im Menü *Längere Denkspiele*. Die Bedienung entspricht der Desktop-App, mit Rätselauswahl, Regeln und Spielfeld, Notizen, Rückgängig, Lösungsansicht und JSON-Export ohne Lösung. Die Einstellungen für Ton und Farbblindheitsmodus bleiben im jeweiligen Browser gespeichert.
+Webport von [Raetselkalender-Generator](https://github.com/Poltermeier/Raetselkalender-Generator/tree/acf15a5799e1503f36a30726b63a7b60b43d378a) mit **82 Rätsel- und Spieltypen**. Für die Rätsel gibt es die Stufen *Mittel* und *Schwer*. Hearts, Schach und 4 gewinnt stehen im Menü *Längere Denkspiele*. Die Bedienung entspricht der Desktop-App, mit Rätselauswahl, Regeln und Spielfeld, Notizen, Rückgängig, Lösungsansicht und JSON-Export ohne Lösung. Die Einstellungen für Ton und Farbblindheitsmodus bleiben im jeweiligen Browser gespeichert.
 
 ## Lokal starten
 
@@ -37,14 +37,18 @@ Auf einem Raster mit fünf Spalten und vier Reihen ermittelst du zu 20 Personen.
 - **FreeCell** verwendet ein Standarddeck mit vier freien Zellen und vier Zielstapeln. Die freien Zellen und leeren Spalten bestimmen die maximal verschiebbare Kartenfolge. Die Austeilungen enthalten einen geprüften Lösungsweg.
 - **Hearts** spielt sich gegen drei unabhängige Gegner. Wähle vor dem Start *Leicht*, *Mittel*, *Schwer* oder *Experte*. Jeder Gegner erhält seine eigene Hand, seine ausgetauschten Karten und die sichtbaren Spielinformationen. *Experte* testet mögliche Verteilungen der unbekannten Karten. Es gelten Kartenweitergabe, Bedienpflicht, die Herz- und Pik-Dame-Punkte und das Spielende ab 100 Punkten.
 - **Schach** lässt dich als Weiß oder Schwarz gegen Stockfish mit acht Elo-Einstellungen von 1320 bis 3000 spielen. Nach Partieende öffnet *Partie analysieren* die Zugnavigation. Für den angezeigten Zug berechnet Stockfish seine Empfehlung, eine mögliche Fortsetzung und die Bewertungen. Gold markiert den gespielten Zug, Blau eine abweichende Empfehlung.
-- **4 gewinnt** bietet PopOut gegen eine Engine auf vier Stufen. Pro Zug wirfst du eine Kugel ein oder entfernst eine eigene unterste Kugel. Bei gleichzeitig entstehenden Viererreihen gewinnt die ziehende Seite. Dreimal dieselbe Stellung mit demselben Zugrecht ergibt ein Remis.
+- **4 gewinnt** bietet PopOut gegen eine Engine auf vier Stufen. Tippe zum Einwerfen auf den Spaltenkopf oder ein freies Feld. Eine eigene Kugel in der untersten Reihe lässt sich direkt antippen und entfernen. Bei gleichzeitig entstehenden Viererreihen gewinnt die ziehende Seite. Dreimal dieselbe Stellung mit demselben Zugrecht ergibt ein Remis.
 
 ## Weitere Zahlen- und Drehrätsel
 
-- **Distance** ordnet sechs oder neun Zahlen so an, dass die Luftlinie zwischen aufeinanderfolgenden Zahlen strikt wächst. Jede erzeugte Anordnung hat genau eine Lösung.
-- **Friedman Zahlen** bietet 648 Zielzahlen. Setze ihre Ziffern in Reihenfolge zu einer Rechnung zusammen. Die Zahlenbasis stammt aus der OEIS-Tabelle von Javier Cobos del Alamo. Der Generator leitet eigene Beispielausdrücke her und prüft sie exakt. [Zahlenfolge A080035 bei OEIS](https://oeis.org/A080035) · [Ausdrücke erzeugen](tools/build_friedman.py)
-- **Summe Produkt** verwendet eine 2 × 3- oder 2 × 4-Matrix mit gleichen Zeilensummen, gleichen Spaltenprodukten und lauter verschiedenen positiven Zahlen.
+- **Distanz** ordnet sechs oder neun Zahlen so an, dass die Luftlinie zwischen aufeinanderfolgenden Zahlen strikt wächst. Jede erzeugte Anordnung hat genau eine Lösung.
+- **Friedman Zahlen** bietet 648 Zielzahlen. Auf *Mittel* sind die Ziele drei- oder vierstellig. Setze ihre Ziffern in Reihenfolge zu einer Rechnung zusammen. Die Zahlenbasis stammt aus der OEIS-Tabelle von Javier Cobos del Alamo. Der Generator leitet eigene Beispielausdrücke her und prüft sie exakt. [Zahlenfolge A080035 bei OEIS](https://oeis.org/A080035) · [Ausdrücke erzeugen](tools/build_friedman.py)
+- **Summe Produkt** verwendet gleiche Zeilensummen, gleiche Spaltenprodukte und lauter verschiedene positive Zahlen. Auf *Mittel* gibt es kleine Zahlen und eine vollständige Spalte in einer 2 × 3-Matrix. Auf *Schwer* kommen 2 × 4- und 3 × 3-Matrizen vor.
 - **Twiddle** sortiert ein Raster durch Vierteldrehungen. Auf Mittel drehen sich 2 × 2-Blöcke, auf Schwer 3 × 3-Blöcke. Der Lösungsweg lässt sich schrittweise ansehen.
+- **Harakiri** trägt die Zahlen 1 bis 8 auf vier Ringen ein. Auf jedem Ring und jedem Durchmesser kommt jede Zahl genau einmal vor.
+- **H₂O** verbindet jedes vorgegebene H mit einem benachbarten O. Wähle ein leeres Feld als O und tippe zwei benachbarte H an.
+- **Schachaufstellung** platziert fünf Figuren, die einander nicht angreifen. Die Zahlen geben an, wie viele Figuren das jeweilige Feld angreifen.
+- **Fillomino** füllt rechteckige Raster mit zusammenhängenden Gruppen. Jede Zahl entspricht der Feldanzahl ihrer Gruppe.
 
 ## Weiterentwicklung
 

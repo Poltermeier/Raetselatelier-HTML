@@ -424,6 +424,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.canvas.unbind("<ButtonRelease-1>")
         self.canvas.unbind("<Motion>")
         self.canvas.unbind("<Leave>")
+        for sequence in ("<Left>", "<Right>", "<Up>", "<Down>"):
+            self.canvas.unbind(sequence)
         self.canvas.configure(cursor="")
         self.vars = {}
         self.entries = {}
@@ -507,6 +509,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.render_popout()
         elif view['kind'] == 'distance':
             self.render_distance()
+        elif view['kind'] == 'harakiri':
+            self.render_harakiri()
         elif view['kind'] == 'pouring':
             self.render_pouring()
         elif view["kind"] == "rectangles":
@@ -894,6 +898,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             if self.puzzle.view["kind"] == "pearls":
                 self.canvas.itemconfigure(f"pearl:{key}", fill=bg)
         self.refresh_note_previews()
+        if self.puzzle.type_id == "fillomino":
+            self.paint_fillomino(values)
         complete = all(var.get() for var in self.vars.values())
         if invalid and not complete:
             self.hide_success(reset=True)
@@ -970,6 +976,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.solution_button.configure(text="Zurück zu meinen Eingaben")
             self.status.configure(text="Lösungsansicht · deine bisherigen Eingaben bleiben erhalten.", foreground=INK)
             self.reset_button.configure(state="disabled")
+            if self.puzzle.type_id == "fillomino":
+                self.paint_fillomino(self.puzzle.solution)
         else:
             for k, var in self.vars.items():
                 self.entries[k].configure(state="normal")
