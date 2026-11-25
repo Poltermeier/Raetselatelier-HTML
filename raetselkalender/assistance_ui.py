@@ -31,7 +31,7 @@ class AssistanceUI:
         self.review_message = ttk.Label(panel, text="", justify="left", wraplength=700)
 
     def update_assist_buttons(self):
-        enabled = (self.puzzle is not None and self.puzzle.view['kind'] not in ('chess-match', 'popout')
+        enabled = (self.puzzle is not None and self.puzzle.view['kind'] not in ('chess-match', 'popout', 'symbol-duel')
                    and not self.busy and not self.showing_solution)
         state = "normal" if enabled else "disabled"
         self.hint_button.configure(state=state)

@@ -62,6 +62,7 @@ gui.ThreadPoolExecutor = lambda **options: BrowserExecutor()
 
 
 class BrowserApp(gui.App):
+    symbol_faces_in_buttons = True
     animate_hearts_cards = not atelierReducedMotion()
 
     sudoku_diagonal_color = "#367db859"  # 35% opacity.
@@ -151,12 +152,16 @@ class BrowserApp(gui.App):
             for piece, button in self.placement_buttons.items():
                 tk.send("label", button.id, PIECE_NAMES[piece])
 
+    def set_symbol_face(self, button, icon, card_position):
+        tk.send("symbol-face", button.id, *icon, card_position)
+
     def fit_board(self):
         width, height = self.canvas.winfo_width(), self.canvas.winfo_height()
         if self.puzzle is None or self.fixed_board_scale is not None or min(width, height) < 100:
             super().fit_board()
             return
         self.fit_job = None
+        self.layout_symbol_duel()
         x1, y1, x2, y2 = self.canvas.logical_region
         zoom = max(.65, min(1.7, (width - 8) / max(1, x2 - x1), (height - 8) / max(1, y2 - y1)))
         if self.canvas.set_zoom(int(zoom * 100) / 100) and not self.is_click_board():

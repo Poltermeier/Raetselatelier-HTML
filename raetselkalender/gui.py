@@ -21,6 +21,8 @@ from .hearts import HEARTS_LEVELS
 from .chess_game_ui import ChessGameUI, CHESS_ELOS
 from .popout import LEVELS as POPOUT_LEVELS
 from .popout_ui import PopOutUI
+from .symbol_duel import CARD_COUNT, SYMBOLS_PER_CARD
+from .symbol_duel_ui import SymbolDuelUI
 from .camping_ui import CampingUI
 from .board_canvas import BoardCanvas, BoardEntry
 from .feedback_ui import FeedbackUI
@@ -46,7 +48,7 @@ MUTED = "#63736a"
 LINE = "#d1d8cf"
 
 
-class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, ClickBoardUI, HistoryUI, CampingUI, FeedbackUI, CalendarUI, PouringUI, MatrixUI, RouteUI, StrategyUI, ChessGameUI, PopOutUI, SpringUI, ActivityUI, AssistanceUI, DiagonalUI, SettingsUI, WorkshopUI):
+class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, ClickBoardUI, HistoryUI, CampingUI, FeedbackUI, CalendarUI, PouringUI, MatrixUI, RouteUI, StrategyUI, ChessGameUI, PopOutUI, SymbolDuelUI, SpringUI, ActivityUI, AssistanceUI, DiagonalUI, SettingsUI, WorkshopUI):
     sudoku_diagonal_color = DIAGONAL_COLOR
 
     def __init__(self, root, type_id="random", seed=None, difficulty="schwer", *, board_scale=None, cat_size=6, pipe_size=5, settings_path=None):
@@ -98,6 +100,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             style.configure(f"{name}.TButton", font=("Helvetica", 9, "bold"), padding=(3, 2),
                             background=background, foreground=foreground, justify="center")
         style.configure("Accent.TButton", background=ACCENT, foreground="white")
+        style.configure("Symbol.TButton", font=("Helvetica", 9), padding=(2, 2))
         style.map("Accent.TButton", background=[("active", "#34775d")])
         style.configure("NotesOn.TButton", background=ACCENT, foreground="white")
         style.map("NotesOn.TButton", background=[("disabled", "#d1d8cf"), ("active", "#34775d")],
@@ -138,8 +141,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.choice.pack(fill="x", pady=(10, 14))
         self.choice.bind("<<ComboboxSelected>>", self.selection_changed)
         ttk.Label(sidebar, text="Längere Denkspiele").pack(anchor="w")
-        self.long_ids = (None, "hearts", "schach", "vier-gewinnt")
-        self.long_choice = ttk.Combobox(sidebar, values=("Spiel auswählen", "Hearts", "Schach", "4 gewinnt"), state="readonly")
+        self.long_ids = (None, "hearts", "schach", "vier-gewinnt", "symbol-duel")
+        self.long_choice = ttk.Combobox(sidebar, values=("Spiel auswählen", "Hearts", "Schach", "4 gewinnt", "Symbolduell"), state="readonly")
         self.long_choice.current(1 if type_id == "hearts" else 0)
         self.long_choice.pack(fill="x", pady=(5,12))
         self.long_choice.bind("<<ComboboxSelected>>", self.selection_changed)
@@ -260,11 +263,12 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         else:
             self.seed_label.pack(anchor="w", before=self.new_button)
             self.seed.pack(fill="x", pady=(5,12), before=self.new_button)
-            self.level_label.pack(anchor="w", before=self.seed_label)
-            difficulty_control = choices.get(long_game, self.level_frame)
-            difficulty_control.pack(fill="x", pady=(5,12), before=self.seed_label)
-            if long_game in choices:
-                difficulty_control.configure(state="disabled" if self.busy else "readonly")
+            if long_game != "symbol-duel":
+                self.level_label.pack(anchor="w", before=self.seed_label)
+                difficulty_control = choices.get(long_game, self.level_frame)
+                difficulty_control.pack(fill="x", pady=(5,12), before=self.seed_label)
+                if long_game in choices:
+                    difficulty_control.configure(state="disabled" if self.busy else "readonly")
         if item is not None and item.id=='katzensuche':
             self.cat_size_frame.pack(fill='x',pady=(0,12),before=self.seed_label)
             self.cat_size_choice.configure(state='disabled' if self.busy else 'readonly')
@@ -318,7 +322,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             button.configure(state="normal" if self.puzzle is not None and not value else "disabled")
         if self.puzzle is not None and self.puzzle.type_id == "hearts":
             self.solution_button.configure(state="disabled")
-        if self.puzzle is not None and self.puzzle.view["kind"] in ("chess-match", "popout"):
+        if self.puzzle is not None and self.puzzle.view["kind"] in ("chess-match", "popout", "symbol-duel"):
             for button in (self.solution_button, self.reset_button, self.export_button):
                 button.configure(state="disabled")
         self.update_notes_button()
@@ -351,6 +355,9 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             return
         if long_game == "vier-gewinnt":
             self.start_popout(seed)
+            return
+        if long_game == "symbol-duel":
+            self.start_symbol_duel(seed)
             return
         type_id = long_game or self.type_ids[max(0, self.choice.current())]
         if type_id != "random" and not BY_ID[type_id].available:
@@ -388,6 +395,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         if puzzle.view['kind'] == 'chess-match':
             color = 'Weiß' if puzzle.view['white'] else 'Schwarz'
             self.meta.configure(text=f"Du spielst {color} · Stockfish {puzzle.view['elo']} Elo")
+        elif puzzle.view["kind"] == "symbol-duel":
+            self.meta.configure(text=f"{CARD_COUNT} Karten · {SYMBOLS_PER_CARD} Symbole pro Karte · Seed {puzzle.seed}")
         else:
             self.meta.configure(text=f"{puzzle.difficulty.capitalize()}   ·   Seed {puzzle.seed}   ·   {certificate}")
         self.rules.configure(text=puzzle.rules.replace("−", "-").replace("–", "-"))
@@ -507,6 +516,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.render_chess_match()
         elif view['kind'] == 'popout':
             self.render_popout()
+        elif view['kind'] == 'symbol-duel':
+            self.render_symbol_duel()
         elif view['kind'] == 'distance':
             self.render_distance()
         elif view['kind'] == 'harakiri':
@@ -582,6 +593,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.fit_job = None
         if self.puzzle is None:
             return
+        self.layout_symbol_duel()
         if self.fixed_board_scale is not None:
             zoom = self.fixed_board_scale
         else:
@@ -855,7 +867,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         if self.puzzle.view['kind']=='chess':
             self.on_chess_change()
             return
-        if self.puzzle.view['kind'] in ('chess-match', 'popout'):
+        if self.puzzle.view['kind'] in ('chess-match', 'popout', 'symbol-duel'):
             return
         if self.puzzle.view['kind']=='binary-symbols':
             self.on_symbol_change()

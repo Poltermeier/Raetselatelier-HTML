@@ -654,6 +654,50 @@ document.addEventListener("pointerdown", (event) => {
     if (audio?.state === "suspended") audio.resume().catch(() => {});
 });
 
+const symbolNameBreaks = {
+    Regenbogen: "Regen­bogen",
+    Schneeflocke: "Schnee­flocke",
+    Schmetterling: "Schmetter­ling",
+    Schildkröte: "Schild­kröte",
+    Regenschirm: "Regen­schirm",
+};
+
+function drawSymbolFace(widget, name, color, primitives, card) {
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("stroke", color);
+    svg.setAttribute("stroke-width", "1.55");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+    svg.style.setProperty("--motif-color", color);
+    for (const [kind, coords] of primitives) {
+        const ellipse = kind === "oval" || kind === "dot";
+        const shape = document.createElementNS(svgNS, ellipse ? "ellipse" : kind === "line" ? "polyline" : "polygon");
+        if (ellipse) {
+            const [left, top, right, bottom] = coords;
+            for (const [attr, value] of Object.entries({
+                cx: (left + right) / 2, cy: (top + bottom) / 2,
+                rx: (right - left) / 2, ry: (bottom - top) / 2
+            })) shape.setAttribute(attr, value);
+        } else {
+            shape.setAttribute("points", coords.join(" "));
+        }
+        if (kind === "line") shape.setAttribute("fill", "none");
+        if (kind === "dot") {
+            shape.setAttribute("fill", color);
+            shape.setAttribute("stroke", "none");
+        }
+        svg.append(shape);
+    }
+    const label = document.createElement("span");
+    label.textContent = symbolNameBreaks[name] || name;
+    widget.element.classList.add("tk-role-symbol-tile");
+    widget.input.setAttribute("aria-label", `${name}, ${card}`);
+    widget.input.replaceChildren(svg, label);
+}
+
 function role(widget, name) {
     widget.element.classList.add("tk-role-" + name);
     if (name === "board") {
@@ -699,6 +743,7 @@ function applyOperations(operations) {
             widget.accessibleName = args[0];
             widget.input.setAttribute("aria-label", args[0]);
             break;
+        case "symbol-face": drawSymbolFace(widget, ...args); break;
         case "invalid":
             if (args[0]) widget.input.setAttribute("aria-invalid", "true");
             else widget.input.removeAttribute("aria-invalid");
