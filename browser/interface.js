@@ -654,19 +654,18 @@ document.addEventListener("pointerdown", (event) => {
     if (audio?.state === "suspended") audio.resume().catch(() => {});
 });
 
-function drawSymbolFace(widget, name, color, primitives, card, scale, angle) {
+function drawSymbolFace(widget, name, palette, primitives, card, scale, angle) {
     const svgNS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(svgNS, "svg");
     svg.setAttribute("viewBox", "0 0 24 24");
     svg.setAttribute("aria-hidden", "true");
-    svg.setAttribute("stroke", color);
     svg.setAttribute("stroke-width", "1.55");
     svg.setAttribute("stroke-linecap", "round");
     svg.setAttribute("stroke-linejoin", "round");
-    svg.style.setProperty("--motif-color", color);
     svg.style.width = `${scale * 100}%`;
     svg.style.transform = `rotate(${angle}deg)`;
-    for (const [kind, coords] of primitives) {
+    for (const [kind, coords, accent] of primitives) {
+        const [ink, fill] = accent ?? palette;
         const ellipse = kind === "oval" || kind === "dot";
         const shape = document.createElementNS(svgNS, ellipse ? "ellipse" : kind === "line" ? "polyline" : "polygon");
         if (ellipse) {
@@ -678,11 +677,8 @@ function drawSymbolFace(widget, name, color, primitives, card, scale, angle) {
         } else {
             shape.setAttribute("points", coords.join(" "));
         }
-        if (kind === "line") shape.setAttribute("fill", "none");
-        if (kind === "dot") {
-            shape.setAttribute("fill", color);
-            shape.setAttribute("stroke", "none");
-        }
+        shape.setAttribute("fill", kind === "line" ? "none" : kind === "dot" ? ink : fill);
+        if (kind !== "dot") shape.setAttribute("stroke", ink);
         svg.append(shape);
     }
     widget.element.classList.add("tk-role-symbol-tile");

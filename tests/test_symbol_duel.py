@@ -3,7 +3,9 @@ from math import dist, hypot
 import unittest
 
 from raetselkalender.symbol_duel import SymbolDuel, deal_symbols
-from raetselkalender.symbol_duel_ui import CARD_RADIUS, SYMBOL_OFFSETS, TARGET_RADIUS, symbol_faces
+from raetselkalender.symbol_duel_ui import (
+    CARD_RADIUS, SYMBOL_OFFSETS, SYMBOL_SIZES, TARGET_RADIUS, native_symbol_points, symbol_faces,
+)
 from raetselkalender.symbol_icons import ICONS
 
 
@@ -34,10 +36,22 @@ class SymbolDuelTests(unittest.TestCase):
         faces = symbol_faces(42, 0)
         sizes, angles = zip(*faces)
         self.assertEqual(len(set(sizes)), 8)
-        self.assertEqual(sum(angle == 0 for angle in angles), 2)
-        self.assertTrue(all(abs(angle) < 20 for angle in angles))
+        self.assertGreater(max(sizes) / min(sizes), 2.3)
+        self.assertLessEqual(min(angles), -140)
+        self.assertGreaterEqual(max(angles), 140)
+        self.assertIn(0, angles)
         self.assertEqual(faces, symbol_faces(42, 0))
         self.assertNotEqual(faces, symbol_faces(42, 1))
+
+    def test_largest_motif_fits_its_touch_target_at_any_rotation(self):
+        scale = max(SYMBOL_SIZES) / 24
+        for name, _, primitives in ICONS:
+            for kind, coords, _ in primitives:
+                radius = max(hypot(x - 12, y - 12) for x, y in native_symbol_points(kind, coords))
+                # Include half the 1.55-unit round outline for any non-dot primitive.
+                if kind != "dot":
+                    radius += 1.55 / 2
+                self.assertLess(radius * scale, TARGET_RADIUS, name)
 
     def test_only_matches_advance_and_each_replacement_uses_next_card(self):
         game = SymbolDuel(4)

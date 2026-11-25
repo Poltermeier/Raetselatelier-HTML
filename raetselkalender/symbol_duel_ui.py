@@ -10,7 +10,9 @@ from .symbol_icons import ICONS
 
 CARD_RADIUS = 172
 ORBIT_RADIUS = 115
-TARGET_RADIUS = 36
+TARGET_RADIUS = 49
+SYMBOL_SIZES = (34, 40, 47, 54, 63, 70, 76, 82)
+SYMBOL_ANGLES = (-162, -108, -57, -24, 0, 39, 85, 143)
 MARGIN = 8
 GAP = 18
 HEADING_HEIGHT = 26
@@ -30,8 +32,8 @@ SYMBOL_OFFSETS = ((0, 0),) + tuple(
 
 def symbol_faces(seed, card_index):
     rng = Random(f"{seed}:{card_index}")
-    sizes = rng.sample((44, 48, 50, 54, 57, 60, 63, 67), SYMBOLS_PER_CARD)
-    angles = rng.sample((-19, -14, -8, 0, 0, 7, 12, 17), SYMBOLS_PER_CARD)
+    sizes = rng.sample(SYMBOL_SIZES, SYMBOLS_PER_CARD)
+    angles = rng.sample(SYMBOL_ANGLES, SYMBOLS_PER_CARD)
     return tuple(zip(sizes, angles))
 
 
@@ -130,21 +132,22 @@ class SymbolDuelUI:
         self.canvas.delete(tag)
         for index, (symbol, (size, angle)) in enumerate(zip(self.symbol_duel.open_cards[side], faces)):
             x, y = self.symbol_tile_center(side, index)
-            _, color, primitives = ICONS[symbol]
+            _, palette, primitives = ICONS[symbol]
             scale = size / 24
             a, b = scale * cos(radians(angle)), scale * sin(radians(angle))
-            for kind, points in primitives:
+            for kind, points, accent in primitives:
+                ink, fill = accent or palette
                 coords = tuple(
                     coordinate
                     for px, py in native_symbol_points(kind, points)
                     for coordinate in (x + a * (px-12) - b * (py-12), y + b * (px-12) + a * (py-12))
                 )
                 if kind == "line":
-                    self.canvas.create_line(*coords, fill=color, width=1.55*scale,
+                    self.canvas.create_line(*coords, fill=ink, width=1.55*scale,
                                             capstyle="round", joinstyle="round", tags=tag)
                 else:
-                    self.canvas.create_polygon(*coords, fill=color if kind == "dot" else "#fffef9",
-                                               outline="" if kind == "dot" else color, width=1.55*scale,
+                    self.canvas.create_polygon(*coords, fill=ink if kind == "dot" else fill,
+                                               outline="" if kind == "dot" else ink, width=1.55*scale,
                                                joinstyle="round", tags=tag)
         self.paint_symbol_focus()
 

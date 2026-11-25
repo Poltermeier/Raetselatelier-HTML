@@ -138,8 +138,7 @@ input[type="text"] { background: var(--paper); border: 1px solid #aebdb2; border
   height: auto;
   flex: 0 0 auto;
   overflow: visible;
-  fill: #f7f5ef;
-  fill: color-mix(in srgb, var(--motif-color) 14%, #fffef9);
+  pointer-events: none;
 }
 .tk-role-symbol-tile > button:focus-visible { outline-offset: -2px; }
 .tk-canvas-windows .tk-role-symbol-tile > button:hover:enabled { background: #fffef9a0; }
