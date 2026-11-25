@@ -100,7 +100,6 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             style.configure(f"{name}.TButton", font=("Helvetica", 9, "bold"), padding=(3, 2),
                             background=background, foreground=foreground, justify="center")
         style.configure("Accent.TButton", background=ACCENT, foreground="white")
-        style.configure("Symbol.TButton", font=("Helvetica", 9), padding=(2, 2))
         style.map("Accent.TButton", background=[("active", "#34775d")])
         style.configure("NotesOn.TButton", background=ACCENT, foreground="white")
         style.map("NotesOn.TButton", background=[("disabled", "#d1d8cf"), ("active", "#34775d")],
@@ -406,6 +405,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.idle_diagnostics.arm()
 
     def clear_board(self):
+        self.clear_symbol_controls()
         self.close_assistance()
         self.cancel_hearts_timer()
         self.cancel_chess_match_request()

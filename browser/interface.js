@@ -654,15 +654,7 @@ document.addEventListener("pointerdown", (event) => {
     if (audio?.state === "suspended") audio.resume().catch(() => {});
 });
 
-const symbolNameBreaks = {
-    Regenbogen: "Regen­bogen",
-    Schneeflocke: "Schnee­flocke",
-    Schmetterling: "Schmetter­ling",
-    Schildkröte: "Schild­kröte",
-    Regenschirm: "Regen­schirm",
-};
-
-function drawSymbolFace(widget, name, color, primitives, card) {
+function drawSymbolFace(widget, name, color, primitives, card, scale, angle) {
     const svgNS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(svgNS, "svg");
     svg.setAttribute("viewBox", "0 0 24 24");
@@ -672,6 +664,8 @@ function drawSymbolFace(widget, name, color, primitives, card) {
     svg.setAttribute("stroke-linecap", "round");
     svg.setAttribute("stroke-linejoin", "round");
     svg.style.setProperty("--motif-color", color);
+    svg.style.width = `${scale * 100}%`;
+    svg.style.transform = `rotate(${angle}deg)`;
     for (const [kind, coords] of primitives) {
         const ellipse = kind === "oval" || kind === "dot";
         const shape = document.createElementNS(svgNS, ellipse ? "ellipse" : kind === "line" ? "polyline" : "polygon");
@@ -691,11 +685,9 @@ function drawSymbolFace(widget, name, color, primitives, card) {
         }
         svg.append(shape);
     }
-    const label = document.createElement("span");
-    label.textContent = symbolNameBreaks[name] || name;
     widget.element.classList.add("tk-role-symbol-tile");
     widget.input.setAttribute("aria-label", `${name}, ${card}`);
-    widget.input.replaceChildren(svg, label);
+    widget.input.replaceChildren(svg);
 }
 
 function role(widget, name) {

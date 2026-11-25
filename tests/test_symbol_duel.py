@@ -1,7 +1,9 @@
 from itertools import combinations
+from math import dist, hypot
 import unittest
 
 from raetselkalender.symbol_duel import SymbolDuel, deal_symbols
+from raetselkalender.symbol_duel_ui import CARD_RADIUS, SYMBOL_OFFSETS, TARGET_RADIUS, symbol_faces
 from raetselkalender.symbol_icons import ICONS
 
 
@@ -22,6 +24,20 @@ class SymbolDuelTests(unittest.TestCase):
         cards = deal_symbols(12)
         self.assertEqual(cards, deal_symbols(12))
         self.assertNotEqual(cards, deal_symbols(13))
+
+    def test_round_cards_keep_targets_separate_and_motifs_varied(self):
+        self.assertEqual(len(SYMBOL_OFFSETS), 8)
+        for x, y in SYMBOL_OFFSETS:
+            self.assertLess(hypot(x, y) + TARGET_RADIUS, CARD_RADIUS)
+        for first, second in combinations(SYMBOL_OFFSETS, 2):
+            self.assertGreater(dist(first, second), 2 * TARGET_RADIUS)
+        faces = symbol_faces(42, 0)
+        sizes, angles = zip(*faces)
+        self.assertEqual(len(set(sizes)), 8)
+        self.assertEqual(sum(angle == 0 for angle in angles), 2)
+        self.assertTrue(all(abs(angle) < 20 for angle in angles))
+        self.assertEqual(faces, symbol_faces(42, 0))
+        self.assertNotEqual(faces, symbol_faces(42, 1))
 
     def test_only_matches_advance_and_each_replacement_uses_next_card(self):
         game = SymbolDuel(4)

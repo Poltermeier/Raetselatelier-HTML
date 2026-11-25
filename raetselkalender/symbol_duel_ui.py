@@ -1,4 +1,6 @@
 """Present two open symbol cards in the atelier's game area."""
+from math import cos, radians, sin, tau
+from random import Random
 from secrets import randbits
 
 from .puzzle import Puzzle
@@ -6,17 +8,43 @@ from .solver import Model
 from .symbol_duel import SYMBOLS_PER_CARD, SymbolDuel
 from .symbol_icons import ICONS
 
-CARD_WIDTH = 392
-CARD_HEIGHT = 230
+CARD_RADIUS = 172
+ORBIT_RADIUS = 115
+TARGET_RADIUS = 36
 MARGIN = 8
-GAP = 12
-TILE_WIDTH = 88
-TILE_HEIGHT = 83
+GAP = 18
+HEADING_HEIGHT = 26
+SCORE_HEIGHT = 32
+CARD_DIAMETER = 2 * CARD_RADIUS
 INK = "#233a32"
 SURFACES = (
-    ("#e9f3ee", "#9dbeb0", "#28634f"),
-    ("#edf0f8", "#aebbd1", "#405c88"),
+    ("#eaf4ef", "#9dbeb0", "#28634f"),
+    ("#f1eff9", "#b9afd0", "#5b467f"),
 )
+ORBIT_SLOTS = SYMBOLS_PER_CARD - 1
+SYMBOL_OFFSETS = ((0, 0),) + tuple(
+    (ORBIT_RADIUS * sin(tau * i / ORBIT_SLOTS), -ORBIT_RADIUS * cos(tau * i / ORBIT_SLOTS))
+    for i in range(ORBIT_SLOTS)
+)
+
+
+def symbol_faces(seed, card_index):
+    rng = Random(f"{seed}:{card_index}")
+    sizes = rng.sample((44, 48, 50, 54, 57, 60, 63, 67), SYMBOLS_PER_CARD)
+    angles = rng.sample((-19, -14, -8, 0, 0, 7, 12, 17), SYMBOLS_PER_CARD)
+    return tuple(zip(sizes, angles))
+
+
+def native_symbol_points(kind, coords):
+    if kind in ("oval", "dot"):
+        left, top, right, bottom = coords
+        cx, cy = (left + right) / 2, (top + bottom) / 2
+        rx, ry = (right - left) / 2, (bottom - top) / 2
+        for i in range(24):
+            angle = tau * i / 24
+            yield cx + rx * cos(angle), cy + ry * sin(angle)
+    else:
+        yield from zip(coords[::2], coords[1::2])
 
 
 class SymbolDuelUI:
@@ -26,6 +54,9 @@ class SymbolDuelUI:
         rules = ("Auf den beiden offenen Karten kommt genau ein Symbol doppelt vor. "
                  "Tippe es auf einer der beiden Karten an. Bei jedem Treffer wechselt abwechselnd eine Karte. "
                  "Finde auch das gemeinsame Symbol auf dem letzten Kartenpaar.")
+        if not self.symbol_faces_in_buttons:
+            rules += (" Mit den Pfeiltasten wählst du auf dem Spielfeld ein Symbol aus. "
+                      "Mit der Eingabetaste oder der Leertaste bestätigst du.")
         puzzle = Puzzle("symbol-duel", "Symbolduell", rules, Model({}, []), {}, {},
                         {"kind": "symbol-duel"}, randbits(48) if seed is None else seed, "")
         self.load_puzzle(puzzle)
@@ -37,95 +68,144 @@ class SymbolDuelUI:
         self.activity_controls = []
         self.symbol_buttons = [[], []]
         for side, (background, border, ink) in enumerate(SURFACES):
-            panel = self.canvas.create_rectangle(0, 0, 1, 1, fill=background, outline=border, width=1.5)
-            heading = self.canvas.create_text(0, 0, anchor="nw", fill=ink, font=("Helvetica", 11, "bold"))
-            self.symbol_frames.append((panel, heading))
-            for index in range(SYMBOLS_PER_CARD):
-                button = self.activity_button(
-                    "", lambda s=side, i=index: self.pick_symbol(s, i), 0, 0, TILE_WIDTH,
-                    height=TILE_HEIGHT if self.symbol_faces_in_buttons else 26, style="Symbol.TButton",
-                    tags=(f"symbol-tile:{side}:{index}",),
-                )
-                self.symbol_buttons[side].append(button)
+            card = self.canvas.create_oval(0, 0, 1, 1, fill=background, outline=border, width=2)
+            rim = self.canvas.create_oval(0, 0, 1, 1, outline=border, width=1)
+            center = self.canvas.create_oval(0, 0, 1, 1, fill="#fffef9", outline=border, width=1)
+            heading = self.canvas.create_text(0, 0, anchor="n", fill=ink, font=("Helvetica", 12, "bold"))
+            self.symbol_frames.append((card, rim, center, heading))
+            if self.symbol_faces_in_buttons:
+                for index in range(SYMBOLS_PER_CARD):
+                    button = self.activity_button(
+                        "", lambda s=side, i=index: self.pick_symbol(s, i), 0, 0,
+                        2 * TARGET_RADIUS, height=2 * TARGET_RADIUS, style="TButton",
+                        tags=(f"symbol-tile:{side}:{index}",),
+                    )
+                    self.symbol_buttons[side].append(button)
         self.symbol_count_text = self.canvas.create_text(0, 0, anchor="w", fill=INK, font=("Helvetica", 11, "bold"))
         self.symbol_feedback = ""
         if not self.symbol_faces_in_buttons:
-            self.canvas.bind("<Button-1>", self.click_symbol_duel)
+            self.install_native_symbol_controls()
         self.layout_symbol_duel()
         for side in range(2):
             self.paint_symbol_card(side)
         self.update_symbol_status()
 
-    def symbol_card_origin(self, side):
-        return (MARGIN + side * (CARD_WIDTH + GAP), 32) if self.symbol_wide else (
-            MARGIN, 32 + side * (CARD_HEIGHT + GAP))
+    def symbol_card_center(self, side):
+        x, y = MARGIN + CARD_RADIUS, SCORE_HEIGHT + HEADING_HEIGHT + CARD_RADIUS
+        if self.symbol_wide:
+            return x + side * (CARD_DIAMETER + GAP), y
+        return x, y + side * (CARD_DIAMETER + HEADING_HEIGHT + GAP)
 
-    def symbol_tile_origin(self, side, index):
-        x, y = self.symbol_card_origin(side)
-        row, column = divmod(index, 4)
-        return x + 12 + column * (TILE_WIDTH + 5), y + 41 + row * (TILE_HEIGHT + 6)
+    def symbol_tile_center(self, side, index):
+        x, y = self.symbol_card_center(side)
+        dx, dy = SYMBOL_OFFSETS[index]
+        return x + dx, y + dy
 
     def layout_symbol_duel(self):
         if self.puzzle is None or self.puzzle.view["kind"] != "symbol-duel":
             return
-        wide = self.canvas.winfo_width() >= 740
+        wide = self.canvas.winfo_width() >= 680
         if self.symbol_wide == wide:
             return
+        resize = self.symbol_wide is not None
         self.symbol_wide = wide
         self.canvas.coords(self.symbol_count_text, MARGIN + 1, 16)
-        for side, (panel, heading) in enumerate(self.symbol_frames):
-            x, y = self.symbol_card_origin(side)
-            self.canvas.coords(panel, x, y, x + CARD_WIDTH, y + CARD_HEIGHT)
-            self.canvas.coords(heading, x + 12, y + 10)
-            for index in range(SYMBOLS_PER_CARD):
-                x, y = self.symbol_tile_origin(side, index)
-                self.canvas.coords(f"symbol-tile:{side}:{index}",
-                                   x + TILE_WIDTH / 2, y + (TILE_HEIGHT / 2 if self.symbol_faces_in_buttons else 68))
-            if not self.symbol_faces_in_buttons:
-                self.paint_native_symbol_card(side)
-        width = 2 * MARGIN + (2 * CARD_WIDTH + GAP if wide else CARD_WIDTH)
-        height = 32 + MARGIN + (CARD_HEIGHT if wide else 2 * CARD_HEIGHT + GAP)
+        for side, (card, rim, center, heading) in enumerate(self.symbol_frames):
+            x, y = self.symbol_card_center(side)
+            for item, radius in ((card, CARD_RADIUS), (rim, CARD_RADIUS - 8), (center, TARGET_RADIUS + 5)):
+                self.canvas.coords(item, x - radius, y - radius, x + radius, y + radius)
+            self.canvas.coords(heading, x, y - CARD_RADIUS - HEADING_HEIGHT)
+            if self.symbol_faces_in_buttons:
+                for index in range(SYMBOLS_PER_CARD):
+                    self.canvas.coords(f"symbol-tile:{side}:{index}", *self.symbol_tile_center(side, index))
+            elif resize:
+                self.paint_native_symbol_card(side, symbol_faces(self.puzzle.seed, self.symbol_duel.open_indices[side]))
+        width = 2 * MARGIN + CARD_DIAMETER + (CARD_DIAMETER + GAP if wide else 0)
+        card_with_heading = CARD_DIAMETER + HEADING_HEIGHT
+        height = SCORE_HEIGHT + MARGIN + card_with_heading + (card_with_heading + GAP if not wide else 0)
         self.canvas.configure(scrollregion=(0, 0, width, height))
 
-    def set_symbol_face(self, button, icon, card_position):
-        button.configure(text=icon[0])
-
-    def paint_native_symbol_card(self, side):
+    def paint_native_symbol_card(self, side, faces):
         tag = f"symbol-drawing:{side}"
         self.canvas.delete(tag)
-        for index, symbol in enumerate(self.symbol_duel.open_cards[side]):
-            x, y = self.symbol_tile_origin(side, index)
+        for index, (symbol, (size, angle)) in enumerate(zip(self.symbol_duel.open_cards[side], faces)):
+            x, y = self.symbol_tile_center(side, index)
             _, color, primitives = ICONS[symbol]
-            self.canvas.create_rectangle(x, y, x + TILE_WIDTH, y + 53, fill="#fffef9", outline="", tags=(tag,))
-            x += (TILE_WIDTH - 45) / 2
-            y += 4
+            scale = size / 24
+            a, b = scale * cos(radians(angle)), scale * sin(radians(angle))
             for kind, points in primitives:
-                coords = tuple((x if i % 2 == 0 else y) + point * 45 / 24 for i, point in enumerate(points))
+                coords = tuple(
+                    coordinate
+                    for px, py in native_symbol_points(kind, points)
+                    for coordinate in (x + a * (px-12) - b * (py-12), y + b * (px-12) + a * (py-12))
+                )
                 if kind == "line":
-                    self.canvas.create_line(*coords, fill=color, width=2.8, capstyle="round", joinstyle="round", tags=(tag,))
-                elif kind in ("oval", "dot"):
-                    self.canvas.create_oval(*coords, outline=color, width=2.6 if kind == "oval" else 0,
-                                            fill=color if kind == "dot" else "#f7f5ef", tags=(tag,))
+                    self.canvas.create_line(*coords, fill=color, width=1.55*scale,
+                                            capstyle="round", joinstyle="round", tags=tag)
                 else:
-                    self.canvas.create_polygon(*coords, fill="#f7f5ef", outline=color, width=2.6,
-                                               joinstyle="round", tags=(tag,))
+                    self.canvas.create_polygon(*coords, fill=color if kind == "dot" else "#fffef9",
+                                               outline="" if kind == "dot" else color, width=1.55*scale,
+                                               joinstyle="round", tags=tag)
+        self.paint_symbol_focus()
 
     def paint_symbol_card(self, side):
-        number = self.symbol_duel.open_indices[side] + 1
-        label = f"Karte {number}"
-        self.canvas.itemconfigure(self.symbol_frames[side][1], text=label)
-        for index, symbol in enumerate(self.symbol_duel.open_cards[side]):
-            self.set_symbol_face(self.symbol_buttons[side][index], ICONS[symbol], label)
-        if not self.symbol_faces_in_buttons:
-            self.paint_native_symbol_card(side)
+        card_index = self.symbol_duel.open_indices[side]
+        label = f"Karte {card_index + 1}"
+        self.canvas.itemconfigure(self.symbol_frames[side][3], text=label)
+        faces = symbol_faces(self.puzzle.seed, card_index)
+        if self.symbol_faces_in_buttons:
+            for button, symbol, (size, angle) in zip(self.symbol_buttons[side], self.symbol_duel.open_cards[side], faces):
+                self.set_symbol_face(button, ICONS[symbol], label, size / (2 * TARGET_RADIUS), angle)
+        else:
+            self.paint_native_symbol_card(side, faces)
+
+    def install_native_symbol_controls(self):
+        self.symbol_focus = (0, 0)
+        self.original_symbol_takefocus = self.canvas.cget("takefocus")
+        self.canvas.configure(takefocus=True)
+        self.canvas.bind("<Button-1>", self.click_symbol_duel)
+        self.canvas.bind("<KeyPress>", self.key_symbol_duel)
+        self.canvas.bind("<FocusIn>", self.paint_symbol_focus)
+        self.canvas.bind("<FocusOut>", lambda event: self.canvas.delete("symbol-focus"))
+
+    def clear_symbol_controls(self):
+        if hasattr(self, "original_symbol_takefocus"):
+            for sequence in ("<KeyPress>", "<FocusIn>", "<FocusOut>"):
+                self.canvas.unbind(sequence)
+            self.canvas.configure(takefocus=self.original_symbol_takefocus)
+            del self.original_symbol_takefocus
+
+    def paint_symbol_focus(self, event=None):
+        self.canvas.delete("symbol-focus")
+        if self.canvas.focus_get() == self.canvas and not self.symbol_duel.finished:
+            x, y = self.symbol_tile_center(*self.symbol_focus)
+            r = TARGET_RADIUS
+            self.canvas.create_oval(x-r, y-r, x+r, y+r, outline="#2471a6", width=2, tags="symbol-focus")
+
+    def key_symbol_duel(self, event):
+        side, index = self.symbol_focus
+        if event.keysym in ("Left", "Right"):
+            step = -1 if event.keysym == "Left" else 1
+            self.symbol_focus = side, (index + step) % SYMBOLS_PER_CARD
+        elif event.keysym in ("Up", "Down"):
+            self.symbol_focus = 1 - side, index
+        elif event.keysym in ("Return", "space"):
+            self.pick_symbol(side, index)
+        else:
+            return
+        self.paint_symbol_focus()
+        return "break"
 
     def click_symbol_duel(self, event):
         x, y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
         for side in range(2):
             for index in range(SYMBOLS_PER_CARD):
-                left, top = self.symbol_tile_origin(side, index)
-                if left <= x <= left + TILE_WIDTH and top <= y < top + TILE_HEIGHT:
+                cx, cy = self.symbol_tile_center(side, index)
+                if (cx - x)**2 + (cy - y)**2 <= TARGET_RADIUS**2:
+                    self.symbol_focus = side, index
+                    self.canvas.focus_set()
                     self.pick_symbol(side, index)
+                    self.paint_symbol_focus()
                     return
 
     def pick_symbol(self, side, index):

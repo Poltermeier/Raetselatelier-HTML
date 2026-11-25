@@ -152,8 +152,8 @@ class BrowserApp(gui.App):
             for piece, button in self.placement_buttons.items():
                 tk.send("label", button.id, PIECE_NAMES[piece])
 
-    def set_symbol_face(self, button, icon, card_position):
-        tk.send("symbol-face", button.id, *icon, card_position)
+    def set_symbol_face(self, button, icon, card_position, scale, angle):
+        tk.send("symbol-face", button.id, *icon, card_position, scale, angle)
 
     def fit_board(self):
         width, height = self.canvas.winfo_width(), self.canvas.winfo_height()
