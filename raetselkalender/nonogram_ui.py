@@ -1,22 +1,30 @@
 """Mouse marks for nonograms; unmarked cells can remain empty at completion."""
-from tkinter import ttk
-
 from .picture_nonogram import LIVES
 
 INK, PAPER, RED = "#233a32", "#fffef9", "#a62531"
+HEART_RED, HEART_GRAY = "#c3243c", "#8c9691"
 
 
 class NonogramUI:
     def setup_picture_nonogram_toolbar(self):
+        from tkinter import ttk
+
         self.nonogram_toolbar = ttk.Frame(self.main)
         self.nonogram_fill_button = ttk.Button(self.nonogram_toolbar, text="Ausmalen",
                                               command=lambda: self.select_nonogram_mark("1"))
         self.nonogram_cross_button = ttk.Button(self.nonogram_toolbar, text="Kreuz setzen",
                                                command=lambda: self.select_nonogram_mark("0"))
-        self.nonogram_lives_label = ttk.Label(self.nonogram_toolbar, font=("Helvetica", 11, "bold"))
+        self.nonogram_hearts = ttk.Frame(self.nonogram_toolbar)
+        self.nonogram_heart_labels = tuple(
+            ttk.Label(self.nonogram_hearts, text="♥", font=("Helvetica", 20, "bold")) for _ in range(LIVES)
+        )
+        self.nonogram_lives_label = ttk.Label(self.nonogram_hearts)
         for button in (self.nonogram_fill_button, self.nonogram_cross_button):
             button.pack(side="left", padx=(0, 7))
-        self.nonogram_lives_label.pack(side="left")
+        self.nonogram_hearts.pack(side="left", padx=(2, 0))
+        for heart in self.nonogram_heart_labels:
+            heart.pack(side="left")
+        self.nonogram_lives_label.pack(side="left", padx=(6, 0))
 
     def reset_nonogram_lives(self):
         self.nonogram_lives = LIVES if self.puzzle.view["kind"] == "picture-nonogram" else None
@@ -35,6 +43,8 @@ class NonogramUI:
         for tool, button in (("1", self.nonogram_fill_button), ("0", self.nonogram_cross_button)):
             style = "DifficultyOn.TButton" if self.nonogram_mark == tool else "TButton"
             button.configure(style=style, state=state)
+        for index, heart in enumerate(self.nonogram_heart_labels):
+            heart.configure(foreground=HEART_RED if index < self.nonogram_lives else HEART_GRAY)
         label = f"{self.nonogram_lives} von {LIVES} Leben" if self.nonogram_lives else "Verloren · 0 Leben"
         self.nonogram_lives_label.configure(text=label, foreground=RED if self.nonogram_lives < LIVES else INK)
 
@@ -68,9 +78,9 @@ class NonogramUI:
                 return
             self.note_vars[key].set('' if self.note_vars[key].get() else 'x')
         else:
-            if self.nonogram_lives is not None and value == "0" and self.puzzle.solution[key] == 1:
+            if self.nonogram_lives is not None and int(value) != self.puzzle.solution[key]:
                 self.nonogram_lives -= 1
-                self.nonogram_mistake = key
+                self.nonogram_mistake = (key, value)
                 if not self.nonogram_lives:
                     self.close_assistance()
                 self.on_change()
@@ -88,19 +98,21 @@ class NonogramUI:
                                           and self.puzzle.check(values)[0] == 'correct')
         self.canvas.delete('nonogram-cross')
         left, top, step, _, _ = self.nonogram_geometry
+        mistake = self.nonogram_mistake if not self.showing_solution else None
         for key, var in self.vars.items():
-            mistake = self.nonogram_mistake == key and not self.showing_solution
-            fill = "#ffe6e7" if mistake else INK if values[key] else PAPER
+            wrong_fill = mistake == (key, "1")
+            wrong_cross = mistake == (key, "0")
+            fill = "#f2a8af" if wrong_fill else "#ffe6e7" if wrong_cross else INK if values[key] else PAPER
             tag = f"cell:{key}"
             if self.nonogram_paints.get(key) != fill:
                 self.canvas.itemconfigure(tag, fill=fill)
                 self.nonogram_paints[key] = fill
             note = not var.get() and self.note_vars[key].get()
-            if not clean and (mistake or var.get() == '0' or note):
+            if not clean and (wrong_cross or var.get() == '0' or note):
                 r, c = map(int, key.split(','))
                 x, y = left + (c+.5)*step, top + (r+.5)*step
                 span = min(8, step/4)
-                color = RED if mistake else '#9a8f70' if note else '#63736a'
+                color = RED if wrong_cross else '#9a8f70' if note else '#63736a'
                 for dy in (-span, span):
                     self.canvas.create_line(x-span, y-dy, x+span, y+dy, fill=color, width=1.5,
                                             tags=('nonogram-cross', f'nonogram-cross:{key}'))
@@ -119,7 +131,8 @@ class NonogramUI:
         if not self.nonogram_lives:
             text = "Verloren · Keine Leben mehr. Setze die Eingaben zurück oder starte ein neues Rätsel."
         elif self.nonogram_mistake:
-            text = "Falsches Kreuz · Ein Leben verloren."
+            action = "Falsches Kreuz" if self.nonogram_mistake[1] == "0" else "Falsch ausgemalt"
+            text = f"{action} · Ein Leben verloren."
         else:
             marked = sum(var.get() == "1" for var in self.vars.values())
             required = sum(self.puzzle.solution.values())

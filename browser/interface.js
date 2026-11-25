@@ -709,6 +709,7 @@ function role(widget, name) {
     if (name === "sidebar") widget.element.setAttribute("aria-label", "Rätsel auswählen");
     if (["status", "hint-message", "review-message"].includes(name)) widget.element.setAttribute("role", "status");
     if (["case-clue", "nonogram-lives"].includes(name)) widget.element.setAttribute("aria-live", "polite");
+    if (name === "nonogram-heart") widget.element.setAttribute("aria-hidden", "true");
     if (name === "case-person") setOptions(widget, { text: widget.options.text });
     if (name === "case-heading") {
         widget.element.setAttribute("role", "heading");

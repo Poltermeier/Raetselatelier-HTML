@@ -1,9 +1,12 @@
 from itertools import product
+from types import SimpleNamespace
 import unittest
+from unittest.mock import Mock
 
 from raetselkalender.catalog import BY_ID, generate
 from raetselkalender.generators import runs
 from raetselkalender.nonogram_images import MOTIFS
+from raetselkalender.nonogram_ui import NonogramUI
 from raetselkalender.picture_nonogram import line_patterns, puzzle_for_motif
 
 
@@ -23,8 +26,10 @@ class PictureNonogramTests(unittest.TestCase):
                 with self.subTest(name=name, mirrored=mirrored):
                     bitmap = tuple(line[::-1] for line in image) if mirrored else image
                     puzzle = puzzle_for_motif(name, bitmap, 42, level)
-                    self.assertEqual((puzzle.view["cols"], puzzle.view["rows"]), (12, 20))
-                    self.assertTrue(all(len(line) == 12 and set(line) <= {"#", "."} for line in bitmap))
+                    width, height = len(bitmap[0]), len(bitmap)
+                    self.assertIn((width, height), {(11, 18), (12, 20), (13, 22), (14, 24)})
+                    self.assertEqual((puzzle.view["cols"], puzzle.view["rows"]), (width, height))
+                    self.assertTrue(all(len(line) == width and set(line) <= {"#", "."} for line in bitmap))
                     self.assertEqual(puzzle.result, name)
                     self.assertTrue(puzzle.analysis["unique"])
                     self.assertTrue(puzzle.analysis["logical_solvable"])
@@ -36,7 +41,35 @@ class PictureNonogramTests(unittest.TestCase):
         self.assertEqual(BY_ID["nonogramm"].title, "Zahlen Nonogramm")
         self.assertEqual(old.title, "Zahlen Nonogramm")
         self.assertEqual((old.view["cols"], old.view["rows"]), (10, 5))
+        self.assertEqual(BY_ID["bild-nonogramm"].title, "Nonogramm - Motiv")
         for level in ("mittel", "schwer"):
-            puzzles = [generate("bild-nonogramm", seed, level) for seed in range(6)]
-            self.assertGreater(len({puzzle.result for puzzle in puzzles}), 1)
+            puzzles = [generate("bild-nonogramm", seed, level) for seed in range(16)]
+            self.assertTrue(all(puzzle.title == "Nonogramm - Motiv" for puzzle in puzzles))
+            self.assertEqual({(puzzle.view["cols"], puzzle.view["rows"]) for puzzle in puzzles},
+                             {(11, 18), (12, 20), (13, 22), (14, 24)})
             self.assertEqual(puzzles[0].solution, generate("bild-nonogramm", 0, level).solution)
+
+    def test_wrong_fill_and_cross_each_cost_one_heart_and_lock_at_zero(self):
+        ui = NonogramUI()
+        ui.puzzle = SimpleNamespace(solution={"blank": 0, "filled": 1})
+        ui.vars = {key: Mock() for key in ui.puzzle.solution}
+        ui.note_vars = {key: Mock() for key in ui.puzzle.solution}
+        ui.showing_solution = ui.busy = ui.nonogram_won = ui.note_mode = False
+        ui.nonogram_lives = 3
+        ui.on_change = Mock()
+        ui.close_assistance = Mock()
+        for key, value, remaining in (("blank", "1", 2), ("filled", "0", 1)):
+            ui.mark_nonogram(key, value)
+            self.assertEqual(ui.nonogram_lives, remaining)
+            self.assertEqual(ui.nonogram_mistake, (key, value))
+            ui.vars[key].set.assert_not_called()
+
+        ui.mark_nonogram("blank", "0")
+        ui.vars["blank"].set.assert_called_once_with("0")
+        self.assertEqual(ui.nonogram_lives, 1)
+        ui.mark_nonogram("blank", "1")
+        self.assertEqual(ui.nonogram_lives, 0)
+        ui.close_assistance.assert_called_once()
+        ui.mark_nonogram("filled", "1")
+        ui.vars["filled"].set.assert_not_called()
+        self.assertEqual(ui.on_change.call_count, 4)

@@ -8,7 +8,7 @@ from .nonogram_images import MOTIFS
 from .solver import Model, Table
 
 PICTURE_TYPE = "bild-nonogramm"
-PICTURE_TITLE = "Bild Nonogramm"
+PICTURE_TITLE = "Nonogramm - Motiv"
 LIVES = 3
 
 
@@ -38,7 +38,7 @@ def puzzle_for_motif(name, image, seed, difficulty):
                 row_hints=clues[:rows], col_hints=clues[rows:], binary_paint=True)
     rules = ("Die Zahlen zeigen, wie viele Bildfelder am Stück liegen. Zwischen Blöcken bleibt mindestens ein Feld frei. "
              "Wähle Ausmalen oder Kreuz setzen. Auch Rechtsklick setzt ein Kreuz. "
-             "Ein Kreuz auf einem Bildfeld kostet eines deiner drei Leben. Male alle Bildfelder aus, um das Motiv zu sehen.")
+             "Falsches Ausmalen und falsche Kreuze kosten je ein Herz. Male alle Bildfelder aus, um das Motiv zu sehen.")
     return finish(PICTURE_TYPE, PICTURE_TITLE, rules, model, solution, {}, view, seed, difficulty, result=name)
 
 

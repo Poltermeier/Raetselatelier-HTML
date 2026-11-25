@@ -47,7 +47,7 @@ Für die **Sonderkommission Nordhafen** ermittelst du zu 20 Personen mit Namen u
 ## Nonogramme
 
 - **Zahlen Nonogramm** zeigt drei Ziffern in einem 10 × 5-Gitter.
-- **Bild Nonogramm** zeigt einen Gegenstand in einem 12 × 20-Gitter. Die 17 eigenen Motive und ihre Spiegelungen sind allein aus den Zeilen- und Spaltenhinweisen lösbar. Ein falsches Kreuz kostet eines von drei Leben. Bei null Leben endet die Runde. [Motivliste](raetselkalender/nonogram_images.py)
+- **Nonogramm - Motiv** zeigt einen Gegenstand in einem Raster mit 11 × 18, 12 × 20, 13 × 22 oder 14 × 24 Feldern. Die 36 eigenen Motive und ihre Spiegelungen sind allein aus den Zeilen- und Spaltenhinweisen lösbar. Falsches Ausmalen und falsche Kreuze kosten jeweils eines von drei Herzen. Ein verlorenes Herz wird grau. Bei null Leben endet die Runde. [Motivliste](raetselkalender/nonogram_images.py)
 
 ## Weitere Zahlen- und Drehrätsel
 

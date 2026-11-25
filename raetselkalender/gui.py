@@ -405,6 +405,9 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         if puzzle.view['kind'] == 'chess-match':
             color = 'Weiß' if puzzle.view['white'] else 'Schwarz'
             self.meta.configure(text=f"Du spielst {color} · Stockfish {puzzle.view['elo']} Elo")
+        elif puzzle.view["kind"] == "picture-nonogram":
+            cols, rows = puzzle.view["cols"], puzzle.view["rows"]
+            self.meta.configure(text=f"{cols} × {rows} Felder · {puzzle.difficulty.capitalize()} · Seed {puzzle.seed} · {certificate}")
         elif puzzle.view["kind"] == "sequence":
             size = puzzle.view["size"]
             layout = "4 Felder im Kreis" if size == 2 else "3 × 3 Felder"
