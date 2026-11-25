@@ -31,7 +31,7 @@ PADS = (
 )
 DIAL_CENTER = (170, 236)
 DIAL_RADIUS = 102
-DIAL_PAD_WIDTH = 102
+DIAL_PAD_LENGTH, DIAL_PAD_DEPTH = 150, 94
 INK = "#233a32"
 ERROR = "#943b34"
 
@@ -69,23 +69,28 @@ class SequenceUI:
         if size == 2:
             x, y = DIAL_CENTER
             radius = DIAL_RADIUS
-            self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, outline="#9dbbb1", width=2)
+            bezel = 155
+            self.canvas.create_oval(x - bezel, y - bezel, x + bezel, y + bezel,
+                                    fill="#284840", outline="#18352f", width=2, tags=("sequence-dial",))
+            hub = 49
+            self.canvas.create_oval(x - hub, y - hub, x + hub, y + hub, fill="#e9f3ed", outline="#b3cfc3", width=2)
             self.sequence_score_text = self.canvas.create_text(x, y - 11, fill=INK, font=("Helvetica", 28, "bold"))
             self.canvas.create_text(x, y + 20, text="Punkte", fill=INK, font=("Helvetica", 10, "bold"))
             self.sequence_instruction = self.canvas.create_text(170, 39, fill=INK, font=("Helvetica", 11))
-            centers = ((x, y - radius), (x + radius, y), (x, y + radius), (x - radius, y))
-            width = DIAL_PAD_WIDTH
+            length, depth = DIAL_PAD_LENGTH, DIAL_PAD_DEPTH
+            pads = ((x, y - radius, length, depth), (x + radius, y, depth, length),
+                    (x, y + radius, length, depth), (x - radius, y, depth, length))
         else:
             self.sequence_score_text = self.canvas.create_text(16, 18, anchor="nw", fill=INK, font=("Helvetica", 17, "bold"))
             self.sequence_instruction = self.canvas.create_text(16, 53, anchor="nw", fill=INK, font=("Helvetica", 11))
             gap = 10
             width = (308 - gap * (size - 1)) / size
-            centers = tuple((16 + width / 2 + col * (width + gap), 82 + width / 2 + row * (width + gap))
-                            for row in range(size) for col in range(size))
-        for index, (x, y) in enumerate(centers):
+            pads = tuple((16 + width / 2 + col * (width + gap), 82 + width / 2 + row * (width + gap), width, width)
+                         for row in range(size) for col in range(size))
+        for index, (x, y, width, height) in enumerate(pads):
             button = self.activity_button(
                 str(index + 1), lambda i=index: self.choose_sequence_field(i), x, y,
-                width, height=width, style=self.sequence_pad_style(index, False),
+                width, height=height, style=self.sequence_pad_style(index, False),
             )
             self.sequence_buttons.append(button)
             self.set_sequence_pad(button, index, False)

@@ -67,6 +67,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.pool = ThreadPoolExecutor(max_workers=1)
         self.future = None
         self.puzzle = None
+        self.nonogram_lives = None
         self.vars = {}
         self.entries = {}
         self.diagonal_overlays={}
@@ -219,6 +220,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.rules = ttk.Label(self.main, text="", wraplength=730, justify="left", font=("Helvetica",12))
         self.rules.pack(anchor="w", pady=(0, 12))
         self.setup_assistance()
+        self.setup_picture_nonogram_toolbar()
         self.board_holder = ttk.Frame(self.main)
         self.board_holder.pack(fill="both", expand=True)
         self.canvas = BoardCanvas(self.board_holder, bg=PAPER, highlightthickness=1,
@@ -332,6 +334,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.update_undo_button()
         self.update_assist_buttons()
         self.selection_changed()
+        self.refresh_nonogram_toolbar()
         if value:
             self.cancel_pour_animation()
             if self.idle_diagnostics is not None:
@@ -390,6 +393,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
 
     def load_puzzle(self, puzzle):
         self.puzzle = puzzle
+        self.reset_nonogram_lives()
         self.showing_solution = False
         self.solution_button.configure(text="Lösung ansehen")
         self.set_busy(False)
@@ -416,6 +420,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.idle_diagnostics.arm()
 
     def clear_board(self):
+        self.nonogram_toolbar.pack_forget()
         self.clear_symbol_controls()
         self.close_assistance()
         self.cancel_hearts_timer()
@@ -752,6 +757,10 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         bottom_right = v.get("hints_side") == "bottom-right"
         left = 90 if "row_hints" in v and not bottom_right else 28
         top = 68 if 'diagonal_sums' in v else 105 if "col_hints" in v and not bottom_right else 28
+        picture = v["kind"] == "picture-nonogram"
+        if picture:
+            left = max(62, 14 + 8 * max(len(" ".join(map(str, h))) for h in v["row_hints"]))
+            top = 20 + 16 * max(map(len, v["col_hints"]))
         xy = lambda key: (left+(int(key.split(',')[1])+.5)*step,
                           top+(int(key.split(',')[0])+.5)*step)
         trees = set(v.get("trees", []))
@@ -770,6 +779,13 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
                 self.cell_bgs[key] = bg
                 self.canvas.create_rectangle(x-step/2, y-step/2, x+step/2, y+step/2, fill=bg,
                     outline=LINE, tags=("grid-cell", f"cell:{key}"))
+        if picture:
+            for r in range(5, rows, 5):
+                y = top + r * step
+                self.canvas.create_line(left, y, left + cols * step, y, fill="#839b8e", width=2)
+            for c in range(5, cols, 5):
+                x = left + c * step
+                self.canvas.create_line(x, top, x, top + rows * step, fill="#839b8e", width=2)
         if v.get('diagonals'):
             for a,b,c,d in ((0,0,cols,rows),(0,rows,cols,0)):
                 segment=(left+a*step,top+b*step,left+c*step,top+d*step)
@@ -794,7 +810,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
                 self.canvas.create_line(left, top+i*step, left+cols*step, top+i*step, fill=INK, width=2)
         for key in p.model.domains:
             x, y = xy(key)
-            if p.type_id == "nonogramm":
+            if p.type_id == "nonogramm" or picture:
                 self.register_click_value(key)
             elif key in p.givens:
                 self.canvas.create_text(x, y, text=str(p.givens[key]),
@@ -844,10 +860,14 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.draw_calendar_marks(left, top, step, rows, cols)
         right = step+28 if v.get('sum_cells') else 90 if 'diagonal_sums' in v else 65 if bottom_right else 28
         self.canvas.configure(scrollregion=(0, 0, left+cols*step+right, bottom))
-        if p.type_id == "nonogramm":
+        if p.type_id == "nonogramm" or picture:
             self.nonogram_geometry = left, top, step, rows, cols
+            self.nonogram_paints = {}
             self.canvas.bind('<Button-1>', self.click_nonogram)
             self.canvas.configure(cursor='hand2')
+            if picture:
+                self.nonogram_toolbar.pack(fill="x", pady=(0, 8), before=self.board_holder)
+                self.canvas.bind("<Button-3>", lambda event: self.click_nonogram(event, cross=True))
 
     def on_change(self,edited_key=None):
         if self.updating or self.puzzle is None or self.showing_solution:
@@ -891,6 +911,9 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             return
         if self.puzzle.view['kind']=='activity':
             self.on_activity_change()
+            return
+        if self.puzzle.view["kind"] == "picture-nonogram":
+            self.update_picture_nonogram()
             return
         if self.is_click_board():
             self.on_click_board_change()
@@ -1049,6 +1072,10 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.refresh_borders()
             self.on_change()
             return
+        if self.nonogram_lives is not None:
+            self.reset_nonogram_lives()
+            self.init_history()
+            self.update_assist_buttons()
         self.updating = True
         for var in self.vars.values():
             var.set("")
@@ -1058,6 +1085,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.updating = False
         if self.note_mode:
             self.set_note_mode(True)
+        if self.nonogram_lives is not None:
+            self.history_state = self.capture_history()
         self.on_change()
 
     def export(self):

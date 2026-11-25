@@ -169,7 +169,12 @@ class BrowserApp(gui.App):
         self.fit_job = None
         self.layout_symbol_duel()
         x1, y1, x2, y2 = self.canvas.logical_region
-        zoom = max(.65, min(1.7, (width - 8) / max(1, x2 - x1), (height - 8) / max(1, y2 - y1)))
+        width_zoom = (width - 8) / max(1, x2 - x1)
+        if self.puzzle.view["kind"] == "picture-nonogram":
+            # Keep the clues and cells readable. The taller board scrolls vertically.
+            zoom = min(1.15, width_zoom)
+        else:
+            zoom = max(.65, min(1.7, width_zoom, (height - 8) / max(1, y2 - y1)))
         if self.canvas.set_zoom(int(zoom * 100) / 100) and not self.is_click_board():
             self.refresh_note_previews()
         self.fit_hearts_hand()
@@ -194,6 +199,7 @@ def start():
         sidebar.master: "body", sidebar: "sidebar", app.main: "main",
         app.title: "title", app.meta: "metadata", app.rules: "rules",
         app.board_holder: "board-holder", app.canvas: "board", app.status: "status",
+        app.nonogram_toolbar: "nonogram-toolbar", app.nonogram_lives_label: "nonogram-lives",
         app.hint_message: "hint-message", app.review_message: "review-message",
         app.progress: "progress", app.success_panel: "success",
         app.error_panel: "error", app.confetti_canvas: "confetti",

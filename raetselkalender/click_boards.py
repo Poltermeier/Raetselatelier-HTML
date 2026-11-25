@@ -8,7 +8,7 @@ ACCENT = "#27644c"
 class ClickBoardUI:
     def is_click_board(self):
         return bool(self.puzzle and (self.puzzle.type_id in ("kistenguck", "pontifex-hashikake", "camping", "nonogramm", 'kaesekaestchen', 'osternest-sudoku')
-            or self.puzzle.view['kind'] in ('routes','matrix','cats','mines','binary-symbols','treasure')))
+            or self.puzzle.view['kind'] in ('routes','matrix','cats','mines','binary-symbols','treasure','picture-nonogram')))
 
     def register_click_value(self, key):
         self.vars[key] = tk.StringVar()
@@ -31,7 +31,7 @@ class ClickBoardUI:
             self.paint_boxes()
         elif self.puzzle.type_id == "camping":
             self.paint_camping()
-        elif self.puzzle.type_id == "nonogramm":
+        elif self.puzzle.type_id == "nonogramm" or self.puzzle.view["kind"] == "picture-nonogram":
             self.paint_nonogram()
         elif self.puzzle.type_id == 'kaesekaestchen':
             self.paint_cheese()
@@ -111,6 +111,7 @@ class ClickBoardUI:
         self.reset_button.configure(state="disabled" if self.showing_solution else "normal")
         self.updating = False
         self.paint_click_board()
+        self.refresh_nonogram_toolbar()
         if not self.showing_solution:
             self.resume_notes_after_solution()
             self.on_change()

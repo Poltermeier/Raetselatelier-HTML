@@ -126,6 +126,9 @@ input[type="text"] { background: var(--paper); border: 1px solid #aebdb2; border
 .case-status { padding: 1px 3px; border-radius: 4px; font-size: .84em; color: #50645a; background: #e4ebe3; }
 [data-case-status="Schuldig"] > .case-status { color: #6b361d; background: #f4dcca; }
 [data-case-status="Unschuldig"] > .case-status { color: #184c40; background: #cce7df; }
+.tk-role-nonogram-toolbar { flex-wrap: wrap; align-items: center; gap: 8px 0; }
+.tk-role-nonogram-lives { padding: 0 4px; }
+
 .tk-canvas-windows .tk-role-sequence-pad > button {
   background: var(--pad-color);
   color: var(--pad-ink);
@@ -134,7 +137,7 @@ input[type="text"] { background: var(--paper); border: 1px solid #aebdb2; border
   font-weight: 750 !important;
   -webkit-tap-highlight-color: transparent;
 }
-.tk-role-sequence-pad.sequence-pad-round { clip-path: circle(50%); }
+.tk-role-sequence-pad.sequence-pad-round { clip-path: ellipse(50% 50%); }
 .tk-canvas-windows .tk-role-sequence-pad.sequence-pad-round > button { border-radius: 50%; }
 .tk-canvas-windows .tk-role-sequence-pad[data-lit="true"] > button {
   background: var(--pad-flash);

@@ -30,7 +30,7 @@ class NotesUI:
         self.last_note_key = None
 
     def notes_supported(self):
-        return bool(self.puzzle and self.puzzle.view["kind"] not in ("rectangles", "lock", 'pouring','jump','chess') and self.note_vars)
+        return bool(self.puzzle and self.puzzle.view["kind"] not in ("rectangles", "lock", 'pouring','jump','chess', "picture-nonogram") and self.note_vars)
 
     def update_notes_button(self):
         active = self.notes_supported() and not self.showing_solution and not self.busy

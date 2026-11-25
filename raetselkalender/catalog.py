@@ -35,6 +35,7 @@ from .new_puzzles import distance, sum_product, twiddle
 from .friedman import friedman
 from .fillomino import fillomino
 from .placement_puzzles import chess_placement, harakiri, water
+from .picture_nonogram import PICTURE_TITLE, PICTURE_TYPE, picture_nonogram
 
 
 def chess_puzzle(seed, difficulty):
@@ -97,7 +98,8 @@ CATALOG = [
     PuzzleType("kropki-sudoku", "Kropki Sudoku", g.kropki),
     PuzzleType("windrose", "Windrose", calendar.windrose),
     PuzzleType("rinjin-sudoku", "Rinjin-Sudoku", calendar.rinjin),
-    PuzzleType("nonogramm", "Nonogramm", g.nonogram),
+    PuzzleType("nonogramm", "Zahlen Nonogramm", g.nonogram),
+    PuzzleType(PICTURE_TYPE, PICTURE_TITLE, picture_nonogram),
     PuzzleType("bienensudoku", "Bienensudoku", calendar.bees),
     PuzzleType("pontifex-hashikake", "Pontifex Hashikake", g.hashi),
     PuzzleType("kombinationsschloss", "Kombinationsschloss", calendar.combination_lock),

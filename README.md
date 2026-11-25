@@ -1,6 +1,6 @@
 # Simon's Rätselatelier im Browser
 
-Webport von [Raetselkalender-Generator](https://github.com/Poltermeier/Raetselkalender-Generator/tree/acf15a5799e1503f36a30726b63a7b60b43d378a) mit **86 Rätsel- und Spieltypen**. Für die Rätsel gibt es die Stufen *Mittel* und *Schwer*. Hearts, Schach, beide Vier-gewinnt-Varianten, Symbolduell und beide Farbfolge-Spiele stehen im Menü *Längere Denkspiele*. Die Bedienung entspricht der Desktop-App, mit Rätselauswahl, Regeln und Spielfeld, Notizen, Rückgängig, Lösungsansicht und JSON-Export ohne Lösung. Die Einstellungen für Ton und Farbblindheitsmodus bleiben im jeweiligen Browser gespeichert.
+Webport von [Raetselkalender-Generator](https://github.com/Poltermeier/Raetselkalender-Generator/tree/acf15a5799e1503f36a30726b63a7b60b43d378a) mit **87 Rätsel- und Spieltypen**. Für die Rätsel gibt es die Stufen *Mittel* und *Schwer*. Hearts, Schach, beide Vier-gewinnt-Varianten, Symbolduell und beide Farbfolge-Spiele stehen im Menü *Längere Denkspiele*. Die Bedienung entspricht der Desktop-App, mit Rätselauswahl, Regeln und Spielfeld, Notizen, Rückgängig, Lösungsansicht und JSON-Export ohne Lösung. Die Einstellungen für Ton und Farbblindheitsmodus bleiben im jeweiligen Browser gespeichert.
 
 ## Lokal starten
 
@@ -42,7 +42,12 @@ Für die **Sonderkommission Nordhafen** ermittelst du zu 20 Personen mit Namen u
 - **Vier gewinnt** bietet die klassische Variante gegen eine Engine auf vier Stufen. Ein volles Brett ohne Viererreihe ergibt ein Remis.
 - **Vier gewinnt - entfernen** bietet die Variante mit herausnehmbaren Kugeln gegen eine Engine auf vier Stufen. Tippe zum Einwerfen auf den Spaltenkopf oder ein freies Feld. Eine eigene Kugel in der untersten Reihe lässt sich direkt antippen und entfernen. Bei gleichzeitig entstehenden Viererreihen gewinnt die ziehende Seite. Dreimal dieselbe Stellung mit demselben Zugrecht ergibt ein Remis.
 - **Symbolduell** verwendet 55 runde Karten mit jeweils acht von 57 eigenen Vektorsymbolen. Die Motive sind kräftig eingefärbt und variieren von Karte zu Karte in Position, Größe und Drehung. Zwei Karten sind offen und teilen genau ein Symbol. Tippe es auf einer der Karten an, damit die nächste Karte eine der beiden ersetzt. Die Deckgröße orientiert sich an der klassischen Ausgabe. [Regeln der klassischen Ausgabe](https://cdn.svc.asmodee.net/production-zygomatic/uploads/2026/01/DOBSPO07EN_RULES_20251210.pdf)
-- **Farbfolge** und **Farbfolge Extrem** verwenden vier runde Tasten im Kreis beziehungsweise neun Felder im Raster. Jedes Feld hat eine kräftige Farbe und einen eigenen Ton. Die Folge wächst nach jeder richtigen Eingabe. Der Punktestand zählt die vollständig wiedergegebenen Folgen. Der Lautstärkeregler in den Einstellungen steuert auch die Farbtöne.
+- **Farbfolge** und **Farbfolge Extrem** verwenden vier breite, abgerundete Tasten um den Punktestand beziehungsweise neun Felder im Raster. Jedes Feld hat eine kräftige Farbe und einen eigenen Ton. Die Folge wächst nach jeder richtigen Eingabe. Der Punktestand zählt die vollständig wiedergegebenen Folgen. Der Lautstärkeregler in den Einstellungen steuert auch die Farbtöne.
+
+## Nonogramme
+
+- **Zahlen Nonogramm** zeigt drei Ziffern in einem 10 × 5-Gitter.
+- **Bild Nonogramm** zeigt einen Gegenstand in einem 12 × 20-Gitter. Die 17 eigenen Motive und ihre Spiegelungen sind allein aus den Zeilen- und Spaltenhinweisen lösbar. Ein falsches Kreuz kostet eines von drei Leben. Bei null Leben endet die Runde. [Motivliste](raetselkalender/nonogram_images.py)
 
 ## Weitere Zahlen- und Drehrätsel
 

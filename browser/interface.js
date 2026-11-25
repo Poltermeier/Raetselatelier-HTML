@@ -184,7 +184,7 @@ function setOptions(widget, changed) {
             }
         }
         if (options.text === "×") input.setAttribute("aria-label", "Schließen");
-        if (options.style === "DifficultyOn.TButton" || ["Mittel", "Schwer"].includes(options.text)) {
+        if (options.style === "DifficultyOn.TButton" || ["Mittel", "Schwer", "Ausmalen", "Kreuz setzen"].includes(options.text)) {
             input.setAttribute("aria-pressed", options.style === "DifficultyOn.TButton");
         }
         if ((options.text || "").startsWith("Notizen")) input.setAttribute("aria-pressed", options.style === "NotesOn.TButton");
@@ -708,7 +708,7 @@ function role(widget, name) {
     }
     if (name === "sidebar") widget.element.setAttribute("aria-label", "Rätsel auswählen");
     if (["status", "hint-message", "review-message"].includes(name)) widget.element.setAttribute("role", "status");
-    if (name === "case-clue") widget.element.setAttribute("aria-live", "polite");
+    if (["case-clue", "nonogram-lives"].includes(name)) widget.element.setAttribute("aria-live", "polite");
     if (name === "case-person") setOptions(widget, { text: widget.options.text });
     if (name === "case-heading") {
         widget.element.setAttribute("role", "heading");

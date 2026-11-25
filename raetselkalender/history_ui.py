@@ -29,7 +29,7 @@ class HistoryUI:
 
     def update_undo_button(self):
         if hasattr(self, "undo_button"):
-            active = bool(self.undo_stack) and not self.busy and not self.showing_solution
+            active = bool(self.undo_stack) and not self.busy and not self.showing_solution and self.nonogram_lives != 0
             self.undo_button.configure(state="normal" if active else "disabled")
 
     def record_history(self):
@@ -43,7 +43,7 @@ class HistoryUI:
         self.update_undo_button()
 
     def undo_last(self, event=None):
-        if self.busy or self.showing_solution:
+        if self.busy or self.showing_solution or self.nonogram_lives == 0:
             return "break"
         if getattr(self,'pentomino_drag',None) is not None:
             self.cancel_pentomino_drag();return 'break'

@@ -201,7 +201,7 @@ def nonogram(seed: int, difficulty: str) -> Puzzle:
         except SearchLimit:
             continue
         if len(result.solutions) == 1:
-            return finish("nonogramm", "Nonogramm",
+            return finish("nonogramm", "Zahlen Nonogramm",
                 "Fülle das 10×5-Gitter per Maus: Ein Klick malt ein Feld aus, ein weiterer entfernt die Füllung. "
                 "Im Notizmodus streichst du freie Felder durch. Die Hinweise nennen "
                 "die Längen zusammenhängender Blöcke in ihrer Reihenfolge. Zwischen zwei "
