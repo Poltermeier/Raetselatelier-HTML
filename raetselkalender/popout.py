@@ -1,4 +1,4 @@
-"""PopOut rules and a bounded alpha-beta engine on a 7 × 6 bitboard."""
+"""Four-in-a-row rules and a bounded alpha-beta engine on a 7 × 6 bitboard."""
 from collections import Counter
 from random import Random
 
@@ -10,14 +10,14 @@ LEVELS = {"leicht": (2, 900), "mittel": (3, 2700), "schwer": (4, 8500), "experte
 WIN = 100000
 
 
-def legal_moves(board, player):
+def legal_moves(board, player, *, allow_remove=True):
     occupied = board[0] | board[1]
     drops, pops = [], []
     for column in CENTER_FIRST:
         base = column * STRIDE
         if not occupied & (1 << (base+HEIGHT-1)):
             drops.append(column)
-        if board[player] & (1 << base):
+        if allow_remove and board[player] & (1 << base):
             pops.append(column+WIDTH)
     return drops + pops
 
@@ -60,16 +60,20 @@ def winning_cells(bits):
 
 
 class PopOutGame:
-    def __init__(self, seed, difficulty):
+    def __init__(self, seed, difficulty, *, allow_remove=True):
         self.board = (0, 0)
         self.turn = 0
         self.result = None
         self.difficulty = difficulty
+        self.allow_remove = allow_remove
         self.random = Random(seed)
         self.repetitions = Counter({(*self.board, self.turn): 1})
 
+    def moves(self):
+        return legal_moves(self.board, self.turn, allow_remove=self.allow_remove)
+
     def play(self, move):
-        if type(move) is not int or self.result is not None or move not in legal_moves(self.board, self.turn):
+        if type(move) is not int or self.result is not None or move not in self.moves():
             return False
         self.board = apply_move(self.board, self.turn, move)
         won = winner(self.board, self.turn)
@@ -78,7 +82,7 @@ class PopOutGame:
         self.repetitions[key] += 1
         if won is not None:
             self.result = won
-        elif self.repetitions[key] >= 3 or not legal_moves(self.board, self.turn):
+        elif self.repetitions[key] >= 3 or not self.moves():
             self.result = "draw"
         return True
 
@@ -123,11 +127,11 @@ def engine_move(game):
         remaining -= 1
         if remaining < 0:
             raise SearchBudget
-        if not depth:
-            return position_value(board, player)
-        actions = legal_moves(board, player)
+        actions = legal_moves(board, player, allow_remove=game.allow_remove)
         if not actions:
             return 0
+        if not depth:
+            return position_value(board, player)
         best = -WIN
         for move in actions:
             best = max(best, grade(board, player, move, depth, plies+1, alpha, beta))
@@ -136,7 +140,7 @@ def engine_move(game):
                 break
         return best
 
-    moves = legal_moves(game.board, game.turn)
+    moves = game.moves()
     favorite = moves[0]
     for depth in range(1, depth_limit+1):
         best, candidate = -WIN, favorite

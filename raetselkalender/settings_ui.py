@@ -11,7 +11,7 @@ class SettingsUI:
         if current is not None and current.winfo_exists():current.lift();return
         window=self.settings_window=tk.Toplevel(self.root);window.title('Einstellungen');window.transient(self.root)
         body=ttk.Frame(window,padding=20);body.pack(fill='both',expand=True)
-        ttk.Label(body,text='Siegsound',font=('Helvetica',15,'bold')).pack(anchor='w')
+        ttk.Label(body,text='Spiel- und Siegtöne',font=('Helvetica',15,'bold')).pack(anchor='w')
         volume=tk.DoubleVar(value=self.preferences['volume']);colorblind=tk.BooleanVar(value=self.preferences['colorblind'])
         label=ttk.Label(body);label.pack(anchor='w',pady=(8,0))
         def edit_volume(value=None):

@@ -20,7 +20,8 @@ from .history_ui import HistoryUI
 from .hearts import HEARTS_LEVELS
 from .chess_game_ui import ChessGameUI, CHESS_ELOS
 from .popout import LEVELS as POPOUT_LEVELS
-from .popout_ui import PopOutUI
+from .popout_ui import FOUR_TITLES, PopOutUI
+from .sequence_ui import SEQUENCE_TITLES, SequenceUI
 from .symbol_duel import CARD_COUNT, SYMBOLS_PER_CARD
 from .symbol_duel_ui import SymbolDuelUI
 from .camping_ui import CampingUI
@@ -48,7 +49,7 @@ MUTED = "#63736a"
 LINE = "#d1d8cf"
 
 
-class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, ClickBoardUI, HistoryUI, CampingUI, FeedbackUI, CalendarUI, PouringUI, MatrixUI, RouteUI, StrategyUI, ChessGameUI, PopOutUI, SymbolDuelUI, SpringUI, ActivityUI, AssistanceUI, DiagonalUI, SettingsUI, WorkshopUI):
+class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, ClickBoardUI, HistoryUI, CampingUI, FeedbackUI, CalendarUI, PouringUI, MatrixUI, RouteUI, StrategyUI, ChessGameUI, PopOutUI, SequenceUI, SymbolDuelUI, SpringUI, ActivityUI, AssistanceUI, DiagonalUI, SettingsUI, WorkshopUI):
     sudoku_diagonal_color = DIAGONAL_COLOR
 
     def __init__(self, root, type_id="random", seed=None, difficulty="schwer", *, board_scale=None, cat_size=6, pipe_size=5, settings_path=None):
@@ -91,6 +92,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         style.configure("TFrame", background=BG)
         style.configure("TLabel", background=BG, foreground=INK, font=("Helvetica", 10))
         style.configure("TButton", font=("Helvetica", 10), padding=(12, 8))
+        self.configure_sequence_styles(style)
         for name, background, foreground in (
             ("Deduction", "#f7f6ee", INK),
             ("DeductionSelected", ACCENT, "white"),
@@ -140,8 +142,10 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.choice.pack(fill="x", pady=(10, 14))
         self.choice.bind("<<ComboboxSelected>>", self.selection_changed)
         ttk.Label(sidebar, text="Längere Denkspiele").pack(anchor="w")
-        self.long_ids = (None, "hearts", "schach", "vier-gewinnt", "symbol-duel")
-        self.long_choice = ttk.Combobox(sidebar, values=("Spiel auswählen", "Hearts", "Schach", "4 gewinnt", "Symbolduell"), state="readonly")
+        games = {None: "Spiel auswählen", "hearts": "Hearts", "schach": "Schach", **FOUR_TITLES,
+                 "symbol-duel": "Symbolduell", **SEQUENCE_TITLES}
+        self.long_ids = tuple(games)
+        self.long_choice = ttk.Combobox(sidebar, values=tuple(games.values()), state="readonly")
         self.long_choice.current(1 if type_id == "hearts" else 0)
         self.long_choice.pack(fill="x", pady=(5,12))
         self.long_choice.bind("<<ComboboxSelected>>", self.selection_changed)
@@ -250,8 +254,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.choice.current(0)
         long_game = self.selected_long_game()
         item = BY_ID.get(long_game or self.type_ids[max(0, self.choice.current())])
-        choices = {"hearts": self.hearts_level_choice, "vier-gewinnt": self.popout_level_choice}
-        for widget in (self.level_label, self.level_frame, self.chess_settings, *choices.values()):
+        choices = {"hearts": self.hearts_level_choice, **dict.fromkeys(FOUR_TITLES, self.popout_level_choice)}
+        for widget in (self.level_label, self.level_frame, self.chess_settings, self.hearts_level_choice, self.popout_level_choice):
             widget.pack_forget()
         if long_game == "schach":
             self.seed_label.pack_forget()
@@ -262,7 +266,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         else:
             self.seed_label.pack(anchor="w", before=self.new_button)
             self.seed.pack(fill="x", pady=(5,12), before=self.new_button)
-            if long_game != "symbol-duel":
+            if long_game != "symbol-duel" and long_game not in SEQUENCE_TITLES:
                 self.level_label.pack(anchor="w", before=self.seed_label)
                 difficulty_control = choices.get(long_game, self.level_frame)
                 difficulty_control.pack(fill="x", pady=(5,12), before=self.seed_label)
@@ -321,7 +325,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             button.configure(state="normal" if self.puzzle is not None and not value else "disabled")
         if self.puzzle is not None and self.puzzle.type_id == "hearts":
             self.solution_button.configure(state="disabled")
-        if self.puzzle is not None and self.puzzle.view["kind"] in ("chess-match", "popout", "symbol-duel"):
+        if self.puzzle is not None and self.puzzle.view["kind"] in ("chess-match", "popout", "symbol-duel", "sequence"):
             for button in (self.solution_button, self.reset_button, self.export_button):
                 button.configure(state="disabled")
         self.update_notes_button()
@@ -352,11 +356,14 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         except ValueError:
             messagebox.showerror("Ungültiger Seed", "Der Seed muss eine ganze Zahl sein.", parent=self.root)
             return
-        if long_game == "vier-gewinnt":
-            self.start_popout(seed)
+        if long_game in FOUR_TITLES:
+            self.start_popout(seed, long_game)
             return
         if long_game == "symbol-duel":
             self.start_symbol_duel(seed)
+            return
+        if long_game in SEQUENCE_TITLES:
+            self.start_sequence(seed, long_game)
             return
         type_id = long_game or self.type_ids[max(0, self.choice.current())]
         if type_id != "random" and not BY_ID[type_id].available:
@@ -394,6 +401,9 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         if puzzle.view['kind'] == 'chess-match':
             color = 'Weiß' if puzzle.view['white'] else 'Schwarz'
             self.meta.configure(text=f"Du spielst {color} · Stockfish {puzzle.view['elo']} Elo")
+        elif puzzle.view["kind"] == "sequence":
+            size = puzzle.view["size"]
+            self.meta.configure(text=f"{size} × {size} Felder · Seed {puzzle.seed}")
         elif puzzle.view["kind"] == "symbol-duel":
             self.meta.configure(text=f"{CARD_COUNT} Karten · {SYMBOLS_PER_CARD} Symbole pro Karte · Seed {puzzle.seed}")
         else:
@@ -410,6 +420,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.cancel_hearts_timer()
         self.cancel_chess_match_request()
         self.cancel_popout()
+        self.cancel_sequence_job()
         self.cancel_pentomino_drag(paint=False)
         self.close_chess_menu()
         self.route_drag_active=False
@@ -516,6 +527,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.render_chess_match()
         elif view['kind'] == 'popout':
             self.render_popout()
+        elif view['kind'] == 'sequence':
+            self.render_sequence()
         elif view['kind'] == 'symbol-duel':
             self.render_symbol_duel()
         elif view['kind'] == 'distance':
@@ -867,7 +880,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         if self.puzzle.view['kind']=='chess':
             self.on_chess_change()
             return
-        if self.puzzle.view['kind'] in ('chess-match', 'popout', 'symbol-duel'):
+        if self.puzzle.view['kind'] in ('chess-match', 'popout', 'symbol-duel', 'sequence'):
             return
         if self.puzzle.view['kind']=='binary-symbols':
             self.on_symbol_change()
@@ -1063,6 +1076,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
     def close(self):
         self.cancel_chess_match_request()
         self.cancel_popout()
+        self.cancel_sequence_job()
         self.cancel_pentomino_drag(paint=False)
         if self.settings_window is not None:save_preferences(self.preferences,self.preferences_file)
         self.close_chess_menu()

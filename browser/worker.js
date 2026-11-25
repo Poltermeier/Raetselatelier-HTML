@@ -25,7 +25,7 @@ globalThis.atelierSave = (json) => {
     postMessage({ type: "preferences", json });
     return true;
 };
-globalThis.atelierSound = (volume) => postMessage({ type: "sound", volume });
+globalThis.atelierSound = (volume, frequency, duration) => postMessage({ type: "sound", volume, frequency, duration });
 
 function deliver(event) {
     try {

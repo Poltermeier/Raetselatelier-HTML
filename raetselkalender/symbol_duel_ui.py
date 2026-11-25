@@ -10,10 +10,10 @@ from .symbol_duel import SYMBOLS_PER_CARD, SymbolDuel
 from .symbol_icons import ICONS
 
 CARD_RADIUS = 172
-INNER_RADIUS = CARD_RADIUS - 8
+INNER_RADIUS = CARD_RADIUS - 4
 MIN_TOUCH_RADIUS = 35
 SYMBOL_GAP = 3
-SYMBOL_SIZES = (34, 40, 47, 54, 63, 70, 76, 82)
+SYMBOL_SIZES = (36, 54, 60, 65, 70, 75, 80, 86)
 SYMBOL_ANGLES = (-162, -108, -57, -24, 0, 39, 85, 143)
 MARGIN = 8
 GAP = 18
@@ -77,7 +77,9 @@ def symbol_offsets(rng, radii):
     orbit = INNER_RADIUS - radii[first]
     offsets = [(orbit * cos(angle), orbit * sin(angle)) for angle in angles]
     offsets.append((0, 0))
-    return tuple(offsets[order.index(index)] for index in range(len(radii)))
+    # Spread the larger targets around the rim in the fallback as well.
+    positions = dict(zip(order, (offsets[i] for i in (0, 3, 1, 5, 2, 6, 4, 7))))
+    return tuple(positions[index] for index in range(len(radii)))
 
 
 def symbol_placements(seed, card_index):

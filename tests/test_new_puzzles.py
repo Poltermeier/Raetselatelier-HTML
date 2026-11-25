@@ -118,3 +118,22 @@ class PopOutTests(unittest.TestCase):
             move = engine_move(game)
             self.assertIn(move, legal_moves(game.board, game.turn))
             self.assertTrue(has_four(apply_move(game.board, game.turn, move)[0]))
+
+    def test_classic_does_not_offer_removal_to_either_player(self):
+        for level in LEVELS:
+            game = PopOutGame(2, level, allow_remove=False)
+            for move in (0, 6, 1, 6, 2, 5):
+                self.assertTrue(game.play(move))
+            self.assertFalse(game.play(7))
+            self.assertEqual(engine_move(game), 3)
+            self.assertTrue(game.play(3))
+            self.assertEqual(game.result, 0)
+
+    def test_classic_draws_on_full_board_without_a_four(self):
+        game = PopOutGame(3, "mittel", allow_remove=False)
+        moves = (6, 6, 4, 1, 3, 5, 2, 2, 0, 2, 6, 2, 1, 0, 4, 0, 6, 5, 0, 4, 4, 4,
+                 1, 1, 0, 4, 1, 3, 3, 5, 5, 3, 5, 3, 0, 1, 2, 3, 2, 6, 5, 6)
+        for move in moves:
+            self.assertIsNone(game.result)
+            self.assertTrue(game.play(move))
+        self.assertEqual(game.result, "draw")

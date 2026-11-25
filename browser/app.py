@@ -10,6 +10,7 @@ import tkinter as tk
 
 from raetselkalender import catalog, gui, settings_ui
 from raetselkalender.preferences import normalize_preferences
+from raetselkalender.sequence_ui import PADS
 from raetselkalender.word_games import display_word
 from raetselkalender.placement_puzzles import PIECE_NAMES
 
@@ -20,9 +21,9 @@ settings_ui.save_preferences = lambda values, path=None: atelierSave(json.dumps(
 
 
 class BrowserVictorySound:
-    def play(self, volume):
+    def play(self, volume, *, frequency=None, duration=.19):
         if volume:
-            atelierSound(volume)
+            atelierSound(volume, frequency, duration)
 
 
 gui.VictorySound = BrowserVictorySound
@@ -152,6 +153,10 @@ class BrowserApp(gui.App):
             for piece, button in self.placement_buttons.items():
                 tk.send("label", button.id, PIECE_NAMES[piece])
 
+    def set_sequence_pad(self, button, index, lit):
+        name, pale, strong, _ = PADS[index]
+        tk.send("sequence-pad", button.id, f"Feld {index + 1} · {name}", pale, strong, lit)
+
     def set_symbol_face(self, button, icon, card_position, scale, angle):
         tk.send("symbol-face", button.id, *icon, card_position, scale, angle)
 
@@ -197,7 +202,7 @@ def start():
     for widget, label in ((app.choice, "Rätseltyp"), (app.seed, "Seed (optional)"),
                           (app.long_choice, "Längere Denkspiele"), (app.chess_elo_choice, "Stockfish-Elo"),
                           (app.chess_color_choice, "Deine Farbe"),
-                          (app.popout_level_choice, "4 gewinnt – Schwierigkeit"),
+                          (app.popout_level_choice, "Vier gewinnt – Schwierigkeit"),
                           (app.hearts_level_choice, "Hearts-Schwierigkeit"),
                           (app.cat_size_choice, "Feldgröße Katzensuche"),
                           (app.pipe_size_choice, "Feldgröße Pipes")):

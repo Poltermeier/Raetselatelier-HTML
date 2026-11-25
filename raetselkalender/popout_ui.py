@@ -1,5 +1,5 @@
-"""Touch and keyboard controls for 4 gewinnt – PopOut."""
-from .popout import HEIGHT, WIDTH, STRIDE, PopOutGame, engine_move, legal_moves, winning_cells
+"""Touch and keyboard controls for both four-in-a-row variants."""
+from .popout import HEIGHT, WIDTH, STRIDE, PopOutGame, engine_move, winning_cells
 from .puzzle import Puzzle
 from .solver import Model
 
@@ -7,31 +7,40 @@ INK = "#233a32"
 LEFT, TOP, STEP = 18, 64, 58
 DISC_COLORS = ("#ed882b", "#54bdd2")
 
+FOUR_TITLES = {"vier-gewinnt-klassisch": "Vier gewinnt", "vier-gewinnt": "Vier gewinnt - entfernen"}
+
 
 class PopOutUI:
-    def start_popout(self, seed):
+    def start_popout(self, seed, variant):
         from secrets import randbits
 
         level = self.popout_level.get().lower()
+        allow_remove = variant == "vier-gewinnt"
         rules = ("Verbinde vier deiner Kugeln waagerecht, senkrecht oder diagonal. "
-                 "Tippe oben auf eine Spalte oder auf ein freies Feld, um eine Kugel einzuwerfen. "
-                 "Tippe auf eine eigene Kugel in der untersten Reihe, um sie zu entfernen. "
-                 "Die Kugeln darüber rutschen nach. Entstehen gleichzeitig zwei Viererreihen, gewinnt die Seite am Zug. "
-                 "Bei dreimal derselben Stellung mit demselben Zugrecht oder ohne legalen Zug endet die Partie remis. "
-                 "Mit der Tastatur wählst du die Spalte mit ← und →, wirfst mit ↓ ein und nimmst mit ↑ heraus.")
-        puzzle = Puzzle("vier-gewinnt", "4 gewinnt", rules, Model({}, []), {}, {},
-                        {"kind": "popout"}, randbits(48) if seed is None else seed, level)
+                 "Tippe oben auf eine Spalte oder auf ein freies Feld, um eine Kugel einzuwerfen. ")
+        if allow_remove:
+            rules += ("Tippe auf eine eigene Kugel in der untersten Reihe, um sie zu entfernen. "
+                      "Die Kugeln darüber rutschen nach. Entstehen gleichzeitig zwei Viererreihen, gewinnt die Seite am Zug. "
+                      "Bei dreimal derselben Stellung mit demselben Zugrecht oder ohne legalen Zug endet die Partie remis. ")
+        else:
+            rules += "Ist das Feld voll und niemand hat vier verbunden, endet die Partie remis. "
+        rules += "Mit der Tastatur wählst du die Spalte mit ← und → und wirfst mit ↓ ein"
+        rules += ". Mit ↑ entfernst du die unterste eigene Kugel." if allow_remove else "."
+        puzzle = Puzzle(variant, FOUR_TITLES[variant], rules, Model({}, []), {}, {},
+                        {"kind": "popout", "allow_remove": allow_remove}, randbits(48) if seed is None else seed, level)
         self.load_puzzle(puzzle)
 
     def render_popout(self):
-        self.popout_game = PopOutGame(self.puzzle.seed, self.puzzle.difficulty)
+        self.popout_game = PopOutGame(self.puzzle.seed, self.puzzle.difficulty,
+                                     allow_remove=self.puzzle.view["allow_remove"])
         self.popout_column = 3
         self.canvas.configure(cursor="hand2")
         self.canvas.bind("<Button-1>", self.click_popout)
         self.canvas.bind("<Left>", lambda event: self.focus_popout_column(-1))
         self.canvas.bind("<Right>", lambda event: self.focus_popout_column(1))
         self.canvas.bind("<Down>", lambda event: self.play_popout(self.popout_column) or "break")
-        self.canvas.bind("<Up>", lambda event: self.play_popout(self.popout_column + WIDTH) or "break")
+        if self.popout_game.allow_remove:
+            self.canvas.bind("<Up>", lambda event: self.play_popout(self.popout_column + WIDTH) or "break")
         self.paint_popout()
 
     def focus_popout_column(self, direction):
@@ -52,7 +61,7 @@ class PopOutUI:
         bit = 1 << (column*STRIDE+row)
         if not (first | second) & bit:
             self.play_popout(column)
-        elif row == 0 and first & bit:
+        elif self.popout_game.allow_remove and row == 0 and first & bit:
             self.play_popout(column+WIDTH)
 
     def cancel_popout(self):
@@ -87,7 +96,7 @@ class PopOutUI:
         self.canvas.create_rectangle(LEFT, TOP, LEFT+WIDTH*STEP, TOP+HEIGHT*STEP, fill="#173e54",
                                      outline="#103448", width=3, tags=tag)
         winning = winning_cells(game.board[game.result]) if isinstance(game.result, int) else set()
-        moves = legal_moves(game.board, 0) if game.turn == 0 and game.result is None and not self.busy else ()
+        moves = game.moves() if game.turn == 0 and game.result is None and not self.busy else ()
         for column in range(WIDTH):
             x = LEFT+(column+.5)*STEP
             outline = "#1d6b79" if column == self.popout_column else "#a0b9b9"

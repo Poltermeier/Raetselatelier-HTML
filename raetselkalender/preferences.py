@@ -1,4 +1,4 @@
-"""Small local preferences and a quiet synthesized victory chime."""
+"""Small local preferences and synthesized game sounds."""
 from functools import lru_cache
 import io
 import json
@@ -48,10 +48,10 @@ def save_preferences(values,path=None):
             except OSError:pass
 
 
-@lru_cache(maxsize=8)
-def victory_wave(volume):
+@lru_cache(maxsize=32)
+def sound_wave(volume, notes):
     rate=22050;pcm=bytearray();amplitude=round(12000*max(0,min(100,volume))/100)
-    for frequency,duration in ((523.25,.09),(659.25,.09),(783.99,.17)):
+    for frequency,duration in notes:
         count=round(rate*duration)
         for i in range(count):
             envelope=min(1,i/(rate*.008),(count-i)/(rate*.035))
@@ -62,18 +62,29 @@ def victory_wave(volume):
     return stream.getvalue()
 
 
+
+def victory_wave(volume):
+    return sound_wave(volume, ((523.25, .09), (659.25, .09), (783.99, .17)))
+
+
 class VictorySound:
     def __init__(self):self.thread=None
 
-    def play(self,volume):
-        volume=normalize_preferences({'volume':volume})['volume']
-        if not volume or self.thread is not None and self.thread.is_alive():return
-        self.thread=threading.Thread(target=self._play,args=(volume,),daemon=True);self.thread.start()
+    def play(self, volume, *, frequency=None, duration=.19):
+        volume = normalize_preferences({"volume": volume})["volume"]
+        if not volume:
+            return
+        if frequency is not None:
+            threading.Thread(target=self._play, args=(volume, frequency, duration), daemon=True).start()
+            return
+        if self.thread is None or not self.thread.is_alive():
+            self.thread = threading.Thread(target=self._play, args=(volume,), daemon=True)
+            self.thread.start()
 
     @staticmethod
-    def _play(volume):
+    def _play(volume, frequency=None, duration=.19):
         try:
-            data=victory_wave(volume)
+            data=victory_wave(volume) if frequency is None else sound_wave(volume, ((frequency, duration),))
             if sys.platform=='win32':
                 import winsound
                 winsound.PlaySound(data,winsound.SND_MEMORY|winsound.SND_NODEFAULT)

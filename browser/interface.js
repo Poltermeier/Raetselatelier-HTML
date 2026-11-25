@@ -625,33 +625,41 @@ dialog.addEventListener("close", () => {
     showNextDialog();
 });
 
-function playSound(volume) {
+function playSound(volume, frequency, duration) {
     if (!audio || audio.state !== "running" || !volume) return;
     let time = audio.currentTime + .01;
-    for (const [frequency, duration] of [[523.25, .09], [659.25, .09], [783.99, .17]]) {
+    const notes = frequency == null ? [[523.25, .09], [659.25, .09], [783.99, .17]] : [[frequency, duration]];
+    for (const [pitch, length] of notes) {
         const oscillator = audio.createOscillator();
         const gain = audio.createGain();
-        oscillator.frequency.value = frequency;
+        oscillator.frequency.value = pitch;
         oscillator.connect(gain).connect(audio.destination);
         const amplitude = .24 * volume / 100;
         gain.gain.setValueAtTime(0, time);
         gain.gain.linearRampToValueAtTime(amplitude, time + .008);
-        gain.gain.setValueAtTime(amplitude, time + duration - .035);
-        gain.gain.linearRampToValueAtTime(0, time + duration);
+        gain.gain.setValueAtTime(amplitude, time + length - .035);
+        gain.gain.linearRampToValueAtTime(0, time + length);
         oscillator.start(time);
-        oscillator.stop(time + duration);
-        time += duration;
+        oscillator.stop(time + length);
+        time += length;
     }
 }
 
+function unlockAudio(event) {
+    if (!event.isTrusted) return;
+    if (!audio && window.AudioContext) audio = new AudioContext();
+    if (audio?.state === "suspended") audio.resume().catch(() => {});
+}
+
+document.addEventListener("keydown", unlockAudio);
+document.addEventListener("click", unlockAudio);
 document.addEventListener("pointerdown", (event) => {
     for (const widget of widgets.values()) {
         if (widget.kind === "Menu" && !widget.element.hidden && !widget.element.contains(event.target)) {
             post({ kind: "close", id: widget.id });
         }
     }
-    if (!audio && window.AudioContext) audio = new AudioContext();
-    if (audio?.state === "suspended") audio.resume().catch(() => {});
+    unlockAudio(event);
 });
 
 function drawSymbolFace(widget, name, palette, primitives, card, scale, angle) {
@@ -731,6 +739,15 @@ function applyOperations(operations) {
             widget.accessibleName = args[0];
             widget.input.setAttribute("aria-label", args[0]);
             break;
+        case "sequence-pad": {
+            const [name, pale, strong, lit] = args;
+            widget.element.classList.add("tk-role-sequence-pad");
+            widget.element.dataset.lit = String(lit);
+            widget.input.setAttribute("aria-label", name);
+            widget.input.style.setProperty("--pad-pale", pale);
+            widget.input.style.setProperty("--pad-strong", strong);
+            break;
+        }
         case "symbol-face": drawSymbolFace(widget, ...args); break;
         case "invalid":
             if (args[0]) widget.input.setAttribute("aria-invalid", "true");
@@ -877,7 +894,7 @@ function start() {
             dialogs.push(["Rätselatelier", "Bei der Bedienung ist ein Fehler aufgetreten. Details stehen in der Browserkonsole.", null]);
             showNextDialog();
         }
-        if (data.type === "sound") playSound(data.volume);
+        if (data.type === "sound") playSound(data.volume, data.frequency, data.duration);
         if (data.type === "preferences") {
             try { localStorage.setItem(preferencesKey, data.json); } catch { /* private browsing restrictions */ }
         }
