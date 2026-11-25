@@ -4,7 +4,8 @@ import unittest
 
 from raetselkalender.symbol_duel import SymbolDuel, deal_symbols
 from raetselkalender.symbol_duel_ui import (
-    INNER_RADIUS, MIN_TOUCH_RADIUS, SYMBOL_GAP, SYMBOL_SIZES, native_symbol_points, symbol_placements, symbol_touch_radius,
+    INNER_RADIUS, MIN_TOUCH_RADIUS, MOTIF_EXTENTS, SYMBOL_GAP, SYMBOL_SIZES, SYMBOL_STROKE,
+    native_symbol_points, symbol_placements, symbol_touch_radius,
 )
 from raetselkalender.symbol_icons import ICONS
 
@@ -29,13 +30,15 @@ class SymbolDuelTests(unittest.TestCase):
 
     def test_cards_have_different_positions_and_clear_tap_targets(self):
         for seed in (0, 42, 49383):
-            layouts = tuple(symbol_placements(seed, index) for index in range(55))
+            deck = deal_symbols(seed)
+            layouts = tuple(symbol_placements(seed, i, symbols) for i, symbols in enumerate(deck))
             with self.subTest(seed=seed):
                 self.assertEqual(len({tuple(slot[:2] for slot in card) for card in layouts}), 55)
-                self.assertEqual(layouts[0], symbol_placements(seed, 0))
+                self.assertEqual(layouts[0], symbol_placements(seed, 0, deck[0]))
                 self.assertTrue(any(all(hypot(slot.x, slot.y) > 15 for slot in card) for card in layouts))
                 for card in layouts:
                     self.assertEqual(len(card), 8)
+                    self.assertGreater(sum(slot.size**2 for slot in card), 1.4 * sum(size**2 for size in SYMBOL_SIZES))
                     for slot in card:
                         self.assertGreaterEqual(slot.radius, MIN_TOUCH_RADIUS)
                         self.assertLessEqual(hypot(slot.x, slot.y) + slot.radius, INNER_RADIUS + 1e-8)
@@ -44,24 +47,24 @@ class SymbolDuelTests(unittest.TestCase):
                     self.assertLessEqual(min(gaps), 7)
 
     def test_cards_keep_the_variation_in_symbol_size_and_rotation(self):
-        card = symbol_placements(42, 0)
+        card = symbol_placements(42, 0, deal_symbols(42)[0])
         sizes = {slot.size for slot in card}
         angles = {slot.angle for slot in card}
-        self.assertEqual(len(sizes), 8)
-        self.assertGreater(max(sizes) / min(sizes), 2.3)
+        self.assertGreaterEqual(len(sizes), 5)
+        self.assertGreater(max(sizes) / min(sizes), 1.9)
         self.assertLessEqual(min(angles), -140)
         self.assertGreaterEqual(max(angles), 140)
         self.assertIn(0, angles)
 
     def test_motifs_fit_their_touch_targets_at_any_rotation(self):
-        for name, _, primitives in ICONS:
+        for extent, (name, _, primitives) in zip(MOTIF_EXTENTS, ICONS):
             for kind, coords, _ in primitives:
                 radius = max(hypot(x - 12, y - 12) for x, y in native_symbol_points(kind, coords))
-                # Include half the 1.55-unit round outline for any non-dot primitive.
+                # Include half the round outline for any non-dot primitive.
                 if kind != "dot":
-                    radius += 1.55 / 2
-                for size in SYMBOL_SIZES:
-                    self.assertLess(radius * (size / 24), symbol_touch_radius(size), name)
+                    radius += SYMBOL_STROKE / 2
+                size = round(max(SYMBOL_SIZES) * 1.42)
+                self.assertLess(radius * (size / 24), symbol_touch_radius(size, extent), name)
 
     def test_only_matches_advance_and_each_replacement_uses_next_card(self):
         game = SymbolDuel(4)

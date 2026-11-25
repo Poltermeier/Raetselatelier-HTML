@@ -6,7 +6,9 @@ WIDTH, HEIGHT, STRIDE = 7, 6, 7
 COLUMNS = tuple(63 << (column * STRIDE) for column in range(WIDTH))
 CENTER_FIRST = (3, 2, 4, 1, 5, 0, 6)
 DIRECTIONS = (1, STRIDE, STRIDE-1, STRIDE+1)
-LEVELS = {"leicht": (2, 900), "mittel": (3, 2700), "schwer": (4, 8500), "experte": (6, 20000)}
+BOARD_MASK = sum(COLUMNS)
+BOTTOM_ROW = sum(1 << (column * STRIDE) for column in range(WIDTH))
+LEVELS = {"leicht": (2, 900), "mittel": (5, 9000), "schwer": (6, 18000), "experte": (7, 32000)}
 WIN = 100000
 
 
@@ -87,7 +89,7 @@ class PopOutGame:
         return True
 
 
-def position_value(board, player):
+def simple_position_value(board, player):
     def value(bits):
         strength = 5*(bits & COLUMNS[3]).bit_count()
         for shift in DIRECTIONS:
@@ -95,6 +97,52 @@ def position_value(board, player):
             strength += 3*pairs.bit_count() + 11*(pairs & (bits >> (2*shift))).bit_count()
         return strength
     return value(board[player]) - value(board[1-player])
+
+
+
+def winning_targets(bits):
+    """Squares that would complete a four, including gaps between pieces."""
+    targets = 0
+    for shift in DIRECTIONS:
+        pairs = bits & (bits >> shift)
+        triples = pairs & (bits >> (2 * shift))
+        targets |= (triples >> shift) | (triples << (3 * shift))
+        targets |= (pairs & (bits >> (3 * shift))) << (2 * shift)
+        targets |= (bits & (pairs >> (2 * shift))) << shift
+    return targets & BOARD_MASK
+
+
+def playable_drops(board):
+    # Adding at the bottom of each column carries into its lowest empty square.
+    return ((board[0] | board[1]) + BOTTOM_ROW) & BOARD_MASK
+
+
+def open_pairs(bits, opponent):
+    available = BOARD_MASK ^ opponent
+    total = 0
+    for shift in DIRECTIONS:
+        open_two = available & (available >> shift)
+        open_four = open_two & (open_two >> (2 * shift))
+        a, b, c, d = (bits >> (i * shift) for i in range(4))
+        pairs = (a & b) | (c & d) | ((a | b) & (c | d))
+        total += (open_four & pairs).bit_count()
+    return total
+
+
+def position_value(board, player, plies, allow_remove):
+    own, opponent = board[player], board[1-player]
+    vacant = BOARD_MASK ^ (own | opponent)
+    playable = playable_drops(board)
+    our_targets = winning_targets(own) & vacant
+    their_targets = winning_targets(opponent) & vacant
+    if our_targets & playable:
+        return WIN - plies - 1
+    their_playable = (their_targets & playable).bit_count()
+    if not allow_remove and their_playable > 1:
+        return plies + 2 - WIN
+    center = (own & COLUMNS[3]).bit_count() - (opponent & COLUMNS[3]).bit_count()
+    pairs = open_pairs(own, opponent) - open_pairs(opponent, own)
+    return 4 * center + 3 * pairs + 8 * (our_targets.bit_count() - their_targets.bit_count()) - 22 * their_playable
 
 
 class SearchBudget(Exception):
@@ -106,6 +154,7 @@ def engine_move(game):
     depth_limit, budget = LEVELS[game.difficulty]
     remaining = budget
     repetitions = game.repetitions.copy()
+    tactical = game.difficulty != "leicht"
 
     def grade(board, player, move, depth, plies, alpha, beta):
         following = apply_move(board, player, move)
@@ -113,6 +162,8 @@ def engine_move(game):
         if won is not None:
             return (WIN-plies) if won == player else (plies-WIN)
         next_player = 1-player
+        if not game.allow_remove:
+            return -search(following, next_player, depth-1, plies, -beta, -alpha)
         key = (*following, next_player)
         repetitions[key] += 1
         try:
@@ -131,7 +182,17 @@ def engine_move(game):
         if not actions:
             return 0
         if not depth:
-            return position_value(board, player)
+            return (position_value(board, player, plies, game.allow_remove) if tactical
+                    else simple_position_value(board, player))
+        if tactical and not game.allow_remove:
+            playable = playable_drops(board)
+            if winning_targets(board[player]) & playable:
+                return WIN - plies - 1
+            threats = winning_targets(board[1-player]) & playable
+            if threats:
+                if threats.bit_count() > 1:
+                    return plies + 2 - WIN
+                actions = ((threats.bit_length() - 1) // STRIDE,)
         best = -WIN
         for move in actions:
             best = max(best, grade(board, player, move, depth, plies+1, alpha, beta))

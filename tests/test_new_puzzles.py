@@ -137,3 +137,18 @@ class PopOutTests(unittest.TestCase):
             self.assertIsNone(game.result)
             self.assertTrue(game.play(move))
         self.assertEqual(game.result, "draw")
+
+
+    def test_medium_stops_the_early_fork_in_both_board_variants(self):
+        for allow_remove in (False, True):
+            for opening in ((3, 1, 2, 0), (3, 2, 1, 0), (3, 5, 4, 6)):
+                with self.subTest(allow_remove=allow_remove, opening=opening):
+                    game = PopOutGame(42, "mittel", allow_remove=allow_remove)
+                    for column in opening:
+                        self.assertTrue(game.play(column))
+                        self.assertNotEqual(game.result, 0)
+                        if game.result is not None:
+                            break
+                        self.assertTrue(game.play(engine_move(game)))
+                        if game.result is not None:
+                            break

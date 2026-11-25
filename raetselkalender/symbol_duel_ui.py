@@ -1,5 +1,5 @@
 """Present two open symbol cards in the atelier's game area."""
-from math import cos, hypot, radians, sin, sqrt, tau
+from math import ceil, cos, floor, hypot, radians, sin, sqrt, tau
 from random import Random
 from secrets import randbits
 from typing import NamedTuple
@@ -13,6 +13,8 @@ CARD_RADIUS = 172
 INNER_RADIUS = CARD_RADIUS - 4
 MIN_TOUCH_RADIUS = 35
 SYMBOL_GAP = 3
+SYMBOL_STROKE = 1.55
+DRAWING_MARGIN = .4
 SYMBOL_SIZES = (36, 54, 60, 65, 70, 75, 80, 86)
 SYMBOL_ANGLES = (-162, -108, -57, -24, 0, 39, 85, 143)
 MARGIN = 8
@@ -35,10 +37,27 @@ class SymbolPlacement(NamedTuple):
     angle: int
 
 
-def symbol_touch_radius(size):
-    # 60% of the motif width covers the diagonal extent of the drawings,
-    # including their outline, even when rotated.
-    return max(MIN_TOUCH_RADIUS, round(size * .6))
+def motif_extent(primitives):
+    """Conservative radius, in fractions of the drawing width, at any rotation."""
+    radii = []
+    for kind, coords, _ in primitives:
+        if kind in ("oval", "dot"):
+            left, top, right, bottom = coords
+            cx, cy = (left + right) / 2, (top + bottom) / 2
+            radius = hypot(cx - 12, cy - 12) + max(right - left, bottom - top) / 2
+            corner = max(hypot(x - 12, y - 12) for x in (left, right) for y in (top, bottom))
+            radius = min(radius, corner)
+        else:
+            radius = max(hypot(x - 12, y - 12) for x, y in zip(coords[::2], coords[1::2]))
+        radii.append(radius + (0 if kind == "dot" else SYMBOL_STROKE / 2))
+    return max(radii) / 24
+
+
+MOTIF_EXTENTS = tuple(motif_extent(primitives) for _, _, primitives in ICONS)
+
+
+def symbol_touch_radius(size, extent):
+    return max(MIN_TOUCH_RADIUS, ceil(size * extent + DRAWING_MARGIN))
 
 
 def symbol_offsets(rng, radii):
@@ -82,15 +101,50 @@ def symbol_offsets(rng, radii):
     return tuple(positions[index] for index in range(len(radii)))
 
 
-def symbol_placements(seed, card_index):
+def available_radius(x, y, slots, index):
+    room = INNER_RADIUS - hypot(x, y)
+    for i, other in enumerate(slots):
+        if i != index:
+            room = min(room, hypot(x - other.x, y - other.y) - other.radius - SYMBOL_GAP)
+    return room
+
+
+def enlarge_symbols(rng, slots, extents, starting_sizes):
+    """Move each motif wherever nearby space allows it to grow."""
+    indices = list(range(len(slots)))
+    for distance in (33, 18, 8):
+        rng.shuffle(indices)
+        for index in indices:
+            slot = slots[index]
+            extent = extents[index]
+            limit = round(starting_sizes[index] * 1.42)
+            best = slot
+            candidates = [(slot.x, slot.y)]
+            candidates += [(slot.x + rng.uniform(-distance, distance), slot.y + rng.uniform(-distance, distance))
+                           for _ in range(12)]
+            for x, y in candidates:
+                room = floor(available_radius(x, y, slots, index))
+                if room < best.radius:
+                    continue
+                size = min(limit, floor((room - DRAWING_MARGIN) / extent))
+                if size > best.size:
+                    best = SymbolPlacement(x, y, symbol_touch_radius(size, extent), size, slot.angle)
+            slots[index] = best
+    return tuple(slots)
+
+
+def symbol_placements(seed, card_index, symbols):
     rng = Random(f"{seed}:{card_index}")
     sizes = rng.sample(SYMBOL_SIZES, SYMBOLS_PER_CARD)
     angles = rng.sample(SYMBOL_ANGLES, SYMBOLS_PER_CARD)
-    radii = tuple(map(symbol_touch_radius, sizes))
-    return tuple(
-        SymbolPlacement(x, y, radius, size, angle)
-        for (x, y), radius, size, angle in zip(symbol_offsets(rng, radii), radii, sizes, angles)
-    )
+    extents = tuple(MOTIF_EXTENTS[symbol] for symbol in symbols)
+    radii = tuple(symbol_touch_radius(size, extent) for size, extent in zip(sizes, extents))
+    arrangements = []
+    for _ in range(5):
+        slots = [SymbolPlacement(x, y, radius, size, angle)
+                 for (x, y), radius, size, angle in zip(symbol_offsets(rng, radii), radii, sizes, angles)]
+        arrangements.append(enlarge_symbols(rng, slots, extents, sizes))
+    return max(arrangements, key=lambda slots: sum((slot.size * extent)**2 for slot, extent in zip(slots, extents)))
 
 
 def native_symbol_points(kind, coords):
@@ -203,11 +257,11 @@ class SymbolDuelUI:
                     for coordinate in (x + a * (px-12) - b * (py-12), y + b * (px-12) + a * (py-12))
                 )
                 if kind == "line":
-                    self.canvas.create_line(*coords, fill=ink, width=1.55*scale,
+                    self.canvas.create_line(*coords, fill=ink, width=SYMBOL_STROKE*scale,
                                             capstyle="round", joinstyle="round", tags=tag)
                 else:
                     self.canvas.create_polygon(*coords, fill=ink if kind == "dot" else fill,
-                                               outline="" if kind == "dot" else ink, width=1.55*scale,
+                                               outline="" if kind == "dot" else ink, width=SYMBOL_STROKE*scale,
                                                joinstyle="round", tags=tag)
         self.paint_symbol_focus()
 
@@ -215,10 +269,11 @@ class SymbolDuelUI:
         card_index = self.symbol_duel.open_indices[side]
         label = f"Karte {card_index + 1}"
         self.canvas.itemconfigure(self.symbol_frames[side][-1], text=label)
-        slots = self.symbol_slots[side] = symbol_placements(self.puzzle.seed, card_index)
+        symbols = self.symbol_duel.open_cards[side]
+        slots = self.symbol_slots[side] = symbol_placements(self.puzzle.seed, card_index, symbols)
         if self.symbol_faces_in_buttons:
             self.position_symbol_buttons(side)
-            for button, symbol, slot in zip(self.symbol_buttons[side], self.symbol_duel.open_cards[side], slots):
+            for button, symbol, slot in zip(self.symbol_buttons[side], symbols, slots):
                 self.set_symbol_face(button, ICONS[symbol], label, slot.size / (2 * slot.radius), slot.angle)
         else:
             self.paint_native_symbol_card(side)

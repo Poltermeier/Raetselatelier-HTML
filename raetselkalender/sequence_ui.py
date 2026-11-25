@@ -32,6 +32,8 @@ PADS = (
 DIAL_CENTER = (170, 236)
 DIAL_RADIUS = 102
 DIAL_PAD_LENGTH, DIAL_PAD_DEPTH = 150, 94
+ROUND_PAUSE = 1200
+INPUT_FLASH = 175
 INK = "#233a32"
 ERROR = "#943b34"
 
@@ -98,8 +100,8 @@ class SequenceUI:
                              170, 421, tags=("sequence-restart",))
         self.canvas.itemconfigure("sequence-restart", state="hidden")
         self.canvas.configure(scrollregion=(0, 0, 340, 454))
-        self.update_sequence_status("Schau zu · Runde 1")
-        self.schedule_sequence(850, lambda: self.show_sequence_step(0))
+        self.update_sequence_status("Bereit · Runde 1 startet gleich")
+        self.schedule_sequence(ROUND_PAUSE, lambda: self.show_sequence_step(0))
 
     def set_sequence_pad(self, button, index, lit):
         button.configure(style=self.sequence_pad_style(index, lit))
@@ -135,12 +137,14 @@ class SequenceUI:
             self.sequence_phase = "answer"
             self.update_sequence_status(f"Du bist dran · 0 von {step} Feldern")
             return
+        if step == 0:
+            self.update_sequence_status(f"Schau zu · Runde {self.sequence_game.score + 1}")
         self.light_sequence_pad(self.sequence_game.pattern[step])
         self.schedule_sequence(310, lambda: self.pause_before_sequence_step(step + 1))
 
-    def pause_before_sequence_step(self, step):
+    def pause_before_sequence_step(self, step, delay=150):
         self.light_sequence_pad()
-        self.schedule_sequence(150, lambda: self.show_sequence_step(step))
+        self.schedule_sequence(delay, lambda: self.show_sequence_step(step))
 
     def choose_sequence_field(self, index):
         if self.busy or self.sequence_phase != "answer":
@@ -154,8 +158,8 @@ class SequenceUI:
             self.schedule_sequence(180, self.light_sequence_pad)
         elif result == "round":
             self.sequence_phase = "preview"
-            self.update_sequence_status(f"Richtig · Schau zu · Runde {self.sequence_game.score + 1}")
-            self.schedule_sequence(175, lambda: self.pause_before_sequence_step(0))
+            self.update_sequence_status(f"Richtig · Runde {self.sequence_game.score + 1} startet gleich")
+            self.schedule_sequence(INPUT_FLASH, lambda: self.pause_before_sequence_step(0, ROUND_PAUSE - INPUT_FLASH))
         else:
             game = self.sequence_game
             self.update_sequence_status(f"Du bist dran · {game.entered} von {len(game.pattern)} Feldern")
