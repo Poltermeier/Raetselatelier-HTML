@@ -740,12 +740,14 @@ function applyOperations(operations) {
             widget.input.setAttribute("aria-label", args[0]);
             break;
         case "sequence-pad": {
-            const [name, pale, strong, lit] = args;
+            const [name, color, ink, flash, lit, circular] = args;
             widget.element.classList.add("tk-role-sequence-pad");
+            widget.element.classList.toggle("sequence-pad-round", circular);
             widget.element.dataset.lit = String(lit);
             widget.input.setAttribute("aria-label", name);
-            widget.input.style.setProperty("--pad-pale", pale);
-            widget.input.style.setProperty("--pad-strong", strong);
+            widget.input.style.setProperty("--pad-color", color);
+            widget.input.style.setProperty("--pad-ink", ink);
+            widget.input.style.setProperty("--pad-flash", flash);
             break;
         }
         case "symbol-face": drawSymbolFace(widget, ...args); break;

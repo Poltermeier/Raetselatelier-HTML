@@ -154,8 +154,9 @@ class BrowserApp(gui.App):
                 tk.send("label", button.id, PIECE_NAMES[piece])
 
     def set_sequence_pad(self, button, index, lit):
-        name, pale, strong, _ = PADS[index]
-        tk.send("sequence-pad", button.id, f"Feld {index + 1} · {name}", pale, strong, lit)
+        pad = PADS[index]
+        tk.send("sequence-pad", button.id, f"Feld {index + 1} · {pad.name}",
+                pad.color, pad.ink, pad.flash, lit, self.puzzle.view["size"] == 2)
 
     def set_symbol_face(self, button, icon, card_position, scale, angle):
         tk.send("symbol-face", button.id, *icon, card_position, scale, angle)

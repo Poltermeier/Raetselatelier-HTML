@@ -403,7 +403,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.meta.configure(text=f"Du spielst {color} · Stockfish {puzzle.view['elo']} Elo")
         elif puzzle.view["kind"] == "sequence":
             size = puzzle.view["size"]
-            self.meta.configure(text=f"{size} × {size} Felder · Seed {puzzle.seed}")
+            layout = "4 Felder im Kreis" if size == 2 else "3 × 3 Felder"
+            self.meta.configure(text=f"{layout} · Seed {puzzle.seed}")
         elif puzzle.view["kind"] == "symbol-duel":
             self.meta.configure(text=f"{CARD_COUNT} Karten · {SYMBOLS_PER_CARD} Symbole pro Karte · Seed {puzzle.seed}")
         else:

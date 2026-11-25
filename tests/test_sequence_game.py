@@ -29,9 +29,9 @@ class SequenceGameTests(unittest.TestCase):
             self.assertEqual(game.score, 11)
 
     def test_each_pad_has_its_own_pitch_and_pcm_responds_to_volume(self):
-        pitches = {pad[3] for pad in PADS}
+        pitches = {pad.frequency for pad in PADS}
         self.assertEqual(len(pitches), 9)
-        notes = ((PADS[0][3], .19),)
+        notes = ((PADS[0].frequency, .19),)
 
         def peak(volume):
             with wave.open(BytesIO(sound_wave(volume, notes)), "rb") as audio:

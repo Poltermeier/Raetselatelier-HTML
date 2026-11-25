@@ -127,16 +127,17 @@ input[type="text"] { background: var(--paper); border: 1px solid #aebdb2; border
 [data-case-status="Schuldig"] > .case-status { color: #6b361d; background: #f4dcca; }
 [data-case-status="Unschuldig"] > .case-status { color: #184c40; background: #cce7df; }
 .tk-canvas-windows .tk-role-sequence-pad > button {
-  background: var(--pad-pale);
-  color: var(--pad-strong);
-  border: 2px solid var(--pad-strong);
+  background: var(--pad-color);
+  color: var(--pad-ink);
+  border: 2px solid var(--pad-ink);
   border-radius: 16px;
   font-weight: 750 !important;
   -webkit-tap-highlight-color: transparent;
 }
+.tk-role-sequence-pad.sequence-pad-round { clip-path: circle(50%); }
+.tk-canvas-windows .tk-role-sequence-pad.sequence-pad-round > button { border-radius: 50%; }
 .tk-canvas-windows .tk-role-sequence-pad[data-lit="true"] > button {
-  background: var(--pad-strong);
-  color: white;
+  background: var(--pad-flash);
   box-shadow: inset 0 0 0 4px white;
 }
 .tk-role-sequence-pad > button:focus-visible { outline-offset: -5px; }

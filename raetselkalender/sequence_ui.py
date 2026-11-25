@@ -1,34 +1,49 @@
-"""Original two-by-two and three-by-three color-sequence boards."""
+"""Circular and three-by-three color-sequence boards."""
 from secrets import randbits
+from typing import NamedTuple
 
 from .puzzle import Puzzle
 from .sequence_game import ColorSequence
 from .solver import Model
 
 SEQUENCE_TITLES = {"farbfolge": "Farbfolge", "farbfolge-extrem": "Farbfolge Extrem"}
+
+
+
+class Pad(NamedTuple):
+    name: str
+    color: str
+    ink: str
+    frequency: float
+    flash: str
+
+
 PADS = (
-    ("Türkis", "#bef0e6", "#07695f", 261.63),
-    ("Orange", "#ffe1b7", "#935208", 329.63),
-    ("Violett", "#e6d9fa", "#69419c", 392.00),
-    ("Pink", "#fbdae9", "#973260", 466.16),
-    ("Blau", "#d1e7ff", "#225f9d", 523.25),
-    ("Limette", "#e5efbd", "#566a19", 311.13),
-    ("Rot", "#ffe0dc", "#a74036", 369.99),
-    ("Gelb", "#fff1ae", "#806206", 440.00),
-    ("Schiefer", "#dfe5f2", "#536182", 587.33),
+    Pad("Türkis", "#18c5b4", "#083a37", 261.63, "#83ffeb"),
+    Pad("Orange", "#fa832b", "#4b2108", 329.63, "#ffd394"),
+    Pad("Violett", "#ae74fa", "#291548", 392.00, "#ead0ff"),
+    Pad("Pink", "#f264ac", "#4b0d35", 466.16, "#ffc0e1"),
+    Pad("Blau", "#53a9ff", "#102650", 523.25, "#b6e2ff"),
+    Pad("Limette", "#afce28", "#293609", 311.13, "#e9ff82"),
+    Pad("Rot", "#f46154", "#4e1511", 369.99, "#ffb5a7"),
+    Pad("Gelb", "#ffd22e", "#483104", 440.00, "#fff59d"),
+    Pad("Schieferblau", "#8f9ace", "#1e274c", 587.33, "#d5deff"),
 )
+DIAL_CENTER = (170, 236)
+DIAL_RADIUS = 102
+DIAL_PAD_WIDTH = 102
 INK = "#233a32"
 ERROR = "#943b34"
 
 
 class SequenceUI:
     def configure_sequence_styles(self, style):
-        for index, (_, pale, strong, _) in enumerate(PADS):
-            for lit, background, foreground in ((False, pale, strong), (True, strong, "#ffffff")):
+        for index, pad in enumerate(PADS):
+            for lit, background in ((False, pad.color), (True, pad.flash)):
                 name = self.sequence_pad_style(index, lit)
-                style.configure(name, background=background, foreground=foreground, font=("Helvetica", 22, "bold"))
+                style.configure(name, background=background, foreground=pad.ink, font=("Helvetica", 22, "bold"))
                 style.map(name, background=[("active", background), ("disabled", background)],
-                          foreground=[("disabled", foreground)])
+                          foreground=[("disabled", pad.ink)])
 
     @staticmethod
     def sequence_pad_style(index, lit):
@@ -51,15 +66,25 @@ class SequenceUI:
         self.sequence_lit = None
         self.activity_controls = []
         self.sequence_buttons = []
-        self.sequence_score_text = self.canvas.create_text(16, 18, anchor="nw", fill=INK, font=("Helvetica", 17, "bold"))
-        self.sequence_instruction = self.canvas.create_text(16, 53, anchor="nw", fill=INK, font=("Helvetica", 11))
-        gap = 10
-        width = (308 - gap * (size - 1)) / size
-        for index in range(size * size):
-            row, column = divmod(index, size)
+        if size == 2:
+            x, y = DIAL_CENTER
+            radius = DIAL_RADIUS
+            self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, outline="#9dbbb1", width=2)
+            self.sequence_score_text = self.canvas.create_text(x, y - 11, fill=INK, font=("Helvetica", 28, "bold"))
+            self.canvas.create_text(x, y + 20, text="Punkte", fill=INK, font=("Helvetica", 10, "bold"))
+            self.sequence_instruction = self.canvas.create_text(170, 39, fill=INK, font=("Helvetica", 11))
+            centers = ((x, y - radius), (x + radius, y), (x, y + radius), (x - radius, y))
+            width = DIAL_PAD_WIDTH
+        else:
+            self.sequence_score_text = self.canvas.create_text(16, 18, anchor="nw", fill=INK, font=("Helvetica", 17, "bold"))
+            self.sequence_instruction = self.canvas.create_text(16, 53, anchor="nw", fill=INK, font=("Helvetica", 11))
+            gap = 10
+            width = (308 - gap * (size - 1)) / size
+            centers = tuple((16 + width / 2 + col * (width + gap), 82 + width / 2 + row * (width + gap))
+                            for row in range(size) for col in range(size))
+        for index, (x, y) in enumerate(centers):
             button = self.activity_button(
-                str(index + 1), lambda i=index: self.choose_sequence_field(i),
-                16 + width / 2 + column * (width + gap), 82 + width / 2 + row * (width + gap),
+                str(index + 1), lambda i=index: self.choose_sequence_field(i), x, y,
                 width, height=width, style=self.sequence_pad_style(index, False),
             )
             self.sequence_buttons.append(button)
@@ -81,7 +106,7 @@ class SequenceUI:
         self.sequence_lit = index
         if index is not None:
             self.set_sequence_pad(self.sequence_buttons[index], index, True)
-            self.victory_sound.play(self.preferences["volume"], frequency=PADS[index][3], duration=.19)
+            self.victory_sound.play(self.preferences["volume"], frequency=PADS[index].frequency, duration=.19)
 
     def cancel_sequence_job(self):
         if getattr(self, "sequence_job", None) is not None:
@@ -135,6 +160,7 @@ class SequenceUI:
         prefix = "Erreichter Punktestand" if finished else "Punktestand"
         score = f"{prefix}: {self.sequence_game.score}"
         color = ERROR if finished else INK
-        self.canvas.itemconfigure(self.sequence_score_text, text=score, fill=color)
+        board_score = str(self.sequence_game.score) if self.puzzle.view["size"] == 2 else score
+        self.canvas.itemconfigure(self.sequence_score_text, text=board_score, fill=color)
         self.canvas.itemconfigure(self.sequence_instruction, text=message, fill=color)
         self.status.configure(text=f"{score} · {message}", foreground=color)
