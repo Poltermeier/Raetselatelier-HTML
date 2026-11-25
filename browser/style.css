@@ -126,6 +126,7 @@ input[type="text"] { background: var(--paper); border: 1px solid #aebdb2; border
 .case-status { padding: 1px 3px; border-radius: 4px; font-size: .84em; color: #50645a; background: #e4ebe3; }
 [data-case-status="Schuldig"] > .case-status { color: #6b361d; background: #f4dcca; }
 [data-case-status="Unschuldig"] > .case-status { color: #184c40; background: #cce7df; }
+.tk-role-symbol-tile { clip-path: circle(50%); }
 .tk-canvas-windows .tk-role-symbol-tile > button {
   padding: 0;
   border: 0;

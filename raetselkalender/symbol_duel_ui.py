@@ -1,7 +1,8 @@
 """Present two open symbol cards in the atelier's game area."""
-from math import cos, radians, sin, tau
+from math import cos, hypot, radians, sin, sqrt, tau
 from random import Random
 from secrets import randbits
+from typing import NamedTuple
 
 from .puzzle import Puzzle
 from .solver import Model
@@ -9,8 +10,9 @@ from .symbol_duel import SYMBOLS_PER_CARD, SymbolDuel
 from .symbol_icons import ICONS
 
 CARD_RADIUS = 172
-ORBIT_RADIUS = 115
-TARGET_RADIUS = 49
+INNER_RADIUS = CARD_RADIUS - 8
+MIN_TOUCH_RADIUS = 35
+SYMBOL_GAP = 3
 SYMBOL_SIZES = (34, 40, 47, 54, 63, 70, 76, 82)
 SYMBOL_ANGLES = (-162, -108, -57, -24, 0, 39, 85, 143)
 MARGIN = 8
@@ -23,18 +25,70 @@ SURFACES = (
     ("#eaf4ef", "#9dbeb0", "#28634f"),
     ("#f1eff9", "#b9afd0", "#5b467f"),
 )
-ORBIT_SLOTS = SYMBOLS_PER_CARD - 1
-SYMBOL_OFFSETS = ((0, 0),) + tuple(
-    (ORBIT_RADIUS * sin(tau * i / ORBIT_SLOTS), -ORBIT_RADIUS * cos(tau * i / ORBIT_SLOTS))
-    for i in range(ORBIT_SLOTS)
-)
 
 
-def symbol_faces(seed, card_index):
+class SymbolPlacement(NamedTuple):
+    x: float
+    y: float
+    radius: int
+    size: int
+    angle: int
+
+
+def symbol_touch_radius(size):
+    # 60% of the motif width covers the diagonal extent of the drawings,
+    # including their outline, even when rotated.
+    return max(MIN_TOUCH_RADIUS, round(size * .6))
+
+
+def symbol_offsets(rng, radii):
+    # Place the largest targets first and keep the two largest close together.
+    order = sorted(range(len(radii)), key=radii.__getitem__, reverse=True)
+    first, second = order[:2]
+    for _ in range(36):
+        placed = {}
+        for index in order:
+            radius = radii[index]
+            limit = INNER_RADIUS - radius
+            for _ in range(64):
+                angle = rng.uniform(0, tau)
+                if index == second:
+                    cx, cy = placed[first]
+                    distance = radius + radii[first] + rng.uniform(SYMBOL_GAP, SYMBOL_GAP + 4)
+                else:
+                    cx, cy = 0, 0
+                    distance = limit * sqrt(rng.random())
+                x, y = cx + distance * cos(angle), cy + distance * sin(angle)
+                if hypot(x, y) <= limit and all(
+                    hypot(x - px, y - py) >= radius + radii[other] + SYMBOL_GAP
+                    for other, (px, py) in placed.items()
+                ):
+                    placed[index] = x, y
+                    break
+            else:
+                break
+        else:
+            return tuple(placed[index] for index in range(len(radii)))
+
+    # A rotated arrangement is available even if the random attempts run out.
+    start = rng.uniform(0, tau)
+    ring = len(radii) - 1
+    angles = (start + tau * i / ring for i in range(ring))
+    orbit = INNER_RADIUS - radii[first]
+    offsets = [(orbit * cos(angle), orbit * sin(angle)) for angle in angles]
+    offsets.append((0, 0))
+    return tuple(offsets[order.index(index)] for index in range(len(radii)))
+
+
+def symbol_placements(seed, card_index):
     rng = Random(f"{seed}:{card_index}")
     sizes = rng.sample(SYMBOL_SIZES, SYMBOLS_PER_CARD)
     angles = rng.sample(SYMBOL_ANGLES, SYMBOLS_PER_CARD)
-    return tuple(zip(sizes, angles))
+    radii = tuple(map(symbol_touch_radius, sizes))
+    return tuple(
+        SymbolPlacement(x, y, radius, size, angle)
+        for (x, y), radius, size, angle in zip(symbol_offsets(rng, radii), radii, sizes, angles)
+    )
 
 
 def native_symbol_points(kind, coords):
@@ -67,19 +121,19 @@ class SymbolDuelUI:
         self.symbol_duel = SymbolDuel(self.puzzle.seed)
         self.symbol_wide = None
         self.symbol_frames = []
+        self.symbol_slots = [(), ()]
         self.activity_controls = []
         self.symbol_buttons = [[], []]
         for side, (background, border, ink) in enumerate(SURFACES):
             card = self.canvas.create_oval(0, 0, 1, 1, fill=background, outline=border, width=2)
             rim = self.canvas.create_oval(0, 0, 1, 1, outline=border, width=1)
-            center = self.canvas.create_oval(0, 0, 1, 1, fill="#fffef9", outline=border, width=1)
             heading = self.canvas.create_text(0, 0, anchor="n", fill=ink, font=("Helvetica", 12, "bold"))
-            self.symbol_frames.append((card, rim, center, heading))
+            self.symbol_frames.append((card, rim, heading))
             if self.symbol_faces_in_buttons:
                 for index in range(SYMBOLS_PER_CARD):
                     button = self.activity_button(
                         "", lambda s=side, i=index: self.pick_symbol(s, i), 0, 0,
-                        2 * TARGET_RADIUS, height=2 * TARGET_RADIUS, style="TButton",
+                        2 * MIN_TOUCH_RADIUS, height=2 * MIN_TOUCH_RADIUS, style="TButton",
                         tags=(f"symbol-tile:{side}:{index}",),
                     )
                     self.symbol_buttons[side].append(button)
@@ -98,10 +152,15 @@ class SymbolDuelUI:
             return x + side * (CARD_DIAMETER + GAP), y
         return x, y + side * (CARD_DIAMETER + HEADING_HEIGHT + GAP)
 
-    def symbol_tile_center(self, side, index):
+    def symbol_tile_center(self, side, slot):
         x, y = self.symbol_card_center(side)
-        dx, dy = SYMBOL_OFFSETS[index]
-        return x + dx, y + dy
+        return x + slot.x, y + slot.y
+
+    def position_symbol_buttons(self, side):
+        for index, slot in enumerate(self.symbol_slots[side]):
+            tag = f"symbol-tile:{side}:{index}"
+            self.canvas.coords(tag, *self.symbol_tile_center(side, slot))
+            self.canvas.itemconfigure(tag, width=2 * slot.radius, height=2 * slot.radius)
 
     def layout_symbol_duel(self):
         if self.puzzle is None or self.puzzle.view["kind"] != "symbol-duel":
@@ -112,29 +171,28 @@ class SymbolDuelUI:
         resize = self.symbol_wide is not None
         self.symbol_wide = wide
         self.canvas.coords(self.symbol_count_text, MARGIN + 1, 16)
-        for side, (card, rim, center, heading) in enumerate(self.symbol_frames):
+        for side, (card, rim, heading) in enumerate(self.symbol_frames):
             x, y = self.symbol_card_center(side)
-            for item, radius in ((card, CARD_RADIUS), (rim, CARD_RADIUS - 8), (center, TARGET_RADIUS + 5)):
+            for item, radius in ((card, CARD_RADIUS), (rim, INNER_RADIUS)):
                 self.canvas.coords(item, x - radius, y - radius, x + radius, y + radius)
             self.canvas.coords(heading, x, y - CARD_RADIUS - HEADING_HEIGHT)
             if self.symbol_faces_in_buttons:
-                for index in range(SYMBOLS_PER_CARD):
-                    self.canvas.coords(f"symbol-tile:{side}:{index}", *self.symbol_tile_center(side, index))
+                self.position_symbol_buttons(side)
             elif resize:
-                self.paint_native_symbol_card(side, symbol_faces(self.puzzle.seed, self.symbol_duel.open_indices[side]))
+                self.paint_native_symbol_card(side)
         width = 2 * MARGIN + CARD_DIAMETER + (CARD_DIAMETER + GAP if wide else 0)
         card_with_heading = CARD_DIAMETER + HEADING_HEIGHT
         height = SCORE_HEIGHT + MARGIN + card_with_heading + (card_with_heading + GAP if not wide else 0)
         self.canvas.configure(scrollregion=(0, 0, width, height))
 
-    def paint_native_symbol_card(self, side, faces):
+    def paint_native_symbol_card(self, side):
         tag = f"symbol-drawing:{side}"
         self.canvas.delete(tag)
-        for index, (symbol, (size, angle)) in enumerate(zip(self.symbol_duel.open_cards[side], faces)):
-            x, y = self.symbol_tile_center(side, index)
+        for symbol, slot in zip(self.symbol_duel.open_cards[side], self.symbol_slots[side]):
+            x, y = self.symbol_tile_center(side, slot)
             _, palette, primitives = ICONS[symbol]
-            scale = size / 24
-            a, b = scale * cos(radians(angle)), scale * sin(radians(angle))
+            scale = slot.size / 24
+            a, b = scale * cos(radians(slot.angle)), scale * sin(radians(slot.angle))
             for kind, points, accent in primitives:
                 ink, fill = accent or palette
                 coords = tuple(
@@ -154,13 +212,14 @@ class SymbolDuelUI:
     def paint_symbol_card(self, side):
         card_index = self.symbol_duel.open_indices[side]
         label = f"Karte {card_index + 1}"
-        self.canvas.itemconfigure(self.symbol_frames[side][3], text=label)
-        faces = symbol_faces(self.puzzle.seed, card_index)
+        self.canvas.itemconfigure(self.symbol_frames[side][-1], text=label)
+        slots = self.symbol_slots[side] = symbol_placements(self.puzzle.seed, card_index)
         if self.symbol_faces_in_buttons:
-            for button, symbol, (size, angle) in zip(self.symbol_buttons[side], self.symbol_duel.open_cards[side], faces):
-                self.set_symbol_face(button, ICONS[symbol], label, size / (2 * TARGET_RADIUS), angle)
+            self.position_symbol_buttons(side)
+            for button, symbol, slot in zip(self.symbol_buttons[side], self.symbol_duel.open_cards[side], slots):
+                self.set_symbol_face(button, ICONS[symbol], label, slot.size / (2 * slot.radius), slot.angle)
         else:
-            self.paint_native_symbol_card(side, faces)
+            self.paint_native_symbol_card(side)
 
     def install_native_symbol_controls(self):
         self.symbol_focus = (0, 0)
@@ -181,8 +240,10 @@ class SymbolDuelUI:
     def paint_symbol_focus(self, event=None):
         self.canvas.delete("symbol-focus")
         if self.canvas.focus_get() == self.canvas and not self.symbol_duel.finished:
-            x, y = self.symbol_tile_center(*self.symbol_focus)
-            r = TARGET_RADIUS
+            side, index = self.symbol_focus
+            slot = self.symbol_slots[side][index]
+            x, y = self.symbol_tile_center(side, slot)
+            r = slot.radius
             self.canvas.create_oval(x-r, y-r, x+r, y+r, outline="#2471a6", width=2, tags="symbol-focus")
 
     def key_symbol_duel(self, event):
@@ -202,9 +263,9 @@ class SymbolDuelUI:
     def click_symbol_duel(self, event):
         x, y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
         for side in range(2):
-            for index in range(SYMBOLS_PER_CARD):
-                cx, cy = self.symbol_tile_center(side, index)
-                if (cx - x)**2 + (cy - y)**2 <= TARGET_RADIUS**2:
+            for index, slot in enumerate(self.symbol_slots[side]):
+                cx, cy = self.symbol_tile_center(side, slot)
+                if (cx - x)**2 + (cy - y)**2 <= slot.radius**2:
                     self.symbol_focus = side, index
                     self.canvas.focus_set()
                     self.pick_symbol(side, index)
