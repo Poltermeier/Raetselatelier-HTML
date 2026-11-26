@@ -852,6 +852,7 @@ document.addEventListener("keydown", (event) => {
     else if (!event.ctrlKey && !event.metaKey && !event.altKey) {
         if (event.key === "Escape") sequence = "<Escape>";
         else if (event.key === "Enter") sequence = "<Return>";
+        else if (event.key === " " && widget.bindings.has("<KeyPress-space>")) sequence = "<KeyPress-space>";
         else if (event.key.startsWith("Arrow")) sequence = `<${event.key.slice(5)}>`;
         else if (event.key.length === 1) sequence = `<KeyPress-${event.key}>`;
     }

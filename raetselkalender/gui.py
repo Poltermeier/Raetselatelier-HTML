@@ -21,6 +21,8 @@ from .hearts import HEARTS_LEVELS
 from .chess_game_ui import ChessGameUI, CHESS_ELOS
 from .popout import LEVELS as POPOUT_LEVELS
 from .popout_ui import FOUR_TITLES, PopOutUI
+from .paired_maze import MAZE_TITLES, generate_maze
+from .paired_maze_ui import PairedMazeUI
 from .sequence_ui import SEQUENCE_TITLES, SequenceUI
 from .symbol_duel import CARD_COUNT, SYMBOLS_PER_CARD
 from .symbol_duel_ui import SymbolDuelUI
@@ -49,7 +51,7 @@ MUTED = "#63736a"
 LINE = "#d1d8cf"
 
 
-class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, ClickBoardUI, HistoryUI, CampingUI, FeedbackUI, CalendarUI, PouringUI, MatrixUI, RouteUI, StrategyUI, ChessGameUI, PopOutUI, SequenceUI, SymbolDuelUI, SpringUI, ActivityUI, AssistanceUI, DiagonalUI, SettingsUI, WorkshopUI):
+class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, ClickBoardUI, HistoryUI, CampingUI, FeedbackUI, CalendarUI, PouringUI, MatrixUI, RouteUI, StrategyUI, ChessGameUI, PopOutUI, PairedMazeUI, SequenceUI, SymbolDuelUI, SpringUI, ActivityUI, AssistanceUI, DiagonalUI, SettingsUI, WorkshopUI):
     sudoku_diagonal_color = DIAGONAL_COLOR
 
     def __init__(self, root, type_id="random", seed=None, difficulty="schwer", *, board_scale=None, cat_size=6, pipe_size=5, settings_path=None):
@@ -144,7 +146,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.choice.bind("<<ComboboxSelected>>", self.selection_changed)
         ttk.Label(sidebar, text="Längere Denkspiele").pack(anchor="w")
         games = {None: "Spiel auswählen", "hearts": "Hearts", "schach": "Schach", **FOUR_TITLES,
-                 "symbol-duel": "Symbolduell", **SEQUENCE_TITLES}
+                 "symbol-duel": "Symbolduell", **SEQUENCE_TITLES, **MAZE_TITLES}
         self.long_ids = tuple(games)
         self.long_choice = ttk.Combobox(sidebar, values=tuple(games.values()), state="readonly")
         self.long_choice.current(1 if type_id == "hearts" else 0)
@@ -327,7 +329,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             button.configure(state="normal" if self.puzzle is not None and not value else "disabled")
         if self.puzzle is not None and self.puzzle.type_id == "hearts":
             self.solution_button.configure(state="disabled")
-        if self.puzzle is not None and self.puzzle.view["kind"] in ("chess-match", "popout", "symbol-duel", "sequence"):
+        if self.puzzle is not None and self.puzzle.view["kind"] in ("chess-match", "popout", "symbol-duel", "sequence", "maze-game"):
             for button in (self.solution_button, self.reset_button, self.export_button):
                 button.configure(state="disabled")
         self.update_notes_button()
@@ -369,13 +371,14 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.start_sequence(seed, long_game)
             return
         type_id = long_game or self.type_ids[max(0, self.choice.current())]
-        if type_id != "random" and not BY_ID[type_id].available:
+        if type_id not in MAZE_TITLES and type_id != "random" and not BY_ID[type_id].available:
             return
+        generator = generate_maze if type_id in MAZE_TITLES else generate
         self.set_busy(True)
         self.status.configure(text="Erzeuge Rätsel und prüfe die Lösbarkeit …", foreground=INK)
         options={'size':self.cat_size.get()} if type_id=='katzensuche' else {'size':self.pipe_size.get()} if type_id=='pipes' else {}
         level = self.hearts_level.get().lower() if type_id == "hearts" else self.level.get()
-        self.future = self.pool.submit(generate, type_id, seed, level, **options)
+        self.future = self.pool.submit(generator, type_id, seed, level, **options)
         self.root.after(80, self.poll_generation)
 
     def poll_generation(self):
@@ -405,6 +408,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         if puzzle.view['kind'] == 'chess-match':
             color = 'Weiß' if puzzle.view['white'] else 'Schwarz'
             self.meta.configure(text=f"Du spielst {color} · Stockfish {puzzle.view['elo']} Elo")
+        elif puzzle.view["kind"] == "maze-game":
+            self.meta.configure(text=f"{puzzle.difficulty.capitalize()} · Seed {puzzle.seed} · Lösbarkeit geprüft")
         elif puzzle.view["kind"] == "picture-nonogram":
             cols, rows = puzzle.view["cols"], puzzle.view["rows"]
             self.meta.configure(text=f"{cols} × {rows} Felder · {puzzle.difficulty.capitalize()} · Seed {puzzle.seed} · {certificate}")
@@ -429,6 +434,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.cancel_hearts_timer()
         self.cancel_chess_match_request()
         self.cancel_popout()
+        self.cancel_maze_turn()
         self.cancel_sequence_job()
         self.cancel_pentomino_drag(paint=False)
         self.close_chess_menu()
@@ -453,7 +459,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         self.canvas.unbind("<ButtonRelease-1>")
         self.canvas.unbind("<Motion>")
         self.canvas.unbind("<Leave>")
-        for sequence in ("<Left>", "<Right>", "<Up>", "<Down>"):
+        for sequence in ("<Left>", "<Right>", "<Up>", "<Down>", "<KeyPress-space>"):
             self.canvas.unbind(sequence)
         self.canvas.configure(cursor="")
         self.vars = {}
@@ -536,6 +542,8 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             self.render_chess_match()
         elif view['kind'] == 'popout':
             self.render_popout()
+        elif view['kind'] == 'maze-game':
+            self.render_maze_game()
         elif view['kind'] == 'sequence':
             self.render_sequence()
         elif view['kind'] == 'symbol-duel':
@@ -616,6 +624,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         if self.puzzle is None:
             return
         self.layout_symbol_duel()
+        self.layout_maze_game()
         if self.fixed_board_scale is not None:
             zoom = self.fixed_board_scale
         else:
@@ -904,7 +913,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         if self.puzzle.view['kind']=='chess':
             self.on_chess_change()
             return
-        if self.puzzle.view['kind'] in ('chess-match', 'popout', 'symbol-duel', 'sequence'):
+        if self.puzzle.view['kind'] in ('chess-match', 'popout', 'symbol-duel', 'sequence', 'maze-game'):
             return
         if self.puzzle.view['kind']=='binary-symbols':
             self.on_symbol_change()
@@ -1109,6 +1118,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
     def close(self):
         self.cancel_chess_match_request()
         self.cancel_popout()
+        self.cancel_maze_turn()
         self.cancel_sequence_job()
         self.cancel_pentomino_drag(paint=False)
         if self.settings_window is not None:save_preferences(self.preferences,self.preferences_file)

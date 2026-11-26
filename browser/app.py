@@ -10,6 +10,7 @@ import tkinter as tk
 
 from raetselkalender import catalog, gui, settings_ui
 from raetselkalender.preferences import normalize_preferences
+from raetselkalender.paired_maze import MAZE_TITLES, MOVE_NAMES, WAIT, generate_maze
 from raetselkalender.sequence_ui import PADS
 from raetselkalender.word_games import display_word
 from raetselkalender.placement_puzzles import PIECE_NAMES
@@ -34,6 +35,8 @@ async def generate_in_browser(type_id, seed, difficulty, **options):
         seed = secrets.randbits(48)
     if type_id == "random":
         type_id = random.Random(seed).choice([p.id for p in catalog.CATALOG if p.available and p.id != "hearts"])
+    if type_id in MAZE_TITLES:
+        return generate_maze(type_id, seed, difficulty)
     if type_id != "schachraetsel":
         return catalog.generate(type_id, seed, difficulty, **options)
     from chess_adapter import browser_chess_puzzle
@@ -161,6 +164,14 @@ class BrowserApp(gui.App):
     def set_symbol_face(self, button, icon, card_position, scale, angle):
         tk.send("symbol-face", button.id, *icon, card_position, scale, angle)
 
+    def render_maze_game(self):
+        super().render_maze_game()
+        for action, button in self.maze_action_buttons.items():
+            label = "Warten" if action == WAIT else f"Nach {MOVE_NAMES[action].lower()}"
+            tk.send("label", button.id, label)
+            if action != WAIT:
+                tk.send("role", button.id, "maze-direction")
+
     def fit_board(self):
         width, height = self.canvas.winfo_width(), self.canvas.winfo_height()
         if self.puzzle is None or self.fixed_board_scale is not None or min(width, height) < 100:
@@ -168,6 +179,7 @@ class BrowserApp(gui.App):
             return
         self.fit_job = None
         self.layout_symbol_duel()
+        self.layout_maze_game()
         x1, y1, x2, y2 = self.canvas.logical_region
         width_zoom = (width - 8) / max(1, x2 - x1)
         if self.puzzle.view["kind"] == "picture-nonogram":

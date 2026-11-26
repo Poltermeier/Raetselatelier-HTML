@@ -1,6 +1,6 @@
 # Simon's Rätselatelier im Browser
 
-Webport von [Raetselkalender-Generator](https://github.com/Poltermeier/Raetselkalender-Generator/tree/acf15a5799e1503f36a30726b63a7b60b43d378a) mit **87 Rätsel- und Spieltypen**. Für die Rätsel gibt es die Stufen *Mittel* und *Schwer*. Hearts, Schach, beide Vier-gewinnt-Varianten, Symbolduell und beide Farbfolge-Spiele stehen im Menü *Längere Denkspiele*. Die Bedienung entspricht der Desktop-App, mit Rätselauswahl, Regeln und Spielfeld, Notizen, Rückgängig, Lösungsansicht und JSON-Export ohne Lösung. Die Einstellungen für Ton und Farbblindheitsmodus bleiben im jeweiligen Browser gespeichert.
+Webport von [Raetselkalender-Generator](https://github.com/Poltermeier/Raetselkalender-Generator/tree/acf15a5799e1503f36a30726b63a7b60b43d378a) mit **89 Rätsel- und Spieltypen**. Für die Rätsel gibt es die Stufen *Mittel* und *Schwer*. Hearts, Schach, beide Vier-gewinnt-Varianten, Symbolduell, beide Farbfolge-Spiele und die beiden Labyrinthe stehen im Menü *Längere Denkspiele*. Die Bedienung entspricht der Desktop-App, mit Rätselauswahl, Regeln und Spielfeld, Notizen, Rückgängig, Lösungsansicht und JSON-Export ohne Lösung. Die Einstellungen für Ton und Farbblindheitsmodus bleiben im jeweiligen Browser gespeichert.
 
 ## Lokal starten
 
@@ -43,6 +43,10 @@ Für die **Sonderkommission Nordhafen** ermittelst du zu 20 Personen mit Namen u
 - **Vier gewinnt - entfernen** bietet die Variante mit herausnehmbaren Kugeln gegen eine Engine auf vier Stufen. Tippe zum Einwerfen auf den Spaltenkopf oder ein freies Feld. Eine eigene Kugel in der untersten Reihe lässt sich direkt antippen und entfernen. Bei gleichzeitig entstehenden Viererreihen gewinnt die ziehende Seite. Dreimal dieselbe Stellung mit demselben Zugrecht ergibt ein Remis.
 - **Symbolduell** verwendet 55 runde Karten mit jeweils acht von 57 eigenen Vektorsymbolen. Die Motive variieren in Größe und Drehung. Pro Karte werden mehrere Anordnungen verglichen und die Motive passend zum freien Platz vergrößert. Die Tippflächen bleiben getrennt. Zwei Karten sind offen und teilen genau ein Symbol. Tippe es auf einer der Karten an, damit die nächste Karte eine der beiden ersetzt. Die Deckgröße orientiert sich an der klassischen Ausgabe. [Regeln der klassischen Ausgabe](https://cdn.svc.asmodee.net/production-zygomatic/uploads/2026/01/DOBSPO07EN_RULES_20251210.pdf)
 - **Farbfolge** und **Farbfolge Extrem** verwenden vier breite, abgerundete Tasten um den Punktestand beziehungsweise neun Felder im Raster. Jedes Feld hat eine kräftige Farbe und einen eigenen Ton. Die Folge wächst nach jeder richtigen Eingabe. Vor dem ersten Signal jeder Folge gibt es 1,2 Sekunden Vorbereitungszeit. Der Punktestand zählt die vollständig wiedergegebenen Folgen. Der Lautstärkeregler in den Einstellungen steuert auch die Farbtöne.
+- **Minotaurus-Labyrinth** führt dich durch ein Labyrinth mit einem Verfolger. Nach einem Zug oder Warten versucht der Minotaurus bis zu zwei Schritte in deine Richtung, waagerecht vor senkrecht.
+- **Spiegellabyrinth** steuert zwei Figuren gleichzeitig. Auf dem rechten Brett sind links und rechts gespiegelt. Mauern wirken je Brett, und beide Ziele müssen nach demselben Zug besetzt sein.
+
+Beide Labyrinthe werden aus dem Seed erzeugt. Eine Breitensuche prüft ihre Lösbarkeit und liefert auf Wunsch einen Tipp ab der aktuellen Stellung. Pfeiltasten und Bildschirmtasten steuern die Figuren.
 
 ## Nonogramme
 

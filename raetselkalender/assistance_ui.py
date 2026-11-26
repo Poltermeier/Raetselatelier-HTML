@@ -35,7 +35,8 @@ class AssistanceUI:
                    and not self.busy and not self.showing_solution and self.nonogram_lives != 0)
         state = "normal" if enabled else "disabled"
         self.hint_button.configure(state=state)
-        self.review_button.configure(state=state, text="Falsche ausblenden" if self.assist_review else "Falsche anzeigen")
+        review_state = "disabled" if enabled and self.puzzle.view["kind"] == "maze-game" else state
+        self.review_button.configure(state=review_state, text="Falsche ausblenden" if self.assist_review else "Falsche anzeigen")
 
     def clear_hint(self):
         if self.hint_message.cget("text"):
@@ -268,6 +269,8 @@ class AssistanceUI:
             else:
                 self.assist_position(key, wrong[key], hint=True)
                 text = "Eine deiner Eingaben widerspricht den Vorgaben. Prüfe zuerst die markierte Stelle."
+        elif kind == "maze-game":
+            text = self.maze_hint()
         elif kind == "rectangles":
             target = self.borders - self.solution_borders()
             if target:
