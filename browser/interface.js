@@ -740,6 +740,11 @@ function applyOperations(operations) {
             widget.accessibleName = args[0];
             widget.input.setAttribute("aria-label", args[0]);
             break;
+        case "maze-direction":
+            widget.element.classList.add("tk-role-maze-direction");
+            widget.element.classList.toggle("maze-direction-dual", args[1]);
+            widget.input.style.setProperty("--maze-turn", `${args[0] * 90}deg`);
+            break;
         case "sequence-pad": {
             const [name, color, ink, flash, lit, circular] = args;
             widget.element.classList.add("tk-role-sequence-pad");

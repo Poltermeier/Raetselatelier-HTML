@@ -9,6 +9,21 @@ from .solver import Model
 MINOTAUR = "minotaurus-labyrinth"
 MIRROR = "spiegellabyrinth"
 MAZE_TITLES = {MINOTAUR: "Minotaurus-Labyrinth", MIRROR: "Spiegellabyrinth"}
+RANDOM_FORM = "Zufällig"
+MAZE_FORMS = ("Gänge", "Verzweigungen", "Kammern")
+# Width, height, extra passages and number of rooms for Mittel and Schwer.
+BOARD_FORMS = {
+    MINOTAUR: {
+        "Gänge": ((6, 6, 7, 0), (7, 7, 10, 0)),
+        "Verzweigungen": ((6, 7, 5, 0), (7, 8, 7, 0)),
+        "Kammern": ((7, 6, 2, 2), (8, 7, 3, 3)),
+    },
+    MIRROR: {
+        "Gänge": ((5, 5, 3, 0), (6, 6, 2, 0)),
+        "Verzweigungen": ((5, 6, 2, 0), (6, 7, 2, 0)),
+        "Kammern": ((6, 5, 1, 1), (7, 6, 1, 2)),
+    },
+}
 VECTORS = ((-1, 0), (0, 1), (1, 0), (0, -1))
 UP, RIGHT, DOWN, LEFT, WAIT = range(5)
 REFLECTED = (UP, LEFT, DOWN, RIGHT)
@@ -107,8 +122,8 @@ def grid_neighbours(width, height):
     return tuple(result)
 
 
-def random_board(rng, width, height, openings):
-    """Carve a connected maze with depth-first search, then open some loops."""
+def random_board(rng, width, height, openings, rooms=0, *, branching=False):
+    """Carve a connected maze and expand selected passages into loops or rooms."""
     neighbours = grid_neighbours(width, height)
     steps = [[cell] * 4 for cell in range(width * height)]
     start = rng.randrange(len(steps))
@@ -120,15 +135,26 @@ def random_board(rng, width, height, openings):
         steps[neighbour][(direction + 2) % 4] = cell
 
     while frontier:
-        cell = frontier[-1]
+        index = rng.randrange(len(frontier)) if branching and rng.random() < .40 else -1
+        cell = frontier[index]
         choices = [(d, target) for d, target in enumerate(neighbours[cell]) if target not in visited]
         if not choices:
-            frontier.pop()
+            frontier.pop(index)
             continue
         direction, target = rng.choice(choices)
         connect(cell, target, direction)
         visited.add(target)
         frontier.append(target)
+    if rooms:
+        # Non-overlapping 2 × 2 rooms on either parity of the grid.
+        row_offset, col_offset = rng.randrange(2), rng.randrange(2)
+        positions = [row * width + col for row in range(row_offset, height - 1, 2)
+                     for col in range(col_offset, width - 1, 2)]
+        for top_left in rng.sample(positions, rooms):
+            connect(top_left, top_left + 1, RIGHT)
+            connect(top_left, top_left + width, DOWN)
+            connect(top_left + 1, top_left + width + 1, DOWN)
+            connect(top_left + width, top_left + width + 1, RIGHT)
     walls = [(cell, neighbour, direction) for cell, adj in enumerate(neighbours)
              for direction, neighbour in enumerate(adj)
              if cell < neighbour and steps[cell][direction] == cell]
@@ -160,26 +186,29 @@ def distant_goal(rng, board, start, *, border=False):
     return rng.choice(distant)
 
 
-def candidate_maze(rng, variant, hard):
+def candidate_maze(rng, variant, hard, form):
+    width, height, openings, rooms = BOARD_FORMS[variant][form][hard]
+    count = width * height
     if variant == MINOTAUR:
-        size = 7 if hard else 6
-        board = random_board(rng, size, size, 10 if hard else 7)
-        first, second = rng.sample(range(size * size), 2)
+        board = random_board(rng, width, height, openings, rooms, branching=form == "Verzweigungen")
+        first, second = rng.sample(range(count), 2)
         goal = distant_goal(rng, board, first, border=True)
         if goal == second:
-            second = rng.choice([cell for cell in range(size * size) if cell not in (first, goal)])
+            second = rng.choice([cell for cell in range(count) if cell not in (first, goal)])
         return PairedMaze(variant, (board,), (first, second), (goal,))
-    size = 6 if hard else 5
-    boards = tuple(random_board(rng, size, size, 2 if hard else 3) for _ in range(2))
-    starts = tuple(rng.randrange(size * size) for _ in boards)
+    boards = tuple(random_board(rng, width, height, openings, rooms, branching=form == "Verzweigungen")
+                   for _ in range(2))
+    starts = tuple(rng.randrange(count) for _ in boards)
     goals = tuple(distant_goal(rng, board, start) for board, start in zip(boards, starts))
     return PairedMaze(variant, boards, starts, goals)
 
 
-def generate_maze(variant, seed, difficulty):
+def generate_maze(variant, seed, difficulty, *, form=RANDOM_FORM):
     if seed is None:
         from secrets import randbits
         seed = randbits(48)
+    if form == RANDOM_FORM:
+        form = Random(f"labyrinth:{seed}").choice(MAZE_FORMS)
     rng = Random(seed)
     hard = difficulty == "schwer"
     if variant == MINOTAUR:
@@ -196,7 +225,7 @@ def generate_maze(variant, seed, difficulty):
         if attempt == 301:
             # A bounded retry on a known solvable seed keeps the menu playable for any input seed.
             rng = Random(0)
-        maze = candidate_maze(rng, variant, hard)
+        maze = candidate_maze(rng, variant, hard, form)
         solo = max(board_distances(board, start)[goal]
                    for board, start, goal in zip(maze.boards, maze.start, maze.goals))
         if solo > high:
@@ -204,7 +233,7 @@ def generate_maze(variant, seed, difficulty):
         route = shortest_moves(maze)
         if route is None or not max(low, solo + extra) <= len(route) <= high:
             continue
-        view = {"kind": "maze-game", "maze": maze}
+        view = {"kind": "maze-game", "maze": maze, "form": form}
         return Puzzle(variant, MAZE_TITLES[variant], rules, Model({}, []), {}, {}, view, seed, difficulty,
                       analysis={"shortest_moves": len(route), "generation_attempts": attempt})
     raise ValueError("Kein passendes Labyrinth gefunden. Bitte einen anderen Seed wählen.")

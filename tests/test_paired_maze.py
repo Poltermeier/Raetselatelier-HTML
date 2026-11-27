@@ -2,7 +2,8 @@ from itertools import product
 import unittest
 
 from raetselkalender.paired_maze import (
-    Board, MINOTAUR, MIRROR, RIGHT, UP, WAIT, PairedMaze, generate_maze,
+    BOARD_FORMS, DOWN, MAZE_FORMS, RANDOM_FORM, Board, MINOTAUR, MIRROR, RIGHT, UP, WAIT,
+    PairedMaze, generate_maze,
     grid_neighbours, shortest_moves,
 )
 
@@ -61,3 +62,38 @@ class PairedMazeTests(unittest.TestCase):
                         row, col = divmod(maze.goals[0], maze.boards[0].width)
                         self.assertTrue(row in (0, maze.boards[0].height - 1)
                                         or col in (0, maze.boards[0].width - 1))
+
+
+    def test_each_maze_type_has_three_playable_and_structurally_different_forms(self):
+        for variant, difficulty in product((MINOTAUR, MIRROR), ("mittel", "schwer")):
+            with self.subTest(variant=variant, difficulty=difficulty):
+                dimensions = set()
+                for form in MAZE_FORMS:
+                    puzzle = generate_maze(variant, 0, difficulty, form=form)
+                    maze = puzzle.view["maze"]
+                    self.assertEqual(puzzle.view["form"], form)
+                    self.assertEqual(len(shortest_moves(maze)), puzzle.analysis["shortest_moves"])
+                    first = maze.boards[0]
+                    dimensions.add((first.width, first.height))
+                    if form == "Kammern":
+                        _, _, _, rooms = BOARD_FORMS[variant][form][difficulty == "schwer"]
+                        for board in maze.boards:
+                            open_rooms = sum(
+                                board.step(i, RIGHT) == i + 1
+                                and board.step(i, DOWN) == i + board.width
+                                and board.step(i + 1, DOWN) == i + board.width + 1
+                                and board.step(i + board.width, RIGHT) == i + board.width + 1
+                                for i in range(board.width * (board.height - 1))
+                                if i % board.width < board.width - 1
+                            )
+                            self.assertGreaterEqual(open_rooms, rooms)
+                self.assertEqual(len(dimensions), 3)
+
+    def test_random_form_is_seeded_and_uses_each_form(self):
+        forms = set()
+        for seed in range(12):
+            puzzle = generate_maze(MINOTAUR, seed, "mittel", form=RANDOM_FORM)
+            form = puzzle.view["form"]
+            forms.add(form)
+            self.assertEqual(puzzle.view, generate_maze(MINOTAUR, seed, "mittel", form=form).view)
+        self.assertEqual(forms, set(MAZE_FORMS))

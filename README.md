@@ -46,7 +46,7 @@ Für die **Sonderkommission Nordhafen** ermittelst du zu 20 Personen mit Namen u
 - **Minotaurus-Labyrinth** führt dich durch ein Labyrinth mit einem Verfolger. Nach einem Zug oder Warten versucht der Minotaurus bis zu zwei Schritte in deine Richtung, waagerecht vor senkrecht.
 - **Spiegellabyrinth** steuert zwei Figuren gleichzeitig. Auf dem rechten Brett sind links und rechts gespiegelt. Mauern wirken je Brett, und beide Ziele müssen nach demselben Zug besetzt sein.
 
-Beide Labyrinthe werden aus dem Seed erzeugt. Eine Breitensuche prüft ihre Lösbarkeit und liefert auf Wunsch einen Tipp ab der aktuellen Stellung. Pfeiltasten und Bildschirmtasten steuern die Figuren.
+Beide Labyrinthe bieten unter **Bauform** Gänge, Verzweigungen und Kammern. **Zufällig** wählt die Bauform aus dem Seed. Eine Breitensuche prüft die Lösbarkeit und liefert auf Wunsch einen Tipp ab der aktuellen Stellung. Zum Steuern kannst du das Steuerkreuz oder die Pfeiltasten verwenden.
 
 ## Nonogramme
 

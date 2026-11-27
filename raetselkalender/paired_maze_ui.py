@@ -1,15 +1,17 @@
 """Keyboard and touch controls for the atelier's two-piece mazes."""
+from .maze_art import draw_maze_token
 from .paired_maze import DOWN, LEFT, MINOTAUR, MOVE_NAMES, RIGHT, UP, WAIT, shortest_moves
 
 CELL = 42
 MARGIN = 14
-TOP = 141
+TOP = 151
 INK = "#233a32"
 PANEL = "#faf8ef"
 WALL = "#456657"
 DUAL_PALETTES = (("#285c83", "#dcecf7"), ("#764692", "#eee1f4"))
 KEYS = {"<Up>": UP, "<Right>": RIGHT, "<Down>": DOWN, "<Left>": LEFT}
-ACTION_TEXT = ("↑", "→", "↓", "←", "Warten")
+ACTION_TEXT = ("▲", "▶", "▼", "◀", "Warten")
+ARROW_OFFSETS = {UP: (-69, 49), LEFT: (-125, 105), DOWN: (-69, 105), RIGHT: (-13, 105)}
 
 
 class PairedMazeUI:
@@ -26,15 +28,15 @@ class PairedMazeUI:
         actions = directions + (WAIT,) if self.maze_game.variant == MINOTAUR else directions
         for action in actions:
             button = self.activity_button(
-                ACTION_TEXT[action], lambda a=action: self.move_maze(a), 0, 0, 74 if action == WAIT else 62,
-                tags=(f"maze-control:{action}",), height=45 if action == WAIT else 52, style="TButton",
+                ACTION_TEXT[action], lambda a=action: self.move_maze(a), 0, 0, 110 if action == WAIT else 52,
+                tags=(f"maze-control:{action}",), height=34 if action == WAIT else 48,
+                style="TButton" if action == WAIT else "MazeDirection.TButton",
             )
             self.maze_action_buttons[action] = button
-        history_width = 104 if WAIT in actions else 120
         self.maze_undo_button = self.activity_button(
-            "Zug zurück", self.undo_maze, 0, 0, history_width, tags=("maze-undo",), height=45, style="TButton")
+            "Zug zurück", self.undo_maze, 0, 0, 110, tags=("maze-undo",), height=34, style="TButton")
         self.maze_restart_button = self.activity_button(
-            "Neu starten", self.restart_maze, 0, 0, history_width, tags=("maze-restart",), height=45, style="TButton")
+            "Neu starten", self.restart_maze, 0, 0, 110, tags=("maze-restart",), height=34, style="TButton")
         for widget in (self.canvas, *self.activity_controls):
             for key, action in KEYS.items():
                 widget.bind(key, lambda event, a=action: self.maze_key(a))
@@ -59,16 +61,17 @@ class PairedMazeUI:
         width = lane_width * len(boards) + gap if wide else lane_width
         center = width / 2
         self.canvas.coords(self.maze_caption, center, 14)
-        for action, offset in zip(self.maze_action_buttons, (-105, -35, 35, 105)):
-            self.canvas.coords(f"maze-control:{action}", center + offset, 51)
-        if self.maze_game.variant == MINOTAUR:
-            self.canvas.coords(f"maze-control:{WAIT}", center - 112, 109)
-            self.canvas.coords("maze-undo", center - 15, 109)
-            self.canvas.coords("maze-restart", center + 99, 109)
-        else:
-            self.canvas.coords("maze-undo", center - 66, 109)
-            self.canvas.coords("maze-restart", center + 66, 109)
+        for action, (x, y) in ARROW_OFFSETS.items():
+            self.canvas.coords(f"maze-control:{action}", center + x, y)
+        pursuit = self.maze_game.variant == MINOTAUR
+        if pursuit:
+            self.canvas.coords(f"maze-control:{WAIT}", center + 86, 37)
+        self.canvas.coords("maze-undo", center + 86, 76 if pursuit else 53)
+        self.canvas.coords("maze-restart", center + 86, 115 if pursuit else 102)
         self.canvas.delete("maze-board")
+        # The backing groups the four controls into a directional pad.
+        self.canvas.create_rectangle(center - 156, 23, center + 16, 134,
+                                     fill="#e9efe7", outline="#b7c9bc", width=1, tags=("maze-board",))
         self.maze_origins = []
         y = TOP
         for index, board in enumerate(boards):
@@ -94,7 +97,7 @@ class PairedMazeUI:
             r, c = divmod(position, board.width)
             x, y = left + c * CELL, top + r * CELL
             self.canvas.create_rectangle(
-                x, y, x + CELL, y + CELL, fill=PANEL, outline="#e3e7de",
+                x, y, x + CELL, y + CELL, fill=PANEL if (r + c) % 2 else "#f3f0e4", outline="#e3e7de",
                 tags=(*tag, f"maze-cell:{index}:{position}"),
             )
         # Paint walls after the tiles so no adjacent tile obscures an edge.
@@ -124,16 +127,10 @@ class PairedMazeUI:
     def paint_maze_pieces(self):
         self.canvas.delete("maze-piece")
         pursuit = self.maze_game.variant == MINOTAUR
-        faces = (("Du", "#245d50"), ("M", "#a43e30")) if pursuit else (
-            ("1", DUAL_PALETTES[0][0]), ("2", DUAL_PALETTES[1][0]))
-        for index, (position, (name, color)) in enumerate(zip(self.maze_state, faces)):
+        for index, position in enumerate(self.maze_state):
             x, y = self.maze_cell_center(0 if pursuit else index, position)
-            tag = ("maze-piece", f"maze-piece:{index}")
-            self.canvas.create_oval(x - 12, y - 12, x + 12, y + 12, fill=color, outline="#fffef9", width=1.5, tags=tag)
-            if pursuit and index == 1:
-                self.canvas.create_line(x-10, y-6, x-14, y-11, x-14, y-16, fill=color, width=3, tags=tag)
-                self.canvas.create_line(x+10, y-6, x+14, y-11, x+14, y-16, fill=color, width=3, tags=tag)
-            self.canvas.create_text(x, y, text=name, fill="#fffef9", font=("Helvetica", 9, "bold"), tags=tag)
+            piece = ("hero" if index == 0 else "mino") if pursuit else "gem"
+            draw_maze_token(self.canvas, x, y, piece, index)
 
     def maze_key(self, action):
         self.move_maze(action)

@@ -36,7 +36,7 @@ async def generate_in_browser(type_id, seed, difficulty, **options):
     if type_id == "random":
         type_id = random.Random(seed).choice([p.id for p in catalog.CATALOG if p.available and p.id != "hearts"])
     if type_id in MAZE_TITLES:
-        return generate_maze(type_id, seed, difficulty)
+        return generate_maze(type_id, seed, difficulty, **options)
     if type_id != "schachraetsel":
         return catalog.generate(type_id, seed, difficulty, **options)
     from chess_adapter import browser_chess_puzzle
@@ -170,7 +170,7 @@ class BrowserApp(gui.App):
             label = "Warten" if action == WAIT else f"Nach {MOVE_NAMES[action].lower()}"
             tk.send("label", button.id, label)
             if action != WAIT:
-                tk.send("role", button.id, "maze-direction")
+                tk.send("maze-direction", button.id, action, len(self.maze_game.boards) == 2)
 
     def fit_board(self):
         width, height = self.canvas.winfo_width(), self.canvas.winfo_height()
@@ -226,7 +226,8 @@ def start():
                           (app.popout_level_choice, "Vier gewinnt – Schwierigkeit"),
                           (app.hearts_level_choice, "Hearts-Schwierigkeit"),
                           (app.cat_size_choice, "Feldgröße Katzensuche"),
-                          (app.pipe_size_choice, "Feldgröße Pipes")):
+                          (app.pipe_size_choice, "Feldgröße Pipes"),
+                          (app.maze_form_choice, "Bauform")):
         tk.send("label", widget.id, label)
     tk.flush()
     return app

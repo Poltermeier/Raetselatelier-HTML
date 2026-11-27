@@ -21,7 +21,7 @@ from .hearts import HEARTS_LEVELS
 from .chess_game_ui import ChessGameUI, CHESS_ELOS
 from .popout import LEVELS as POPOUT_LEVELS
 from .popout_ui import FOUR_TITLES, PopOutUI
-from .paired_maze import MAZE_TITLES, generate_maze
+from .paired_maze import MAZE_FORMS, MAZE_TITLES, RANDOM_FORM, generate_maze
 from .paired_maze_ui import PairedMazeUI
 from .sequence_ui import SEQUENCE_TITLES, SequenceUI
 from .symbol_duel import CARD_COUNT, SYMBOLS_PER_CARD
@@ -95,6 +95,10 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         style.configure("TFrame", background=BG)
         style.configure("TLabel", background=BG, foreground=INK, font=("Helvetica", 10))
         style.configure("TButton", font=("Helvetica", 10), padding=(12, 8))
+        style.configure("MazeDirection.TButton", background="#28584c", foreground="#fff9ea",
+                        padding=(4, 4), font=("Helvetica", 16, "bold"))
+        style.map("MazeDirection.TButton", background=[("active", "#377462"), ("disabled", "#cbd8ce")],
+                  foreground=[("disabled", "#5b7369")])
         self.configure_sequence_styles(style)
         for name, background, foreground in (
             ("Deduction", "#f7f6ee", INK),
@@ -191,6 +195,12 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         ttk.Label(self.pipe_size_frame,text='Feldgröße Pipes').pack(anchor='w')
         self.pipe_size_choice=ttk.Combobox(self.pipe_size_frame,textvariable=self.pipe_size,values=PIPE_SIZES,state='readonly',width=8)
         self.pipe_size_choice.pack(fill='x',pady=(4,0))
+        self.maze_form = tk.StringVar(value=RANDOM_FORM)
+        self.maze_form_frame = ttk.Frame(sidebar)
+        ttk.Label(self.maze_form_frame, text="Bauform").pack(anchor="w")
+        self.maze_form_choice = ttk.Combobox(self.maze_form_frame, textvariable=self.maze_form,
+                                            values=(RANDOM_FORM, *MAZE_FORMS), state="readonly")
+        self.maze_form_choice.pack(fill="x", pady=(4, 0))
         self.seed_label=ttk.Label(sidebar, text="Seed (optional)")
         self.seed_label.pack(anchor="w")
         self.seed = ttk.Entry(sidebar)
@@ -276,6 +286,11 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
                 difficulty_control.pack(fill="x", pady=(5,12), before=self.seed_label)
                 if long_game in choices:
                     difficulty_control.configure(state="disabled" if self.busy else "readonly")
+        if long_game in MAZE_TITLES:
+            self.maze_form_frame.pack(fill="x", pady=(0, 12), before=self.seed_label)
+            self.maze_form_choice.configure(state="disabled" if self.busy else "readonly")
+        else:
+            self.maze_form_frame.pack_forget()
         if item is not None and item.id=='katzensuche':
             self.cat_size_frame.pack(fill='x',pady=(0,12),before=self.seed_label)
             self.cat_size_choice.configure(state='disabled' if self.busy else 'readonly')
@@ -376,7 +391,13 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
         generator = generate_maze if type_id in MAZE_TITLES else generate
         self.set_busy(True)
         self.status.configure(text="Erzeuge Rätsel und prüfe die Lösbarkeit …", foreground=INK)
-        options={'size':self.cat_size.get()} if type_id=='katzensuche' else {'size':self.pipe_size.get()} if type_id=='pipes' else {}
+        options = {}
+        if type_id in MAZE_TITLES:
+            options["form"] = self.maze_form.get()
+        elif type_id == "katzensuche":
+            options["size"] = self.cat_size.get()
+        elif type_id == "pipes":
+            options["size"] = self.pipe_size.get()
         level = self.hearts_level.get().lower() if type_id == "hearts" else self.level.get()
         self.future = self.pool.submit(generator, type_id, seed, level, **options)
         self.root.after(80, self.poll_generation)
@@ -409,7 +430,7 @@ class App(RectangleUI, LockUI, NotesUI, NonogramUI, ArithmeticUI, HashiUI, Click
             color = 'Weiß' if puzzle.view['white'] else 'Schwarz'
             self.meta.configure(text=f"Du spielst {color} · Stockfish {puzzle.view['elo']} Elo")
         elif puzzle.view["kind"] == "maze-game":
-            self.meta.configure(text=f"{puzzle.difficulty.capitalize()} · Seed {puzzle.seed} · Lösbarkeit geprüft")
+            self.meta.configure(text=f"{puzzle.difficulty.capitalize()} · {puzzle.view['form']} · Seed {puzzle.seed} · Lösbarkeit geprüft")
         elif puzzle.view["kind"] == "picture-nonogram":
             cols, rows = puzzle.view["cols"], puzzle.view["rows"]
             self.meta.configure(text=f"{cols} × {rows} Felder · {puzzle.difficulty.capitalize()} · Seed {puzzle.seed} · {certificate}")
